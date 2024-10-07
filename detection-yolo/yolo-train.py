@@ -67,7 +67,7 @@ def convert_gwhd_yolo(base, base_out):
 if __name__ == "__main__":
     #convert_gwhd_yolo("F:/gwhd_2021/gwhd_2021", "F:/gwhd_2021/gwhd_yolo")
 
-    model = YOLO("C:/Users/Admin/Desktop/master_thesis/runs/detect/train3/weights/best.pt", task='detect')
+    model = YOLO("C:/Users/Admin/Desktop/master_thesis/volume_prediction_fip/detection-yolo/weights/detect/medium-train+val/weights/best.pt", task='detect')
 
     #model.val(data="F:\\gwhd_2021\\gwhd_yolo\\dataset.yaml", batch=12, show_labels=False, split="test")
 
@@ -87,8 +87,6 @@ if __name__ == "__main__":
     
     """
 
-    """
     results: list[Results] = model("F:/FIP-data/2023/WW034/debayered/2023_06_08_13_11_Lot1/FPWW0340091_FIP2_20230608_122303/cam_03.png", imgsz=4000, max_det=800, iou=0.5)
     for result in results:
-        result.plot(labels=False, probs=False, boxes=True, show=True, conf=True, color_mode='instance')
-    """
+        result.plot(labels=False, probs=False, boxes=True, show=False, conf=True, color_mode='instance', save=True, filename="output.jpg")
