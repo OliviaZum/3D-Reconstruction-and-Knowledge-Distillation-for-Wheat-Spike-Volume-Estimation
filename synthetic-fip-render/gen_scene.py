@@ -157,7 +157,7 @@ class FIPScene(pyrender.Scene):
             self.add(m, pose=cp)
 
     def normalize_viewport_size(self, p: np.ndarray):
-        return (p * self.viewport_normalization_factor).astype(np.int32)
+        return (p * self.viewport_normalization_factor)
 
     # Returns instances as list of x, y points
     def get_instance_pixels(self, camera_name, normalize_viewport_size = True):
@@ -206,7 +206,7 @@ class FIPScene(pyrender.Scene):
 def save_scene_data(scene: FIPScene, data, dir: str):
     path = os.path.join(dir, f"{str(scene.scene_id)}.json")
     with open(path, "w") as f:
-        json.dump(data, f)
+        json.dump(data, f, indent=4)
 
 def load_scene_data(dir: str):
     files = os.listdir(dir)
