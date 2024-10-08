@@ -1,12 +1,11 @@
 import trimesh
 import pyrender
-from PIL import Image
 import numpy as np
-import matplotlib.pyplot as plt
 import json
 import random
 import os
 import tqdm
+import uuid
 
 def get_fip_campose(config, camera: str):
     e = config[camera]["extrinsics"]
@@ -25,7 +24,6 @@ def get_fip_campose(config, camera: str):
         [0, 0, 0, 1]
     ])
 
-    #scene.set_pose(cam_node, pose=Pnew)
     return Pnew
 
 def get_fip_camintrinsics(config, camera: str, viewport_size: tuple):
@@ -43,12 +41,11 @@ def get_fip_camintrinsics(config, camera: str, viewport_size: tuple):
 
     return pyrender.IntrinsicsCamera(fx=fx, fy=fy, cx=cx, cy=cy)
 
-def random_rotation_matrix(max_angle: float) -> np.ndarray:
+def random_rotation_matrix(angle) -> np.ndarray:
     # Generate a random unit vector (axis of rotation)
     axis = np.random.normal(size=3)
     axis /= np.linalg.norm(axis)
-    angle = np.random.uniform(-max_angle, max_angle)
-    
+
     # Compute the components of the rotation matrix using Rodrigues' rotation formula
     K = np.array([[    0, -axis[2],  axis[1]],
                   [ axis[2],     0, -axis[0]],
@@ -66,9 +63,14 @@ class FIPScene(pyrender.Scene):
         with open(conf_path) as f:
             self.conf = json.load(f)
 
+        self.base_viewport_size = (4096, 3000)
+        self.viewport_size = viewport_size
+        self.viewport_normalization_factor = np.array(self.base_viewport_size) / np.array(viewport_size)
         self.renderer = pyrender.OffscreenRenderer(viewport_width=viewport_size[0], viewport_height=viewport_size[1])
-        self.init_cameras(viewport_size)
+        self.init_cameras()
         self.generate_spikes(meshes_base_dir, n_instance, n_duplicates)
+
+        self.scene_id = uuid.uuid4()
 
 
     def make_image(self, camera_name: str):
@@ -79,10 +81,10 @@ class FIPScene(pyrender.Scene):
         for n in self.camnodes.keys():
             yield n
 
-    def init_cameras(self, viewport_size):
+    def init_cameras(self):
         self.camnodes = {}
         for n in self.conf.keys():
-            cam = get_fip_camintrinsics(self.conf, n, viewport_size)
+            cam = get_fip_camintrinsics(self.conf, n, self.viewport_size)
             node = self.add(cam, pose=get_fip_campose(self.conf, n))
             self.camnodes[n] = node
 
@@ -93,9 +95,6 @@ class FIPScene(pyrender.Scene):
                 if file.endswith('.ply'):
                     full_path = os.path.join(root, file)
                     ply_files.append(full_path)
-
-        def r():
-            return (random.random() - 0.5) * 2
 
         id = 0
         self.color_to_id = {}
@@ -108,7 +107,7 @@ class FIPScene(pyrender.Scene):
 
                 # This generation rules are very much handcrafted. Technically data "should" originate from configuration file (especially pose of center along x, y)
                 # Practically this is a lot easier and works for now.
-                scale_base = np.eye(3) * 0.002
+                scale_base = np.eye(3) * 0.003
                 rot_base = np.array([
                     [1, 0, 0],
                     [0, 0, -1],
@@ -126,11 +125,10 @@ class FIPScene(pyrender.Scene):
                     self.color_to_id[tuple(color)] = id
                     color = color.astype(np.float32) / 255
                     cm = pyrender.Mesh.from_trimesh(mesh, smooth=False, material=pyrender.MetallicRoughnessMaterial(baseColorFactor=color))
-                    random_move = np.array([
-                        2 * r(), 2 * r(), 0.3 * r()
-                    ])
-                    random_rot = random_rotation_matrix(np.pi / 4)
-                    random_scale = np.eye(3) * (r() * 0.3 + 1)
+                    random_move = np.array([3, 3, 0.3]) * np.random.uniform(-1, 1, 3)
+                    random_rot = random_rotation_matrix(np.random.normal(0, 0.3, 1).item())
+                    random_scale = np.diag(np.random.uniform(0.7, 1.4, 3))
+                    #random_scale = np.eye(3)
                     R = random_rot @ random_scale @ scale_base @ rot_base
                     t = random_move + move_base
                     Rt = np.eye(4)
@@ -158,10 +156,65 @@ class FIPScene(pyrender.Scene):
             cp = get_fip_campose(self.conf, n)
             self.add(m, pose=cp)
 
+    def normalize_viewport_size(self, p: np.ndarray):
+        return (p * self.viewport_normalization_factor).astype(np.int32)
 
-a = FIPScene("C:/Users/Admin/Desktop/master_thesis/volume_prediction_fip/assets/fip_poses_configuration.json", "F:/wheat-scans", (1000, 750), 1, 160)
-for n in a.camnames():
-    img, _ = a.make_image(n)
+    # Returns instances as list of x, y points
+    def get_instance_pixels(self, camera_name, normalize_viewport_size = True):
+        img, _ = self.make_image(camera_name)
+        id_to_pixel: dict[list] = {}
 
-    plt.imshow(img)
-    plt.show()
+        h, w, _ = img.shape
+        for j in range(h):
+            for i in range(w):
+                id = self.color_to_id.get(tuple(img[j, i, :]), None)
+                if id:
+                    id_to_pixel.setdefault(id, [])
+                    r = (i, j)
+                    if normalize_viewport_size:
+                        r = self.normalize_viewport_size(np.array(r))
+                        r = tuple(r)
+                    id_to_pixel[id].append(r)
+        
+        return id_to_pixel
+    
+    # Returns format x_min, y_min, x_max, y_max
+    def get_instance_bbox(self, camera_name, normalize_viewport_size = True):
+        id_to_pixel = self.get_instance_pixels(camera_name, False)
+        id_to_bbox = {}
+
+        for id, pixlist in id_to_pixel.items():
+            xymin = np.array([10000, 10000])
+            xymax = np.array([-10000, -10000])
+            for x, y in pixlist:
+                c = np.array([x, y])
+                xymin = np.minimum(c, xymin)
+                xymax = np.maximum(c, xymax)
+            if normalize_viewport_size:
+                xymin = self.normalize_viewport_size(xymin)
+                xymax = self.normalize_viewport_size(xymax)
+            id_to_bbox[id] = (*xymin, *xymax)
+
+        return id_to_bbox
+    
+    def get_all_bounding_boxes(self):
+        r = {}
+        for n in self.camnames():
+            r[n] = self.get_instance_bbox(n)
+        return r
+    
+def save_scene_data(scene: FIPScene, data, dir: str):
+    path = os.path.join(dir, f"{str(scene.scene_id)}.json")
+    with open(path, "w") as f:
+        json.dump(data, f)
+
+def load_scene_data(dir: str):
+    files = os.listdir(dir)
+    for file in files:
+        splitf = os.path.splitext(file)
+        if splitf[1] == "json":
+            with open(os.path.join(dir, file)) as f:
+                data = json.load(f)
+            yield splitf[0], data
+
+#a = FIPScene("/home/jannis/Schreibtisch/volume_prediction_fip/assets/fip_poses_configuration.json", "/home/jannis/Schreibtisch/volume_prediction_fip/wheat-scans-simplyfied-fast/", (400, 300), 1, 30)
