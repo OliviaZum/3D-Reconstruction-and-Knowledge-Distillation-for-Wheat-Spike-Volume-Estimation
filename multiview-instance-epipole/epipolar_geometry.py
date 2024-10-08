@@ -1,4 +1,5 @@
 import numpy as np
+import json
 
 def cross_product_matrix(x):
     X = np.array([[0, -x[2], x[1]],
