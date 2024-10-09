@@ -212,7 +212,7 @@ def load_scene_data(dir: str):
     files = os.listdir(dir)
     for file in files:
         splitf = os.path.splitext(file)
-        if splitf[1] == "json":
+        if splitf[1] == ".json":
             with open(os.path.join(dir, file)) as f:
                 data = json.load(f)
             yield splitf[0], data
