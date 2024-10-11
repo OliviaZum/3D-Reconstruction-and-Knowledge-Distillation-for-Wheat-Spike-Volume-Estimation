@@ -88,10 +88,10 @@ def check_epipolar_intersect_bbox(F: np.ndarray, point_cam1: np.ndarray, bbox_ca
         [xmax, ymin, 1]
         ])
     # Three checks sufficient, cause a line will always intersect 2 lines of bounding box
-    l1 = check_epipolar_intersect(F, point_cam1, p[0], p[1])
-    l2 = check_epipolar_intersect(F, point_cam1, p[0], p[3])
-    l3 = check_epipolar_intersect(F, point_cam1, p[1], p[2])
-    return l1 or l2 or l3
+    hit = (check_epipolar_intersect(F, point_cam1, p[0], p[1]) or
+         check_epipolar_intersect(F, point_cam1, p[0], p[3]) or
+         check_epipolar_intersect(F, point_cam1, p[1], p[2]))
+    return hit
 
 def test_compute_fundamental(json_file):
     with open(json_file, 'r') as f:

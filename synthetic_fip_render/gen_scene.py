@@ -208,13 +208,18 @@ def save_scene_data(scene: FIPScene, data, dir: str):
     with open(path, "w") as f:
         json.dump(data, f, indent=4)
 
-def load_scene_data(dir: str):
+def load_scene_data(file: str):
+    with open(file) as f:
+        data = json.load(f)
+    return data
+
+def load_scene_data_folder(dir: str):
     files = os.listdir(dir)
     for file in files:
         splitf = os.path.splitext(file)
         if splitf[1] == ".json":
-            with open(os.path.join(dir, file)) as f:
-                data = json.load(f)
+            data = load_scene_data(os.path.join(dir, file))
             yield splitf[0], data
+    
 
 #a = FIPScene("/home/jannis/Schreibtisch/volume_prediction_fip/assets/fip_poses_configuration.json", "/home/jannis/Schreibtisch/volume_prediction_fip/wheat-scans-simplyfied-fast/", (400, 300), 1, 30)
