@@ -18,7 +18,7 @@ import joblib
 import tqdm
 
 # Expects a json of camera_name: {instance_id1: bounding_box, ...}, ...
-def build_epipolar_graph(poses_conf, bounding_boxes: Dict[str, Dict[str, List[float]]], num_samples=3):
+def build_epipolar_graph(poses_conf, bounding_boxes: Dict[str, Dict[str, List[float]]], num_samples=5):
     idx_to_instance = {}
     instance_to_idx = {}
     i = 0
@@ -160,40 +160,50 @@ def SymNMF(g: np.ndarray):
 
 
 def force_opt(g: np.ndarray, do_not_match: np.ndarray):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     with torch.no_grad():
+        # TODO: Parameterization of retractions is not so clever. Cleaner would be to normalize attraction first, then find reasonable parameters
         g_attract = torch.tensor(g, dtype=torch.float32)
-        g_retract: torch.Tensor = (g_attract == 0).to(torch.float32)
-        g_retract[do_not_match @ do_not_match.T == 1] = 0.2
+        # At distance 10 force should be zero. c * 10 - u = 0 => c = u / 10
+        g_retract_sub: torch.Tensor = (g_attract == 0).to(torch.float32) * 50
+        g_retract_sub[do_not_match @ do_not_match.T == 1] = 3000
+        g_retract_mul: torch.Tensor = g_retract_sub / 10
 
-        k = 2
-        lr = 0.02
+        k = 30
+        lr = 0.0002
         embedding = torch.rand((g.shape[0], k)) * 10
 
-        for e in range(200):
+        g_attract = g_attract.to(device)
+        g_retract_sub = g_retract_sub.to(device)
+        g_retract_mul = g_retract_mul.to(device)
+        embedding = embedding.to(device)
+
+        for e in tqdm.tqdm(range(1000)):
             v_pairwise = embedding.unsqueeze(1) - embedding.unsqueeze(0)
             dists = torch.sqrt((v_pairwise ** 2).sum(dim=2))
             v_dir = v_pairwise / dists.unsqueeze(2)
             v_dir[torch.isnan(v_dir)] = 0
 
             forceAttr = g_attract * dists
-            forceRep = dists * g_retract - 10
+            #forceRep = dists * g_retract - 10
+            forceRep = dists * g_retract_mul - g_retract_sub
             forceRep[forceRep > 0] = 0
 
             force = forceAttr + forceRep
             v_force = v_dir * force.unsqueeze(2)
             c = v_force.sum(dim=0)
             embedding += lr * c
-            #totalForce = torch.sum(torch.abs(force))
-            #print(f"{e}: {totalForce}")
+        totalForce = torch.sum(torch.abs(force))
+        print(f"{e}: {totalForce}")
 
-        clustering = MeanShift(bandwidth=5).fit(embedding.numpy())
+        clustering = MeanShift(bandwidth=5).fit(embedding.cpu().numpy())
 
-        #plt.scatter(embedding.numpy()[:, 0], embedding.numpy()[:, 1], c=clustering.labels_, cmap="viridis")
+        #plt.scatter(embedding.cpu().numpy()[:, 0], embedding.cpu().numpy()[:, 1], c=clustering.labels_, cmap="viridis")
         #plt.show()
         return clustering.labels_
 
-def load_and_build_graph(recompute = False):
-    data = load_scene_data("F:/wheat-scans-simplyfied-fast/bboxes_ground_truth/val/0fb876f5-4933-4ca7-8d6b-78a73c155d24.json")
+def load_and_build_graph(file: str, recompute = False):
+    data = load_scene_data(file)
     with open("assets/fip_poses_configuration.json") as f:
         conf = json.load(f)
 
@@ -226,7 +236,9 @@ def run_cluster_test(graph: np.ndarray, idx_to_instance: Dict, do_not_match: np.
         communities = community.louvain_communities(g, weight="weight", resolution=1)
 
     if task == 'lpa':
-        graph[graph == 0] = -1
+        graph[graph == 0] = -10
+        mask = do_not_match @ do_not_match.T == 1
+        graph[mask] = -50
         np.fill_diagonal(graph, 0)
         g = create_networkx_graph(graph)
         communities = community.label_propagation.asyn_lpa_communities(g, weight="weight")
@@ -253,5 +265,5 @@ def run_cluster_test(graph: np.ndarray, idx_to_instance: Dict, do_not_match: np.
         print(confusion)
     
 #graph, idx_to_instance, do_not_match
-v = load_and_build_graph(True)
-#run_cluster_test(*v,'lpa')
+v = load_and_build_graph("F:/wheat-scans-simplyfied-fast/bboxes_ground_truth/simple/7b4fe577-ef66-49b8-8d15-6d2a945cf338.json", False)
+run_cluster_test(*v,'lpa')
