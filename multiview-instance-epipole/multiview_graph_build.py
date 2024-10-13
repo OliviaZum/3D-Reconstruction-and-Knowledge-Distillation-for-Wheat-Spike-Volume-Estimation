@@ -16,6 +16,143 @@ from torch.optim.adam import Adam
 import matplotlib.pyplot as plt
 import joblib
 import tqdm
+import time
+
+def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, List[float]]], num_samples=5):
+
+    # Precompute and build mapping from node idx to instance
+    idx_to_instance = {}
+    instance_to_idx = {}
+    num_instance_per_image = []
+    img_name_to_start_end = {}
+
+    # Lines of boxes for a single image (3 * #boxes, 3)
+    box_lines_img = {}
+    # Zero points of connecting lines for a single image
+    v_zero_img = {}
+    # Connecting vectors of boxes one image (3 * #boxes, 3)
+    v_conn_img = {} 
+    # Sampled points for each bounding box one image  (num_sample * #boxes, 3)
+    sample_points_img = {}
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    start = time.time()
+    with torch.no_grad():
+        i = 0
+        for (n, v) in bounding_boxes.items():
+            num_instance_per_image.append(len(v))
+            img_name_to_start_end[n] = (i, i + len(v))
+            box_lines_img[n] = []
+            v_conn_img[n] = []
+            v_zero_img[n] = []
+            sample_points_img[n] = []
+            for id, box in v.items():
+                xmin, ymin, xmax, ymax = box
+                p = torch.tensor([
+                    [xmin, ymin, 1],
+                    [xmin, ymax, 1],
+                    [xmax, ymax, 1],
+                    [xmax, ymin, 1]
+                    ])
+                pa = torch.stack([p[0, :], p[0, :], p[1, :]])
+                pb = torch.stack([p[1, :], p[3, :], p[2, :]])
+                v_zero_img[n].append(pa)
+                bl = torch.cross(pa, pb, dim=1)
+                box_lines_img[n].append(bl)
+
+                bc = pb - pa
+                v_conn_img[n].append(bc)
+
+                vert = (p[1, :] - p[0, :]).unsqueeze(0)
+                hor = (p[3, :] - p[0, :]).unsqueeze(0)
+                mulp = torch.rand((num_samples, 2))
+                samples = mulp[:, 0].unsqueeze(1) * hor + mulp[:, 1].unsqueeze(1) * vert + p[0, :].unsqueeze(0)
+                sample_points_img[n].append(samples)
+
+                idx_to_instance[i] = (n, id)
+                instance_to_idx[(n, id)] = i
+                i += 1
+
+            box_lines_img[n] = torch.concat(box_lines_img[n], dim=0).to(device)
+            v_conn_img[n] = torch.concat(v_conn_img[n], dim=0).to(device)
+            v_zero_img[n] = torch.concat(v_zero_img[n], dim=0).to(device)
+            sample_points_img[n] = torch.concat(sample_points_img[n], dim=0).to(device)
+
+        # Actual do not match matrix is given by do_not_match @ do_not_match.T, it's rank #images
+        do_not_match = np.ndarray((np.sum(num_instance_per_image), len(num_instance_per_image)))
+        current_write = 0
+        for i, v in enumerate(num_instance_per_image):
+            base = np.zeros((1, len(num_instance_per_image)))
+            base[0, i] = 1
+            for _ in range(v):
+                do_not_match[current_write, :] = base
+                current_write += 1
+        
+        cam_names = list(bounding_boxes.keys())
+        graph = torch.zeros([len(idx_to_instance)] * 2, device=device)
+
+        for i in range(len(cam_names)):
+            for j in range(i+1, len(cam_names)):
+                im1 = cam_names[i]
+                im2 = cam_names[j]
+                F = torch.tensor(epipolar_geometry.build_fundamental(poses_conf, im1, im2), dtype=torch.float32, device=device)
+
+                epi_lines = (F @ sample_points_img[im1].T).T
+                intersect = torch.cross(epi_lines.unsqueeze(0), box_lines_img[im2].unsqueeze(1), dim=2) # (n_boxline, n_epi_line, 3)
+                # Can result in nans, but handled later together with lambda (l) computation
+                intersect = intersect / intersect[:, :, 2].view((intersect.shape[0], intersect.shape[1], 1))
+                zeroed_intersect = intersect - v_zero_img[im2].unsqueeze(1)
+                l = zeroed_intersect[:, :, :2] / v_conn_img[im2][:, :2].unsqueeze(1)
+                mask = torch.logical_and(torch.logical_and(torch.logical_not(torch.isnan(l)), l > 0), l < 1)
+                l_reduced = mask.sum(dim=2) > 0 # (#n_boxline, n_epi_line)
+                # At this point_lreduced = true at i, j if the i'th boxline intersects with the j epiline
+
+                box_intersects = torch.logical_or(torch.logical_or(l_reduced[::3, :], l_reduced[1::3, :]), l_reduced[2::3, :])
+                counts = torch.zeros((box_intersects.shape[0], box_intersects.shape[1] // num_samples), device=device) # (#n_boxes_im2, #n_boxes_im1)
+                for k in range(num_samples):
+                    counts += box_intersects[:, k::num_samples]
+
+                pos_1, end_1 = img_name_to_start_end[im1]
+                pos_2, end_2 = img_name_to_start_end[im2]
+                graph[pos_1:end_1, pos_2:end_2] = counts.T
+                graph[pos_2:end_2, pos_1:end_1] = counts
+
+        return graph.cpu().numpy(), idx_to_instance, do_not_match
+    
+def lp_cluster_torch(graph: np.ndarray, do_not_match):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    with torch.no_grad():
+        graph = torch.tensor(graph, device=device)
+        graph[graph == 0] = -10
+        graph[do_not_match @ do_not_match.T == 1] = -50
+        graph.fill_diagonal_(0)
+        
+        # Essentially reimplemented from networkx (with some degree of parallelism)
+        # With an entirely parallel implementation oscilations occur which lead to the 
+        # graph slowly or not converging at all (and worse results). As a
+        # tradeoff using just some degree of parallelism.
+        labels = torch.eye(graph.shape[0], device=device)
+        no_converge = True
+        num_parallel = graph.shape[0] // 20
+        while no_converge:
+            nodes = torch.randperm(graph.shape[0])
+            no_converge = False
+            for i in range(0, len(nodes), num_parallel):
+                n = nodes[i:min(i+num_parallel, len(nodes))]
+                v = graph[n]
+                freq = v @ labels
+                # Technically labels should be picked at random. 
+                # But complicated and slow, practically the algorithm does not seem to work
+                # worse with a fixed label.
+                max = torch.argmax(freq, dim=1)
+                if torch.any(labels[n, max] == 0):
+                    no_converge = True
+                    labels[n, :] = 0
+                    labels[n, max] = 1
+
+        labels = torch.argmax(labels, dim=1).cpu()
+        return labels
 
 # Expects a json of camera_name: {instance_id1: bounding_box, ...}, ...
 def build_epipolar_graph(poses_conf, bounding_boxes: Dict[str, Dict[str, List[float]]], num_samples=5):
@@ -162,14 +299,13 @@ def SymNMF(g: np.ndarray):
 def force_opt(g: np.ndarray, do_not_match: np.ndarray):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     with torch.no_grad():
-        # TODO: Parameterization of retractions is not so clever. Cleaner would be to normalize attraction first, then find reasonable parameters
         g_attract = torch.tensor(g, dtype=torch.float32)
         # At distance 10 force should be zero. c * 10 - u = 0 => c = u / 10
         g_retract_sub: torch.Tensor = (g_attract == 0).to(torch.float32) * 50
         g_retract_sub[do_not_match @ do_not_match.T == 1] = 3000
         g_retract_mul: torch.Tensor = g_retract_sub / 10
 
-        k = 30
+        k = 10
         lr = 0.0002
         embedding = torch.rand((g.shape[0], k)) * 10
 
@@ -178,7 +314,7 @@ def force_opt(g: np.ndarray, do_not_match: np.ndarray):
         g_retract_mul = g_retract_mul.to(device)
         embedding = embedding.to(device)
 
-        for e in tqdm.tqdm(range(1000)):
+        for e in tqdm.tqdm(range(200)):
             v_pairwise = embedding.unsqueeze(1) - embedding.unsqueeze(0)
             dists = torch.sqrt((v_pairwise ** 2).sum(dim=2))
             v_dir = v_pairwise / dists.unsqueeze(2)
@@ -193,8 +329,8 @@ def force_opt(g: np.ndarray, do_not_match: np.ndarray):
             v_force = v_dir * force.unsqueeze(2)
             c = v_force.sum(dim=0)
             embedding += lr * c
-        totalForce = torch.sum(torch.abs(force))
-        print(f"{e}: {totalForce}")
+            totalForce = torch.sum(torch.abs(force))
+            print(f"{e}: {totalForce}")
 
         clustering = MeanShift(bandwidth=5).fit(embedding.cpu().numpy())
 
@@ -216,13 +352,15 @@ def load_and_build_graph(file: str, recompute = False):
             recompute = True
     if recompute:
         print("Building graph")
-        v = build_epipolar_graph(conf, data)
+        v = build_epipolar_graph_opt(conf, data)
+        print("Done")
+
         joblib.dump(v, fname)
     return v
     
 
 def run_cluster_test(graph: np.ndarray, idx_to_instance: Dict, do_not_match: np.ndarray, task : str = 'force_opt'):
-    tasks = {'force_opt', 'sym_nmf', 'vis', 'lovain', 'lpa'}
+    tasks = {'force_opt', 'sym_nmf', 'vis', 'lovain', 'lpa', 'lpatorch'}
     if task not in tasks:
         print(f"Accepted Tasks are {tasks}")
 
@@ -243,8 +381,11 @@ def run_cluster_test(graph: np.ndarray, idx_to_instance: Dict, do_not_match: np.
         g = create_networkx_graph(graph)
         communities = community.label_propagation.asyn_lpa_communities(g, weight="weight")
 
-    if task == 'force_opt':
-        r = force_opt(graph, do_not_match)
+    if task == 'force_opt' or task == 'lpatorch':
+        if task == 'force_opt':
+            r = force_opt(graph, do_not_match)
+        elif task == 'lpatorch':
+            r = lp_cluster_torch(graph, do_not_match).numpy()
         u = {}
         for j, v in enumerate(r):
             u.setdefault(v, [])
@@ -265,5 +406,5 @@ def run_cluster_test(graph: np.ndarray, idx_to_instance: Dict, do_not_match: np.
         print(confusion)
     
 #graph, idx_to_instance, do_not_match
-v = load_and_build_graph("F:/wheat-scans-simplyfied-fast/bboxes_ground_truth/simple/7b4fe577-ef66-49b8-8d15-6d2a945cf338.json", False)
-run_cluster_test(*v,'lpa')
+v = load_and_build_graph("F:/wheat-scans-simplyfied-fast/bboxes_ground_truth/simple/f46eabfb-2775-49bf-8c78-967d5c43ccf2.json", True)
+run_cluster_test(*v,'lpatorch')

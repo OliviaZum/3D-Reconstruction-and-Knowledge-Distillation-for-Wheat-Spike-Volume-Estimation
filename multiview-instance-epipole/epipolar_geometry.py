@@ -72,9 +72,6 @@ def check_epipolar_intersect(F: np.ndarray, point_cam1: np.ndarray, point1_cam2:
         l = zeroed_intersection[0] / v_1to2[0]
         
     # intersection lies on the line from p1 to p2, just as v_1to2, vectors should be collinear
-    a = np.linalg.norm(l * v_1to2[0:2] - zeroed_intersection[0:2])
-    if np.linalg.norm(l * v_1to2[0:2] - zeroed_intersection[0:2]) >= 0.001:
-        j = 0
     assert  np.linalg.norm(l * v_1to2[0:2] - zeroed_intersection[0:2]) < 0.001
 
     return l >= 0 and l <= 1
