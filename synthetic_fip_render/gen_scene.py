@@ -222,4 +222,8 @@ def load_scene_data_folder(dir: str):
             yield splitf[0], data
     
 
-#a = FIPScene("/home/jannis/Schreibtisch/volume_prediction_fip/assets/fip_poses_configuration.json", "/home/jannis/Schreibtisch/volume_prediction_fip/wheat-scans-simplyfied-fast/", (400, 300), 1, 30)
+"""
+a = FIPScene("assets/fip_poses_configuration.json", "F:/wheat-scans-simplyfied-fast", (400, 300), 5, 100)
+a.draw_camera_meshes()
+pyrender.Viewer(a)
+"""
