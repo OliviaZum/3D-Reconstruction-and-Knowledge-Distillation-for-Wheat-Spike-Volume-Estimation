@@ -1,5 +1,6 @@
 import sys
-sys.path.append("C:/Users/Admin/Desktop/master_thesis/volume_prediction_fip")
+import os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
 
 from typing import Dict, List
 import numpy as np
@@ -18,7 +19,6 @@ import joblib
 import tqdm
 import time
 from multiview_graph import build_epipolar_graph_opt, lp_cluster_torch
-import os
 
 # Expects a json of camera_name: {instance_id1: bounding_box, ...}, ...
 def build_epipolar_graph(poses_conf, bounding_boxes: Dict[str, Dict[str, List[float]]], num_samples=5):

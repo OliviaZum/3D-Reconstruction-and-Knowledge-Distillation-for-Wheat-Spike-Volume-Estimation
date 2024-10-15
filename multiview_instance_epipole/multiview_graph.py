@@ -1,14 +1,11 @@
-import sys
-sys.path.append("C:/Users/Admin/Desktop/master_thesis/volume_prediction_fip")
-
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import numpy as np
-import epipolar_geometry
+from multiview_instance_epipole import epipolar_geometry
 import torch
 import warnings
 
 def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, List[float]]], num_samples=20,
-                             device = 'cuda' if torch.cuda.is_available() else 'cpu', normalize_graph = True) -> torch.Tensor:
+                             device = 'cuda' if torch.cuda.is_available() else 'cpu', normalize_graph = True) -> Tuple[torch.Tensor, Dict[int, Tuple[str, str]]]:
 
     # Precompute and build mapping from node idx to instance
     idx_to_instance = {}
