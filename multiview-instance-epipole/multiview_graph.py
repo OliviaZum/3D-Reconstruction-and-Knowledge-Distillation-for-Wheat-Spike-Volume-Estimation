@@ -7,7 +7,8 @@ import epipolar_geometry
 import torch
 import warnings
 
-def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, List[float]]], num_samples=20):
+def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, List[float]]], num_samples=20,
+                             device = 'cuda' if torch.cuda.is_available() else 'cpu', normalize_graph = True) -> torch.Tensor:
 
     # Precompute and build mapping from node idx to instance
     idx_to_instance = {}
@@ -23,7 +24,6 @@ def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, Lis
     v_conn_img = {} 
     # Sampled points for each bounding box one image  (num_sample * #boxes, 3)
     sample_points_img = {}
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     with torch.no_grad():
         i = 0
@@ -97,27 +97,31 @@ def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, Lis
                 graph[pos_1:end_1, pos_2:end_2] += counts.T
                 graph[pos_2:end_2, pos_1:end_1] += counts
 
+        if normalize_graph:
+            graph *= (1 / (2 * num_samples))
+            graph[graph == 0] = -5
+            graph[torch.logical_and(graph >= 0, graph <= 0.8)] = 0
+            graph.fill_diagonal_(0)
+
         return graph, idx_to_instance
 
-def lp_cluster_torch(graph: np.ndarray):
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+def lp_cluster_torch(graph: np.ndarray, device = 'cuda' if torch.cuda.is_available() else 'cpu') -> torch.Tensor:
     with torch.no_grad():
-        graph = torch.tensor(graph, device=device)
-        graph *= (1 / 40)
-        graph[graph == 0] = -5
-        graph[torch.logical_and(graph >= 0, graph <= 0.8)] = 0
-        graph.fill_diagonal_(0)
         
         # Essentially reimplemented from networkx (with some degree of parallelism)
         # With an entirely parallel implementation oscilations occur which lead to the 
         # graph slowly or not converging at all (and worse results). As a
         # tradeoff using just some degree of parallelism.
+        graph = torch.tensor(graph, device=device)
         labels = torch.eye(graph.shape[0], device=device)
         no_converge = True
         max_iter = 200
         iters = 0
-        num_parallel = graph.shape[0] // 20
+        batches = graph.shape[0] // 20
+        if batches < 1:
+            num_parallel = 1
+        else:
+            num_parallel = batches
         while no_converge and iters <= max_iter:
             iters += 1
             nodes = torch.randperm(graph.shape[0])

@@ -18,6 +18,7 @@ import joblib
 import tqdm
 import time
 from multiview_graph import build_epipolar_graph_opt, lp_cluster_torch
+import os
 
 # Expects a json of camera_name: {instance_id1: bounding_box, ...}, ...
 def build_epipolar_graph(poses_conf, bounding_boxes: Dict[str, Dict[str, List[float]]], num_samples=5):
@@ -192,7 +193,7 @@ def force_opt(g: np.ndarray):
         #plt.show()
         return clustering.labels_
 
-def load_and_build_graph(file: str, recompute = False):
+def load_and_build_graph(file: str, recompute = False, store_cache = True):
     data = load_scene_data(file)
     with open("assets/fip_poses_configuration.json") as f:
         conf = json.load(f)
@@ -209,11 +210,45 @@ def load_and_build_graph(file: str, recompute = False):
         v = build_epipolar_graph_opt(conf, data)
         print("Done")
 
-        joblib.dump((v, data), fname)
+        if store_cache:
+            joblib.dump((v, data), fname)
     return v, data
-    
 
-def run_cluster_test(graph: np.ndarray, idx_to_instance: Dict, ground_truth, task : str = 'force_opt'):
+def show_stats(tp_fn_fp_views: np.ndarray, num_views: np.ndarray, mean_deviation_views: np.ndarray):
+    def to_rates(sums):
+        return {"FN rate": sums[1] / sums[0], "FP rate": sums[2] / sums[0], "Error rate": (sums[2] + sums[1]) / sums[0]}
+    rates_6_10 = to_rates(tp_fn_fp_views[:, 5:9].sum(axis=1))
+    rates_10_12 = to_rates(tp_fn_fp_views[:, 9:].sum(axis=1))
+    rates_12 = to_rates(tp_fn_fp_views[:, 11])
+    print(f"Rates 6-10 Views: {rates_6_10}")
+    print(f"Rates 10-12 Views: {rates_10_12}")
+    print(f"Rates 12 Views: {rates_12}")
+
+    x = np.arange(1, 13)
+    width = 0.2
+    fig, ax = plt.subplots(1, 3, figsize=(8, 6))
+    ax[0].bar(x - width, tp_fn_fp_views[1, :], width, label='FN', color='red')
+    ax[0].bar(x + width, tp_fn_fp_views[2, :], width, label='FP', color='yellow')
+    ax[0].bar(x, tp_fn_fp_views[0, :], width, label='TP', color='green')
+    ax[0].set_xlabel('# Views')
+    ax[0].set_ylabel('# Pairs')
+    ax[0].set_title('FN, FP, TP by Views')
+    ax[0].set_xticks(x)
+    ax[0].legend()
+
+    ax[1].bar(x, num_views, width)
+    ax[1].set_title("#Views per distinct object")
+    ax[1].set_xticks(x)
+
+    ax[2].bar(x, mean_deviation_views, width, label="MAE cluster size deviation")
+    ax[2].set_xlabel("# Views")
+    ax[2].set_ylabel("MAE")
+    ax[2].set_title("Mean absolute cluster size error per node")
+    ax[2].set_xticks(x)
+    plt.tight_layout()
+    plt.show()
+
+def run_cluster_test(graph: np.ndarray, idx_to_instance: Dict, ground_truth, task : str = 'force_opt', verbose=True):
     tasks = {'force_opt', 'sym_nmf', 'vis', 'lovain', 'lpa', 'lpatorch'}
     if task not in tasks:
         print(f"Accepted Tasks are {tasks}")
@@ -263,8 +298,9 @@ def run_cluster_test(graph: np.ndarray, idx_to_instance: Dict, ground_truth, tas
             instance_to_idx.setdefault(id, [])
             instance_to_idx[id].append(idx)
 
-        # Compute error per ground truth cluster size (num observations)
+        # Compute error per ground truth cluster size (num observations) and deviation from true cluster size per node
         tp_fn_fp_views = np.zeros((3, 0))
+        mean_deviation_views = []
         gt_np = np.array(gt)
         pred_np = np.array(pred)
         indices = np.arange(0, len(gt))
@@ -272,44 +308,61 @@ def run_cluster_test(graph: np.ndarray, idx_to_instance: Dict, ground_truth, tas
             objs = [x for x, v in num_view_per_obj.items() if v == current_num_view]
             idxgt = set([x for obj in objs for x in instance_to_idx[obj]])
             tp_fn_fp = np.zeros(3)
+            size_deviation = 0
             for idx in idxgt:
                 mtp = np.logical_and(gt_np[idx] == gt_np[indices], pred_np[idx] == pred_np[indices])
                 mfn = np.logical_and(gt_np[idx] == gt_np[indices], pred_np[idx] != pred_np[indices])
                 mfp = np.logical_and(gt_np[idx] != gt_np[indices], pred_np[idx] == pred_np[indices])
+                pred_cluster_size = (pred_np[idx] == pred_np[indices]).sum()
+                size_deviation += np.abs(pred_cluster_size - current_num_view)
                 tp_fn_fp += np.array([mtp.sum() - 1, mfn.sum(), mfp.sum()]) # If idx == i will count one tp to much
+            if len(idxgt) > 0:
+                mean_deviation_views.append(size_deviation / len(idxgt))
+            else:
+                mean_deviation_views.append(0)
             tp_fn_fp_views = np.concatenate((tp_fn_fp_views, np.expand_dims(tp_fn_fp, 1)), axis=1)
+        mean_deviation_views = np.array(mean_deviation_views)
+
+        def accumulate_frequencies(arr):
+            max_value = max(arr)
+            frequency_array = np.zeros(max_value)
+            for number in arr:
+                frequency_array[number-1] += 1
+            return frequency_array
         
-        fn_rate = tp_fn_fp_views[1, 10:].sum() / tp_fn_fp_views[0, 10:].sum()
-        fp_rate = tp_fn_fp_views[2, 10:].sum() / tp_fn_fp_views[0, 10:].sum()
-        e_rate = (tp_fn_fp_views[1, 10:].sum() + tp_fn_fp_views[2, 10:].sum()) / tp_fn_fp_views[0, 10:].sum()
-        print(f"FN rate: {fn_rate}, FP rate: {fp_rate}, Error rate: {e_rate}")
+        
+        if verbose:
+            show_stats(tp_fn_fp_views, accumulate_frequencies(num_view_per_obj.values()), mean_deviation_views)
+            print("Correct confusion matrix (pred = gt): ")
+            print(metrics.pair_confusion_matrix(gt, gt))
+            print("confusion matrix (considering all pairs) (C00: TN, C10: FN, C11: TP, C01: FP): ")
+            print(metrics.pair_confusion_matrix(gt, pred))
 
-        return
+        return tp_fn_fp_views, accumulate_frequencies(num_view_per_obj.values()), mean_deviation_views
+        
+def run_cluster_test_multiple(dir):
+    tp_fn_fp_views_agg = np.zeros((3, 12))
+    num_view_agg = np.zeros(12)
+    mean_deviation_views_agg = np.zeros(12)
+    counter = 0
+    for file in os.listdir(dir):
+        if os.path.splitext(file)[1] == ".json":
+            (graph, idx_to_instance), data = load_and_build_graph(os.path.join(dir, file), True, False)
+            tp_fn_fp_views, num_view, mean_deviation_views = run_cluster_test(graph.cpu().numpy(), idx_to_instance, data, 'lpatorch', False)
+            tp_fn_fp_views_agg += tp_fn_fp_views
+            num_view_agg += num_view
+            mean_deviation_views_agg += mean_deviation_views
+            counter += 1
+    mean_deviation_views_agg /= counter
+    num_view_agg /= counter
     
-        x = np.arange(1, 13)
-        width = 0.2
-        fig, ax = plt.subplots(1, 2, figsize=(8, 6))
-        ax[0].bar(x - width, tp_fn_fp_views[1, :], width, label='FN', color='red')
-        ax[0].bar(x + width, tp_fn_fp_views[2, :], width, label='FP', color='yellow')
-        ax[0].bar(x, tp_fn_fp_views[0, :], width, label='TP', color='green')
-        ax[0].set_xlabel('# Views')
-        ax[0].set_ylabel('# Pairs')
-        ax[0].set_title('FN, FP, TP by Views')
-        ax[0].set_xticks(x)
-        ax[0].legend()
+    show_stats(tp_fn_fp_views_agg, num_view_agg, mean_deviation_views_agg)
 
-        ax[1].hist(num_view_per_obj.values(), bins=[i - 0.5 for i in range(1, 14)])
-        ax[1].set_title("#Views per distinct object")
-        ax[1].set_xticks(x)
-        plt.tight_layout()
-        plt.show()
 
-        print("Correct confusion matrix (pred = gt): ")
-        print(metrics.pair_confusion_matrix(gt, gt))
-        print("confusion matrix (considering all pairs) (C00: TN, C10: FN, C11: TP, C01: FP): ")
-        print(metrics.pair_confusion_matrix(gt, pred))
-    
-(graph, idx_to_instance), data = load_and_build_graph("F:/wheat-scans-simplyfied-fast/bboxes_ground_truth/val/cdc2f6a9-ea1f-4cfb-8b00-9c8d25b13cdb.json", True)
+run_cluster_test_multiple("F:/wheat-scans-simplyfied-fast/bboxes_ground_truth/val")
+"""
+(graph, idx_to_instance), data = load_and_build_graph("F:/wheat-scans-simplyfied-fast/bboxes_ground_truth/val/cdc2f6a9-ea1f-4cfb-8b00-9c8d25b13cdb.json", False)
 graph = graph.cpu().numpy()
-for _ in range(10):
+for _ in range(1):
     run_cluster_test(graph, idx_to_instance, data, 'lpatorch')
+"""
