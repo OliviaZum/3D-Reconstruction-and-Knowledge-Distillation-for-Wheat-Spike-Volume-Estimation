@@ -1,7 +1,5 @@
 import json
-import numpy as np
-import cv2
-import random
+import sys
 
 # Takes a openmvg scene json with extrinsics and converts to simpler to read configuration
 def convert_openmvg_to_simplified(path_in, path_out):
@@ -33,3 +31,6 @@ def convert_openmvg_to_simplified(path_in, path_out):
 
     with open(path_out, "w") as f:
         json.dump(output, f, indent=4)
+
+if __name__ == "__main__":
+    convert_openmvg_to_simplified(sys.argv[1], sys.argv[2])

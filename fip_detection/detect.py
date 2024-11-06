@@ -17,7 +17,7 @@ def find_objects(yolo_weights_path: str, poses_conf, scan_folder: str, min_view 
             raise Exception(f"One of the required images {img} has not been found")
     results: list[Results] = []
     for i in range(0, len(imgs), batch_size):
-        tmp = model(imgs[i:min(i+batch_size, len(imgs))], imgsz=3008, max_det=800, iou=0.5, batch=2, conf=min_conf)
+        tmp = model(imgs[i:min(i+batch_size, len(imgs))], imgsz=3008, max_det=800, iou=0.5, batch=2, conf=min_conf, verbose=False)
         results.extend(tmp)
 
     # This conversion is somewhat innefficient. One could go without it later on
@@ -78,16 +78,16 @@ def save_results(boxes, results, dir):
             # Annotate with the ID (inside the bounding box)
             img = cv2.putText(img, str(id), (x1 + 5, y1 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)), 2)
 
-        cv2.imwrite(os.path.join(dir, os.path.splitext(os.path.basename(result.path))[0] + ".jpg"), img, [cv2.IMWRITE_JPEG_QUALITY, 30])
+        cv2.imwrite(os.path.join(dir, os.path.splitext(os.path.basename(result.path))[0] + ".jpg"), img, [cv2.IMWRITE_JPEG_QUALITY, 70])
 
 if __name__ == "__main__":
-    with open("assets/fip_poses_configuration.json") as f:
+    with open(r"F:\FIP-data\images\2024\WW036\debayered\2024_07_18_14_08_Lot3\FPWW0360289_FIP2_20240718_135131\poses.json") as f:
         conf = json.load(f)
     print("Starting find objects")
     start = time.time()
     boxes, results = find_objects("C:/Users/Admin/Desktop/master_thesis/volume_prediction_fip/detection-yolo/weights/detect/medium-train+val/weights/best.pt", 
                                     conf,
-                                    "F:/FIP-data/2023/WW034/debayered/2023_06_08_13_11_Lot1/FPWW0340091_FIP2_20230608_122303", batch_size=1)
+                                    r"F:\FIP-data\images\2024\WW036\debayered\2024_07_18_14_08_Lot3\FPWW0360289_FIP2_20240718_135131", batch_size=1)
     print(f"Find objects ended. Time {time.time() - start}")
     
-    save_results(boxes, results, "tmpstuff/tmp_results")
+    save_results(boxes, results, r"F:\FIP-data\images\2024\WW036\debayered\2024_07_18_14_08_Lot3\FPWW0360289_FIP2_20240718_135131\other")

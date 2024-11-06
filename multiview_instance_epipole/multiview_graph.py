@@ -58,10 +58,16 @@ def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, Lis
                 instance_to_idx[(n, id)] = i
                 i += 1
 
-            box_lines_img[n] = torch.concat(box_lines_img[n], dim=0).to(device)
-            v_conn_img[n] = torch.concat(v_conn_img[n], dim=0).to(device)
-            v_zero_img[n] = torch.concat(v_zero_img[n], dim=0).to(device)
-            sample_points_img[n] = torch.concat(sample_points_img[n], dim=0).to(device)
+            if len(box_lines_img[n]) > 0:
+                box_lines_img[n] = torch.concat(box_lines_img[n], dim=0).to(device)
+                v_conn_img[n] = torch.concat(v_conn_img[n], dim=0).to(device)
+                v_zero_img[n] = torch.concat(v_zero_img[n], dim=0).to(device)
+                sample_points_img[n] = torch.concat(sample_points_img[n], dim=0).to(device)
+            else:
+                box_lines_img[n] = torch.zeros((0, 3)).to(device)
+                v_conn_img[n] = torch.zeros((0, 3)).to(device)
+                v_zero_img[n] = torch.zeros((0, 3)).to(device)
+                sample_points_img[n] = torch.zeros((0, 3)).to(device)
         
         cam_names = list(bounding_boxes.keys())
         graph = torch.zeros([len(idx_to_instance)] * 2, device=device)
@@ -96,7 +102,12 @@ def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, Lis
 
         if normalize_graph:
             graph *= (1 / (2 * num_samples))
-            graph[graph == 0] = -5
+            graph[graph == 0] = -2
+            start = 0
+            for w in num_instance_per_image:
+                end = start + w
+                graph[start:end, start:end] = -5
+                start = end
             graph[torch.logical_and(graph >= 0, graph <= 0.8)] = 0
             graph.fill_diagonal_(0)
 

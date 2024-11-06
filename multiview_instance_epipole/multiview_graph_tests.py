@@ -195,7 +195,7 @@ def force_opt(g: np.ndarray):
 
 def load_and_build_graph(file: str, recompute = False, store_cache = True):
     data = load_scene_data(file)
-    with open("assets/fip_poses_configuration.json") as f:
+    with open("assets/2023_fip_poses_configuration.json") as f:
         conf = json.load(f)
 
     fname = "graphcache.cache"
