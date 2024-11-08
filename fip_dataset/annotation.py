@@ -397,14 +397,8 @@ if __name__ == "__main__":
         "img_folder": r"F:\FIP-data\images",
         "ply_folder": r"F:\FIP-data\wheat-scans",
         "precompute_file": r"F:\FIP-data\csv\precomputed.csv",
-        "show": "unedited" # unedited -> No save file, unverified -> not verified, all -> everything
+        "show": lambda folder, data: "FPWW0340112_FIP2_20230710_121032" in folder
     }
-    showconfigs = set(["all", "unedited", "unverified"])
-
-    print(f"Config: {config}")
-    if config["show"] not in showconfigs:
-        print(f"Config show {config["show"]} does not exist")
-        sys.exit(1)
 
     data = FIPDataset.FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"])
 
@@ -421,12 +415,8 @@ if __name__ == "__main__":
             current = json.loads(current.iloc[0])
         else:
             current = None
-        if config["show"] == "unedited" and current:
+        if not config["show"](image_folder, current):
             continue
-        if config["show"] == "unverified" and (current and current["verified"]):
-            continue
-        if config["show"] == "all":
-            pass # Here as a reminder that this case exists
 
         image_dict = json.loads(data.precomputed.loc[data.precomputed["image_dir"] == image_folder, "spikes"].iloc[0])
         # Should probably solve this more clean at some point, but for now we impose the constraint that only one box has the same id here

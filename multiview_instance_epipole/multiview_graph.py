@@ -150,5 +150,5 @@ def lp_cluster_torch(graph: np.ndarray, device = 'cuda' if torch.cuda.is_availab
         if iters == max_iter:
             warnings.warn("label propagation failed to converge")
 
-        labels = torch.argmax(labels, dim=1).cpu()
+        labels = torch.argmax(labels, dim=1)
         return labels

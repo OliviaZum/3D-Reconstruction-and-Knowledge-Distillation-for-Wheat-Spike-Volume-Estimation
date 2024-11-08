@@ -6,10 +6,8 @@ from typing import Dict, List, Tuple
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 from multiview_instance_epipole import multiview_graph
-import json
-import time
 
-def find_objects(yolo_weights_path: str, poses_conf, scan_folder: str, min_view = 6, min_conf = 0.25, batch_size = 5) -> Tuple[Dict[str, List[Tuple[int, List]]], List]:
+def find_objects_yolo(yolo_weights_path: str, scan_folder: str, min_conf = 0.25, batch_size = 5) -> Tuple[Dict[str, List[Tuple[int, List]]], List]:
     model = YOLO(yolo_weights_path, task='detect')
     imgs = [os.path.join(scan_folder, f"cam_{i:02}.png") for i in range(1, 13)]
     for img in imgs:
@@ -29,10 +27,13 @@ def find_objects(yolo_weights_path: str, poses_conf, scan_folder: str, min_view 
         for i in range(boxes.shape[0]):
             current[i] = list(boxes[i, :])
         converted[os.path.basename(result.path)] = current
-    
-    graph, idx_to_instance = multiview_graph.build_epipolar_graph_opt(poses_conf, converted)
-    graph = graph.cpu().numpy()
-    labels = multiview_graph.lp_cluster_torch(graph).numpy()
+
+    return converted, results
+
+def connect_boxes(boxes, poses_conf, min_view = 6):
+    graph, idx_to_instance = multiview_graph.build_epipolar_graph_opt(poses_conf, boxes)
+    graph = graph.detach().cpu().numpy()
+    labels = multiview_graph.lp_cluster_torch(graph).detach().cpu().numpy()
 
     labelcount = {}
     for v in labels:
@@ -41,16 +42,19 @@ def find_objects(yolo_weights_path: str, poses_conf, scan_folder: str, min_view 
 
     # Dict mapping from image name to id, bounding box. Unsure bounding boxes (less than min_view predicted views get label -1)
     combined_results: Dict[str, Tuple[int, List]] = {} 
+    # If an image has 0 detections it is not added otherwise
+    imgs = [f"cam_{i:02}.png" for i in range(1, 13)]
+    for img in imgs:
+        combined_results[img] = []
     for i in range(len(idx_to_instance)):
         image_name, id = idx_to_instance[i]
-        box = converted[image_name][id]
-        combined_results.setdefault(image_name, [])
+        box = boxes[image_name][id]
         label = labels[i]
         if labelcount[label] < min_view:
             label = -1
         combined_results[image_name].append((label, box))
 
-    return combined_results, results
+    return combined_results
 
 
 def save_results(boxes, results, dir):
@@ -79,15 +83,3 @@ def save_results(boxes, results, dir):
             img = cv2.putText(img, str(id), (x1 + 5, y1 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)), 2)
 
         cv2.imwrite(os.path.join(dir, os.path.splitext(os.path.basename(result.path))[0] + ".jpg"), img, [cv2.IMWRITE_JPEG_QUALITY, 70])
-
-if __name__ == "__main__":
-    with open(r"F:\FIP-data\images\2024\WW036\debayered\2024_07_18_14_08_Lot3\FPWW0360289_FIP2_20240718_135131\poses.json") as f:
-        conf = json.load(f)
-    print("Starting find objects")
-    start = time.time()
-    boxes, results = find_objects("C:/Users/Admin/Desktop/master_thesis/volume_prediction_fip/detection-yolo/weights/detect/medium-train+val/weights/best.pt", 
-                                    conf,
-                                    r"F:\FIP-data\images\2024\WW036\debayered\2024_07_18_14_08_Lot3\FPWW0360289_FIP2_20240718_135131", batch_size=1)
-    print(f"Find objects ended. Time {time.time() - start}")
-    
-    save_results(boxes, results, r"F:\FIP-data\images\2024\WW036\debayered\2024_07_18_14_08_Lot3\FPWW0360289_FIP2_20240718_135131\other")

@@ -8,7 +8,7 @@ import re
 import pandas as pd
 
 class FIPDataset:
-    def __init__(self, csv_folder, img_folder, ply_folder, precompute_file = None, spikelabels_file = None) -> None:
+    def __init__(self, csv_folder, img_folder, ply_folder, precompute_file = None, spikelabels_file = None, split_file=None) -> None:
         if precompute_file:
             self.precomputed = pd.read_csv(precompute_file, encoding="ISO-8859-1")
         else:
@@ -77,6 +77,14 @@ class FIPDataset:
         
         self.spikescans["image_dir"] = self.spikescans.apply(set_folder, axis=1)
 
+        # Load poses
+        self.poses = {}
+        pose_folder = 'assets/poses'
+        for file in os.listdir(pose_folder):
+            with open(os.path.join(pose_folder, file)) as f:
+                self.poses[os.path.splitext(file)[0]] = json.load(f)
+
+        # Load annotations
         if spikelabels_file:
             camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
             df = pd.read_csv(spikelabels_file)
@@ -98,6 +106,11 @@ class FIPDataset:
                             new_row[cam_key] = labeled_data[cam_key][label]
                         else:
                             new_row[cam_key] = None
+
+                    if label in labeled_data["label_selectedon"]:
+                        new_row["label_selectedon"] = labeled_data["label_selectedon"][label]
+                    else:
+                        new_row["label_selectedon"] = None
                     
                     new_rows.append(new_row)
 
@@ -108,14 +121,37 @@ class FIPDataset:
 
             self.spikescans = pd.merge(self.spikescans, df, how='inner', on=["image_dir", "label"])
 
-    def precompute(self, precompute_file):
-        # Precompute bounding boxes
-        self.precomputed = pd.DataFrame()
-        self.precomputed["image_dir"] = self.spikescans["image_dir"].unique()
+        # Load/generate split
+        if split_file is not None:
+            if os.path.exists(split_file):
+                df = pd.read_csv(split_file)
+                if len(df) != len(self.spikescans):
+                    print("The generated split file and the spike scans do not match. Delete it to regenerate")
+                    sys.exit(1)
+                self.spikescans = pd.merge(self.spikescans, df, how='inner', on=["image_dir", "label"])
+            else:
+                import random
+                split_list = random.choices(["train", "val", "test"], [0.7, 0.1, 0.2], k=len(self.spikescans))
+                self.spikescans["group"] = split_list
+                subdf = self.spikescans[["image_dir", "label", "group"]]
+                subdf.to_csv(split_file, index=False)
+
+    def get_pose_config(self, folder):
+        for k, v in self.poses.items():
+            if k in folder:
+                return v
+
+    def precompute_boxes(self, precompute_file, update_connections_only = False):
+        # Precompute bounding boxes and connections between them
+        # If update_connections_only just change the connections between the boxes, don't repredict the boxes
+        if update_connections_only:
+            assert self.precomputed is not None
+        else:
+            self.precomputed = pd.DataFrame()
+            self.precomputed["image_dir"] = self.spikescans["image_dir"].unique()
         from fip_detection import detect
+        import torch
         import tqdm
-        with open("assets/fip_poses_configuration.json") as f:
-            conf = json.load(f)
         def converter(obj):
             if isinstance(obj, np.int64):
                 return int(obj)
@@ -123,11 +159,120 @@ class FIPDataset:
                 return float(obj)
             
         for index, row in tqdm.tqdm(self.precomputed.iterrows()):
-            boxes, _ = detect.find_objects("detection-yolo/weights/detect/medium-train+val/weights/best.pt", 
-                                            conf,
-                                            row["image_dir"], batch_size=1, min_view=0)
-            self.precomputed.at[index, "spikes"] = json.dumps(boxes, default=converter)
+            conf = self.get_pose_config(row['image_dir'])
+            if update_connections_only:
+                w = json.loads(row['spikes'])
+                boxes = {} # Ensure ids are unique
+                for img, boxes_img in w.items():
+                    n = {}
+                    for i, (_, v) in enumerate(boxes_img):
+                        n[i] = v
+                    boxes[img] = n
+                    print(len(n))
+            else:
+                boxes, _ = detect.find_objects_yolo("detection-yolo/weights/detect/medium-train+val/weights/best.pt", 
+                                                row["image_dir"], batch_size=1)
+            connected_boxes = detect.connect_boxes(boxes, conf, min_view=0, )
+            if torch.cuda.memory_reserved() // (1024**2) > 3500:
+                torch.cuda.empty_cache()
+            self.precomputed.at[index, "spikes"] = json.dumps(connected_boxes, default=converter)
         self.precomputed.to_csv(precompute_file, sep=",", index=False)
+
+    @staticmethod
+    def iou(box1, box2):
+        # box1 and box2 should be in (x1, y1, x2, y2) format
+        x1, y1, x2, y2 = box1
+        x1_b, y1_b, x2_b, y2_b = box2
+
+        inter_x1 = max(x1, x1_b)
+        inter_y1 = max(y1, y1_b)
+        inter_x2 = min(x2, x2_b)
+        inter_y2 = min(y2, y2_b)
+        if inter_x1 >= inter_x2 or inter_y1 >= inter_y2:
+            return 0.0
+
+        inter_area = (inter_x2 - inter_x1) * (inter_y2 - inter_y1)
+
+        box1_area = (x2 - x1) * (y2 - y1)
+        box2_area = (x2_b - x1_b) * (y2_b - y1_b)
+        union_area = box1_area + box2_area - inter_area
+
+        return inter_area / union_area
+
+    def precompute_image_dataset(self, base_folder: str, padding = 0):
+        # Compute an image dataset of the individual spikes
+        import cv2
+        import tqdm
+
+        os.makedirs(base_folder, exist_ok=True)
+        
+        def extend_box(box, img):
+            box = np.array(box).astype(np.int32)
+            box[0:2] = np.maximum([0, 0], box[0:2] - padding)
+            box[2:4] = np.minimum(box[2:4] + padding, (img.shape[1], img.shape[0]))
+            return img[box[1]:box[3], box[0]:box[2]]
+        
+        camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
+        for folder in tqdm.tqdm(self.spikescans["image_dir"].unique()):
+            scans = self.spikescans.loc[self.spikescans["image_dir"] == folder]
+            precomp_json = json.loads(self.precomputed.loc[self.precomputed["image_dir"] == folder, "spikes"].iloc[0])
+            out_path_fun = lambda scan : os.path.join(base_folder, scan["group"], os.path.split(folder)[1] + scan["label"])
+
+            all_exist = True
+            for _, scan in scans.iterrows():
+                if os.path.exists(out_path_fun(scan)):
+                    continue
+                else:
+                    all_exist = False
+            if all_exist:
+                continue
+
+            all_imgs = {}
+            for img_name in camkeys:
+                img = cv2.imread(os.path.join(folder, img_name))
+                all_imgs[img_name] = img
+
+            for _, scan in scans.iterrows():
+                out_path = out_path_fun(scan)
+                if os.path.exists(out_path):
+                    continue
+                print(out_path)
+                os.makedirs(out_path)
+                out = {
+                    "volume": scan["spikevolume"],
+                    "ply": scan["ply"]
+                }
+                os.makedirs(os.path.join(out_path, "manual"))
+                with open(os.path.join(out_path, "data.json"), "w") as f:
+                    json.dump(out, f)
+
+                # Create a second branch of images which were automatically selected. The ground truth here is the box which was selected first
+                max_iou = 0
+                max_id = -1
+                for id, box in precomp_json[scan["label_selectedon"]]:
+                    iou = self.iou(scan[scan["label_selectedon"]], box)
+                    if iou > max_iou:
+                        max_iou = iou
+                        max_id = id
+                if max_iou > 0.6:
+                    os.makedirs(os.path.join(out_path, "automatic"))
+                else:
+                    max_id = None
+                
+                for img_name in camkeys:
+                    # Write manual images (i.e. boxes which were selected by hand)
+                    if scan[img_name]:
+                        box = extend_box(scan[img_name], all_imgs[img_name])
+                        cv2.imwrite(os.path.join(out_path, "manual", img_name), box)
+                    # If a box very much resembling to the box which was selected initially (as first and set global)
+                    # is found, then write all boxes which are predicted to be same spike to automatic
+                    if max_id:
+                        c = 0
+                        for id, box in precomp_json[img_name]:
+                            if max_id == id:
+                                box = extend_box(box, all_imgs[img_name])
+                                cv2.imwrite(os.path.join(out_path, "automatic", f"{os.path.splitext(img_name)[0]}_{c}.png"), box)
+                                c += 1
 
     @staticmethod
     def labels2num2023mapping():
@@ -166,3 +311,19 @@ class FIPDataset:
     @staticmethod
     def labels2numgeneralmapping():
         return FIPDataset.labels2num2024mapping()
+
+
+if __name__ == "__main__":
+    config = {
+            "annotation_file": r"F:\FIP-data\csv\labeled_spikes.csv",
+            "csv_folder": r"F:\FIP-data\csv",
+            "img_folder": r"F:\FIP-data\images",
+            "ply_folder": r"F:\FIP-data\wheat-scans",
+            "precompute_file": r"F:\FIP-data\csv\precomputed.csv",
+            "split_file": r"F:\FIP-data\csv\split.csv"
+        }
+
+    data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["split_file"])
+    data.precompute_image_dataset(r"F:\FIP-data\spike_dataset")
+    #data.precompute_boxes(config["precompute_file"])
+    j = 0
