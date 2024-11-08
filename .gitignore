@@ -1,0 +1,5 @@
+__pycache__/
+weights/
+local_stuff/
+/lib
+*.cache
