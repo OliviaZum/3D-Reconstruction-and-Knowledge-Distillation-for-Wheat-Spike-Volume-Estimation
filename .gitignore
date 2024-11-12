@@ -3,3 +3,4 @@ weights/
 local_stuff/
 /lib
 *.cache
+jupyter

@@ -324,6 +324,5 @@ if __name__ == "__main__":
         }
 
     data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["split_file"])
-    data.precompute_image_dataset(r"F:\FIP-data\spike_dataset")
+    #data.precompute_image_dataset(r"F:\FIP-data\spike_dataset")
     #data.precompute_boxes(config["precompute_file"])
-    j = 0
