@@ -47,7 +47,6 @@ def build_fundamental(poses_conf, cam1: str, cam2: str):
 # Assumes all points normalized homogenous
 # Checks if the epipolar line defined by a point on cam1 intersects with a line defined by 2 points on cam2
 # Points in x, y format
-# Untested currently
 def check_epipolar_intersect(F: np.ndarray, point_cam1: np.ndarray, point1_cam2: np.ndarray, point2_cam2: np.ndarray):
     eps = 0.0001
     epi_line = F @ point_cam1

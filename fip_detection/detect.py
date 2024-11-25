@@ -15,7 +15,7 @@ def find_objects_yolo(yolo_weights_path: str, scan_folder: str, min_conf = 0.25,
             raise Exception(f"One of the required images {img} has not been found")
     results: list[Results] = []
     for i in range(0, len(imgs), batch_size):
-        tmp = model(imgs[i:min(i+batch_size, len(imgs))], imgsz=3008, max_det=800, iou=0.5, batch=2, conf=min_conf, verbose=False)
+        tmp = model(imgs[i:min(i+batch_size, len(imgs))], imgsz=3008, max_det=800, iou=0.5, conf=min_conf, verbose=False)
         results.extend(tmp)
 
     # This conversion is somewhat innefficient. One could go without it later on

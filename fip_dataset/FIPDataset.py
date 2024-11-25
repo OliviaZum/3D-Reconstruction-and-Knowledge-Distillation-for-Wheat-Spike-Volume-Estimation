@@ -6,9 +6,10 @@ import json
 import numpy as np
 import re
 import pandas as pd
+import random
 
 class FIPDataset:
-    def __init__(self, csv_folder, img_folder, ply_folder, precompute_file = None, spikelabels_file = None, split_file=None) -> None:
+    def __init__(self, csv_folder, img_folder, ply_folder, precompute_file = None, spikelabels_file = None) -> None:
         if precompute_file:
             self.precomputed = pd.read_csv(precompute_file, encoding="ISO-8859-1")
         else:
@@ -121,21 +122,6 @@ class FIPDataset:
 
             self.spikescans = pd.merge(self.spikescans, df, how='inner', on=["image_dir", "label"])
 
-        # Load/generate split
-        if split_file is not None:
-            if os.path.exists(split_file):
-                df = pd.read_csv(split_file)
-                if len(df) != len(self.spikescans):
-                    print("The generated split file and the spike scans do not match. Delete it to regenerate")
-                    sys.exit(1)
-                self.spikescans = pd.merge(self.spikescans, df, how='inner', on=["image_dir", "label"])
-            else:
-                import random
-                split_list = random.choices(["train", "val", "test"], [0.7, 0.1, 0.2], k=len(self.spikescans))
-                self.spikescans["group"] = split_list
-                subdf = self.spikescans[["image_dir", "label", "group"]]
-                subdf.to_csv(split_file, index=False)
-
     def get_pose_config(self, folder):
         for k, v in self.poses.items():
             if k in folder:
@@ -198,81 +184,104 @@ class FIPDataset:
         union_area = box1_area + box2_area - inter_area
 
         return inter_area / union_area
+    
+    @staticmethod
+    def extend_box(box, img, padding):
+        box = np.array(box).astype(np.int32)
+        box[0:2] = np.maximum([0, 0], box[0:2] - padding)
+        box[2:4] = np.minimum(box[2:4] + padding, (img.shape[1], img.shape[0]))
+        return img[box[1]:box[3], box[0]:box[2]]
 
-    def precompute_image_dataset(self, base_folder: str, padding = 0):
+    def precompute_image_dataset(self, base_folder: str, padding = 0, automatic_inferred=True, min_views = 6):
         # Compute an image dataset of the individual spikes
         import cv2
         import tqdm
 
+        if os.path.exists(base_folder):
+            input("The base folder exists. Press enter to overwrite...")
         os.makedirs(base_folder, exist_ok=True)
-        
-        def extend_box(box, img):
-            box = np.array(box).astype(np.int32)
-            box[0:2] = np.maximum([0, 0], box[0:2] - padding)
-            box[2:4] = np.minimum(box[2:4] + padding, (img.shape[1], img.shape[0]))
-            return img[box[1]:box[3], box[0]:box[2]]
+        csv_path = os.path.join(base_folder, "vol_mapping.csv")
+        table = pd.DataFrame(columns=["img_name", "volume"])
         
         camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
         for folder in tqdm.tqdm(self.spikescans["image_dir"].unique()):
-            scans = self.spikescans.loc[self.spikescans["image_dir"] == folder]
+            scans: pd.DataFrame = self.spikescans.loc[self.spikescans["image_dir"] == folder]
             precomp_json = json.loads(self.precomputed.loc[self.precomputed["image_dir"] == folder, "spikes"].iloc[0])
-            out_path_fun = lambda scan : os.path.join(base_folder, scan["group"], os.path.split(folder)[1] + scan["label"])
 
-            all_exist = True
+            export = {}
             for _, scan in scans.iterrows():
-                if os.path.exists(out_path_fun(scan)):
-                    continue
-                else:
-                    all_exist = False
-            if all_exist:
-                continue
+                export[scan["plant_id"]] = {"volume": scan["spikevolume"], "boxes": {}}
+                if automatic_inferred:
+                    # Create branch of images which were automatically selected. The ground truth here is the box which was selected first
+                    max_iou = 0
+                    max_id = -1
+                    for id, box in precomp_json[scan["label_selectedon"]]:
+                        iou = self.iou(scan[scan["label_selectedon"]], box)
+                        if iou > max_iou:
+                            max_iou = iou
+                            max_id = id
+                    if max_iou < 0.6:
+                        max_id = None
+                        print(f"For the scan {scan["range_lot"]}_{scan["row_lot"]}, label {scan["label"]} no matching bounding box was found")
 
+                for i, cam_name in enumerate(camkeys):
+                    img_name = f"{scan["range_lot"]}_{scan["row_lot"]}_{scan["plant_id"]}_{i + 1}_a.jpg"
+
+                    if not automatic_inferred:
+                        # Write manual images (i.e. boxes which were selected by hand)
+                        if scan[cam_name]:
+                            export[scan["plant_id"]]["boxes"][cam_name] = (img_name, scan[cam_name])
+                    else:
+                        if max_id:
+                            c = 0
+                            for id, box in precomp_json[cam_name]:
+                                if max_id == id:
+                                    export[scan["plant_id"]]["boxes"][cam_name] = (img_name, box)
+                                    break # Ignore the case where multiple boxes appear on one image for now
+                                    c += 1
+            # Load all images
             all_imgs = {}
             for img_name in camkeys:
                 img = cv2.imread(os.path.join(folder, img_name))
                 all_imgs[img_name] = img
 
-            for _, scan in scans.iterrows():
-                out_path = out_path_fun(scan)
-                if os.path.exists(out_path):
+            # Do the actual export
+            for a in export.values():
+                if len(a["boxes"]) < min_views:
                     continue
-                print(out_path)
-                os.makedirs(out_path)
-                out = {
-                    "volume": scan["spikevolume"],
-                    "ply": scan["ply"]
-                }
-                os.makedirs(os.path.join(out_path, "manual"))
-                with open(os.path.join(out_path, "data.json"), "w") as f:
-                    json.dump(out, f)
-
-                # Create a second branch of images which were automatically selected. The ground truth here is the box which was selected first
-                max_iou = 0
-                max_id = -1
-                for id, box in precomp_json[scan["label_selectedon"]]:
-                    iou = self.iou(scan[scan["label_selectedon"]], box)
-                    if iou > max_iou:
-                        max_iou = iou
-                        max_id = id
-                if max_iou > 0.6:
-                    os.makedirs(os.path.join(out_path, "automatic"))
-                else:
-                    max_id = None
                 
-                for img_name in camkeys:
-                    # Write manual images (i.e. boxes which were selected by hand)
-                    if scan[img_name]:
-                        box = extend_box(scan[img_name], all_imgs[img_name])
-                        cv2.imwrite(os.path.join(out_path, "manual", img_name), box)
-                    # If a box very much resembling to the box which was selected initially (as first and set global)
-                    # is found, then write all boxes which are predicted to be same spike to automatic
-                    if max_id:
-                        c = 0
-                        for id, box in precomp_json[img_name]:
-                            if max_id == id:
-                                box = extend_box(box, all_imgs[img_name])
-                                cv2.imwrite(os.path.join(out_path, "automatic", f"{os.path.splitext(img_name)[0]}_{c}.png"), box)
-                                c += 1
+                for cam_name, box in a["boxes"].items():
+                    new_row = {"img_name": box[0], "volume": a["volume"]}
+                    out_path = os.path.join(base_folder, box[0])
+                    img = FIPDataset.extend_box(box[1], all_imgs[cam_name], padding)
+                    cv2.imwrite(out_path, img)
+                    table.loc[len(table)] = new_row
+
+            table.to_csv(csv_path, index=False)
+
+    def generate_unlabeled_spikes(self, base_folder: str, max_images: int = None, padding: int = 0):
+        folders = self.spikescans["image_dir"].unique()
+        camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
+
+        import cv2
+        all_images = []
+        for folder in folders:
+            for cam in camkeys:
+                all_images.append((folder, cam))
+        random.seed(10)
+        random.shuffle(all_images)
+        
+        exported = 0
+        for folder, cam_name in all_images:
+            precomp_json = json.loads(self.precomputed.loc[self.precomputed["image_dir"] == folder, "spikes"].iloc[0])
+            img = cv2.imread(os.path.join(folder, cam_name))
+
+            for _, box in precomp_json[cam_name]:
+                box = FIPDataset.extend_box(box, img, padding)
+                cv2.imwrite(os.path.join(base_folder, f"{exported}.jpg"), box)
+                exported += 1
+                if max_images and exported >= max_images:
+                    return
 
     @staticmethod
     def labels2num2023mapping():
@@ -320,9 +329,10 @@ if __name__ == "__main__":
             "img_folder": r"F:\FIP-data\images",
             "ply_folder": r"F:\FIP-data\wheat-scans",
             "precompute_file": r"F:\FIP-data\csv\precomputed.csv",
-            "split_file": r"F:\FIP-data\csv\split.csv"
         }
 
-    data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["split_file"])
-    #data.precompute_image_dataset(r"F:\FIP-data\spike_dataset")
+    data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"])
+    #data.precompute_image_dataset(r"F:\Boxes-ds\spike_dataset_manual_0_pad_min6", 0, False)
+    #data.precompute_image_dataset(r"F:\Boxes-ds\spike_dataset_manual_20_pad_min6", 20, False)
+    data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled_spikes", 100000, 20)
     #data.precompute_boxes(config["precompute_file"])
