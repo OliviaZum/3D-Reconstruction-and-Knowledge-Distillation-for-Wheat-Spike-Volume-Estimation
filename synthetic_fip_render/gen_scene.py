@@ -6,54 +6,7 @@ import random
 import os
 import tqdm
 import uuid
-
-def get_fip_campose(config, camera: str):
-    e = config[camera]["extrinsics"]
-    R = np.array(e["rotation"]).T
-    c = e["center"]
-
-    P = np.zeros((4, 4))
-    P[0:3, 0:3] = R
-    P[0:3, 3] = c
-    P[3, 3] = 1
-
-    Pnew = P @ np.array([
-        [1, 0, 0, 0],
-        [0, -1, 0, 0],
-        [0, 0, -1, 0],
-        [0, 0, 0, 1]
-    ])
-
-    return Pnew
-
-def get_fip_camintrinsics(config, camera: str, viewport_size: tuple):
-    e = config[camera]["intrinsics"]
-    w = e["width"]
-    h = e["height"]
-    f = e["focal_length"]
-    distX = (viewport_size[0] / w)
-    distY = (viewport_size[1] / h)
-    fx = distX * f
-    fy = distY * f
-    pc = e["principal_point"] 
-    cx = distX * pc[0]
-    cy = distY * pc[1]
-
-    return pyrender.IntrinsicsCamera(fx=fx, fy=fy, cx=cx, cy=cy)
-
-def random_rotation_matrix(angle) -> np.ndarray:
-    # Generate a random unit vector (axis of rotation)
-    axis = np.random.normal(size=3)
-    axis /= np.linalg.norm(axis)
-
-    # Compute the components of the rotation matrix using Rodrigues' rotation formula
-    K = np.array([[    0, -axis[2],  axis[1]],
-                  [ axis[2],     0, -axis[0]],
-                  [-axis[1],  axis[0],     0]])
-    
-    rotation_matrix = np.eye(3) + np.sin(angle) * K + (1 - np.cos(angle)) * (K @ K)
-    
-    return rotation_matrix
+from helpers import get_fip_camintrinsics, get_fip_campose, random_rotation_matrix, construct_pose_scale, get_ply_files
 
 class FIPScene(pyrender.Scene):
     def __init__(self, conf_path: str, meshes_base_dir: str, viewport_size: tuple, n_instance: int, n_duplicates: int,
@@ -89,12 +42,7 @@ class FIPScene(pyrender.Scene):
             self.camnodes[n] = node
 
     def generate_spikes(self, ply_dir_base, n_instance, n_duplicates):
-        ply_files = []
-        for root, _, files in os.walk(ply_dir_base):
-            for file in files:
-                if file.endswith('.ply'):
-                    full_path = os.path.join(root, file)
-                    ply_files.append(full_path)
+        ply_files = get_ply_files(ply_dir_base)
 
         id = 0
         self.color_to_id = {}
@@ -127,13 +75,9 @@ class FIPScene(pyrender.Scene):
                     cm = pyrender.Mesh.from_trimesh(mesh, smooth=False, material=pyrender.MetallicRoughnessMaterial(baseColorFactor=color))
                     random_move = np.array([3, 3, 0.3]) * np.random.uniform(-1, 1, 3)
                     random_rot = random_rotation_matrix(np.random.normal(0, 0.3, 1).item())
-                    random_scale = np.diag(np.random.uniform(0.7, 1.4, 3))
+                    random_scale = np.random.uniform(0.7, 1.4, 1)
                     #random_scale = np.eye(3)
-                    R = random_rot @ random_scale @ scale_base @ rot_base
-                    t = random_move + move_base
-                    Rt = np.eye(4)
-                    Rt[0:3, 0:3] = R
-                    Rt[0:3, 3] = t
+                    Rt = construct_pose_scale(rot_base, move_base, scale_base, random_rot, random_scale, random_move)
 
                     self.add(cm, pose=Rt)
                     id += 1
@@ -223,7 +167,7 @@ def load_scene_data_folder(dir: str):
     
 
 """
-a = FIPScene("assets/fip_poses_configuration.json", "F:/wheat-scans-simplyfied-fast", (400, 300), 5, 100)
+a = FIPScene("assets/poses/2023_06_08_13_11_Lot1.json", "F:/wheat-scans-simplyfied-fast", (400, 300), 5, 100)
 a.draw_camera_meshes()
 pyrender.Viewer(a)
 """
