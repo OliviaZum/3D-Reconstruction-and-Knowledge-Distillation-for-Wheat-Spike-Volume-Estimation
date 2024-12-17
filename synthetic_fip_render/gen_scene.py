@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
+
 import trimesh
 import pyrender
 import numpy as np
@@ -6,7 +10,7 @@ import random
 import os
 import tqdm
 import uuid
-from helpers import get_fip_camintrinsics, get_fip_campose, random_rotation_matrix, construct_pose_scale, get_ply_files
+from utils.helpers import get_fip_camintrinsics, get_fip_campose, random_rotation_matrix, construct_pose_scale, get_ply_files
 
 class FIPScene(pyrender.Scene):
     def __init__(self, conf_path: str, meshes_base_dir: str, viewport_size: tuple, n_instance: int, n_duplicates: int,
@@ -166,8 +170,6 @@ def load_scene_data_folder(dir: str):
             yield splitf[0], data
     
 
-"""
-a = FIPScene("assets/poses/2023_06_08_13_11_Lot1.json", "F:/wheat-scans-simplyfied-fast", (400, 300), 5, 100)
+a = FIPScene("assets/poses/2024_07_04_14_04_Lot3.json", "F:/wheat-scans-simplyfied-fast", (400, 300), 5, 30)
 a.draw_camera_meshes()
 pyrender.Viewer(a)
-"""

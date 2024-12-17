@@ -44,6 +44,21 @@ def build_fundamental(poses_conf, cam1: str, cam2: str):
     # Satisfies: x2.T @ F @ x1 = 0
     return fundamentalFromRT(R1, t1, K1, R2, t2, K2)
 
+def get_projection(poses_conf, cam: str):
+    cam_data = poses_conf[cam]
+
+    R = np.array(cam_data["extrinsics"]["rotation"])
+    t = np.array(cam_data["extrinsics"]["center"])
+    K = load_k(cam_data["intrinsics"])
+
+    extrinsics = np.zeros((3, 4))
+    extrinsics[0:3, 0:3] = R
+    extrinsics[0:3, 3] = -R @ t
+
+    P = K @ extrinsics
+    return P
+
+
 # Assumes all points normalized homogenous
 # Checks if the epipolar line defined by a point on cam1 intersects with a line defined by 2 points on cam2
 # Points in x, y format

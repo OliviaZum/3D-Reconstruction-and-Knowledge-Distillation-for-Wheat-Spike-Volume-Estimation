@@ -6,6 +6,8 @@ from typing import Dict, List, Tuple
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 from multiview_instance_epipole import multiview_graph
+import numpy as np
+import cv2
 
 def find_objects_yolo(yolo_weights_path: str, scan_folder: str, min_conf = 0.25, batch_size = 5) -> Tuple[Dict[str, List[Tuple[int, List]]], List]:
     model = YOLO(yolo_weights_path, task='detect')
@@ -21,7 +23,7 @@ def find_objects_yolo(yolo_weights_path: str, scan_folder: str, min_conf = 0.25,
     # This conversion is somewhat innefficient. One could go without it later on
     converted = {}
     for result in results:
-        boxes = result.boxes.xyxy.cpu().numpy()
+        boxes = result.boxes.xyxy.cpu().numpy().astype(int) # astype untested currently
         
         current = {}
         for i in range(boxes.shape[0]):
@@ -30,29 +32,41 @@ def find_objects_yolo(yolo_weights_path: str, scan_folder: str, min_conf = 0.25,
 
     return converted, results
 
-def connect_boxes(boxes, poses_conf, min_view = 6):
+def segment_spikes(seg_model, img):
+    r = seg_model(img, imgsz=224, verbose=False, conf=0.2)
+    r: Results = r[0].cpu()
+    if r.boxes.shape[0] > 0:
+        boxes = r.boxes.xywh
+        area = boxes[:, 2] * boxes[:, 3]
+        max_box = np.argmax(area)
+        scaled_mask = cv2.resize(r.masks.data[max_box].numpy(), list(reversed(r.orig_img.shape[0:2])), interpolation=cv2.INTER_NEAREST).astype(np.bool_)
+        r.orig_img[~scaled_mask] = 0
+        return r.orig_img
+    else:
+        return None
+
+def connect_boxes(boxes: Dict[str, Dict[str, List[int]]], poses_conf, min_view = 6):
     graph, idx_to_instance = multiview_graph.build_epipolar_graph_opt(poses_conf, boxes)
     graph = graph.detach().cpu().numpy()
     labels = multiview_graph.lp_cluster_torch(graph).detach().cpu().numpy()
+    distances = multiview_graph.estimate_distances(poses_conf, boxes, labels, idx_to_instance, min_view if min_view >= 3 else 3)
 
     labelcount = {}
     for v in labels:
         labelcount.setdefault(v, 0)
         labelcount[v] += 1
 
-    # Dict mapping from image name to id, bounding box. Unsure bounding boxes (less than min_view predicted views get label -1)
-    combined_results: Dict[str, Tuple[int, List]] = {} 
-    # If an image has 0 detections it is not added otherwise
-    imgs = [f"cam_{i:02}.png" for i in range(1, 13)]
-    for img in imgs:
-        combined_results[img] = []
+    combined_results = []
     for i in range(len(idx_to_instance)):
         image_name, id = idx_to_instance[i]
         box = boxes[image_name][id]
-        label = labels[i]
+        box = [int(round(x)) for x in box] # in case not already int convert it here as last
+        label = int(labels[i])
+        current_dist = distances[image_name][label]
+        current_dist = float(current_dist) if current_dist else None
         if labelcount[label] < min_view:
-            label = -1
-        combined_results[image_name].append((label, box))
+            label = None
+        combined_results.append({"image": image_name, "cluster": label, "box": box, "distance": current_dist})
 
     return combined_results
 

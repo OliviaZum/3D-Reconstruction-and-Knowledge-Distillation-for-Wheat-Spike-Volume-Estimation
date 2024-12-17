@@ -1,12 +1,19 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
+
 import os
 from typing import Literal
 import trimesh
 import pyrender
 import numpy as np
-import helpers
+from utils import helpers
 import cv2
 import pandas as pd
 import traceback
+import matplotlib.pyplot as plt
+
+image_size = 300
 
 class ArtificialImageGenerator(pyrender.Scene):
     def __init__(self, viewport_size: tuple) -> None:
@@ -14,7 +21,7 @@ class ArtificialImageGenerator(pyrender.Scene):
         self.renderer = pyrender.OffscreenRenderer(viewport_width=viewport_size[0], viewport_height=viewport_size[1])
         self.offscreencamera = pyrender.PerspectiveCamera(0.5 * np.pi, 0.05, 1000)
         pose = np.eye(4)
-        pose[2, 3] = +3
+        #pose[2, 3] = 10
         self.add(self.offscreencamera, pose=pose)
         self.active_spike = None
         self.sun = None
@@ -53,9 +60,10 @@ class ArtificialImageGenerator(pyrender.Scene):
         self.ambient_light = np.array(np.random.uniform(0.1, 0.3) * np.ones(3))
     
     def generate(self, base_dir_in: str, dir_out: str, n_images_per_plant: int, get_pose, num_plants: int = None, cut_spike: bool=False, ignore_weird_samples = True):
-        os.makedirs(dir_out, exist_ok=False)
+        os.makedirs(dir_out, exist_ok=True)
 
         ply_files = helpers.get_ply_files(base_dir_in)
+        # ply_files = [r"F:\FIP-data\wheat-scans\volumes_2023\2_6_10.ply"] # r"F:\FIP-data\wheat-scans\volumes_2023\2_6_10.ply"
         # First three have a total different scale and produce black images. Last one appears twice (different spike, same name)
         weird_stuff = set(["2_10_8", "10_9_5", "11_8_9", "6_9_1"])
         img_names = []
@@ -83,16 +91,23 @@ class ArtificialImageGenerator(pyrender.Scene):
                 img_name = f"{plant_id}_{i}_b.jpg"
                 img_names.append(img_name)
                 img_volumes.append(volume)
-                if cut_spike:
-                    mask = img == 0
-                    mask = ~np.all(mask, axis=2)
-                    coords = np.nonzero(mask)
-                    if len(coords[0]) == 0:
-                        print(f"{plant_id} has an empty mask on img {i}")
-                    else:
-                        y_min, x_min = coords[0].min().item(), coords[1].min().item()
-                        y_max, x_max = coords[0].max().item(), coords[1].max().item()
+                mask = img == 0
+                mask = ~np.all(mask, axis=2)
+                coords = np.nonzero(mask)
+                if len(coords[0]) == 0:
+                    print(f"{plant_id} has an empty mask on img {i}")
+                    img = img[0:image_size, 0:image_size, :]
+                else:
+                    y_min, x_min = coords[0].min().item(), coords[1].min().item()
+                    y_max, x_max = coords[0].max().item(), coords[1].max().item()
+                    if cut_spike:
                         img = img[y_min:y_max + 1, x_min:x_max + 1, :]
+                    else:
+                         if True:
+                             img = helpers.extend_image_box((x_min, y_min, x_max, y_max), img, 20)
+                             w = 2.35 # Fixed to match sizes of FIP (respectively lead to "good" generalization on fip data)
+                             img = cv2.resize(img, None, fx=w, fy=w)
+                             img = helpers.put_image_on_patch(image_size, img)
 
                 cv2.imwrite(os.path.join(dir_out, img_name), img)
                 
@@ -139,8 +154,8 @@ class PoseGenerator:
             assert False, f"{rotation} parameter is invalid"
 
         # Roughly set to match the size of images from the fip
-        scale_base = np.eye(3) * 0.0398
-        if distance_shift == "none":
+        scale_base = np.eye(3) * 0.06
+        if distance_shift == "none": # Currently none, mild, strong are not really supported anymore (need to adapt distances)
             trans_shift = np.zeros(3)
         elif distance_shift == "mild":
             trans_shift = np.array([0, 0, -np.random.uniform(0, 1)])
@@ -149,11 +164,11 @@ class PoseGenerator:
         elif distance_shift == "fiplike":
             if (trans_base != 0).any():
                 assert False, "Do not use fiplike distance with translation"
-            trans_base = np.array([0, 0, 3])
             if plant_changed:
-                self.fip_like_dist_base = -np.clip(np.random.normal(3, 0.3), 2, 4)
-            img_shift = - np.random.uniform(0, 0.5)
-            trans_shift = np.array([0, 0, self.fip_like_dist_base + img_shift])
+                self.fip_like_dist_base = np.clip(np.random.normal(2.8, 0.3), 2.2, 3.5) * 3.6
+            #img_shift = np.random.uniform(-0.5, 0.5)
+            img_shift = 0
+            trans_shift = np.array([0, 0, -self.fip_like_dist_base - img_shift])
         else:
             assert False, f"{distance_shift} parameter is invalid"
 
@@ -170,14 +185,11 @@ class PoseGenerator:
 
 
 np.random.seed(0)
-size = 224
-a = ArtificialImageGenerator((size, size))
+a = ArtificialImageGenerator((300, 300))
 
 global_pose = PoseGenerator()
 
-a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical_ext_random_fiplike", 24, lambda plant_changed: global_pose.get("random", "fiplike", plant_changed=plant_changed), cut_spike=False)
-
-#a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical\constrained_noshift_12", 12, lambda plant_changed: global_pose.get("constrained", "none", plant_changed=plant_changed), cut_spike=False)
+a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical_ext", 12, lambda plant_changed: global_pose.get("random", "fiplike", plant_changed=plant_changed), cut_spike=False)
 
 generate_artifical_sets = False
 if not generate_artifical_sets:

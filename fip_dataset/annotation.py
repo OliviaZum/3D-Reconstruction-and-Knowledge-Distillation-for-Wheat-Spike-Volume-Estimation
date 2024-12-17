@@ -396,8 +396,8 @@ if __name__ == "__main__":
         "csv_folder": r"F:\FIP-data\csv",
         "img_folder": r"F:\FIP-data\images",
         "ply_folder": r"F:\FIP-data\wheat-scans",
-        "precompute_file": r"F:\FIP-data\csv\precomputed.csv",
-        "show": lambda folder, data: "FPWW0340112_FIP2_20230710_121032" in folder
+        "precompute_file": r"F:\FIP-data\csv\precomputed_new.json",
+        "show": lambda folder, data: True
     }
 
     data = FIPDataset.FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"])
@@ -418,7 +418,13 @@ if __name__ == "__main__":
         if not config["show"](image_folder, current):
             continue
 
-        image_dict = json.loads(data.precomputed.loc[data.precomputed["image_dir"] == image_folder, "spikes"].iloc[0])
+        # Annotation tool was written on an old format of storing boxes. For simplicity the new format is backconverted here
+        # (instead of rewritting large parts)
+        image_dict = {}
+        for box in data.precomputed[image_folder]:
+            image_dict.setdefault(box["image"], [])
+            image_dict[box["image"]].append((box["cluster"], box["box"]))
+
         # Should probably solve this more clean at some point, but for now we impose the constraint that only one box has the same id here
         for img in image_dict:
             maxv = 0

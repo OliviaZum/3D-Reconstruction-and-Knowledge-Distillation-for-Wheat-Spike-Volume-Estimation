@@ -22,12 +22,12 @@ def convert_fip_calibration_to_simplified(extrinsics_path: str, intrinsics_path_
             w = line.split()
             if len(w) == 0 or w[0] not in camkeys:
                 continue
-            rotation = np.array(list(map(lambda x: float(x), w[7:]))).reshape((3, 3), order="C").tolist()
-            position = np.array(list(map(lambda x: float(x), w[1:4]))).tolist()
+            rotation = np.array(list(map(lambda x: float(x), w[7:]))).reshape((3, 3), order="C")
+            position = np.array(list(map(lambda x: float(x), w[1:4])))
             config[w[0]] = {
                 "extrinsics": {
-                    "rotation": rotation,
-                    "center": position
+                    "rotation": (rotation).tolist(),
+                    "center": (position).tolist()
                 }
             }
     if len(camkeys.intersection(config.keys())) != len(camkeys):
@@ -61,6 +61,7 @@ def convert_fip_calibration_to_simplified(extrinsics_path: str, intrinsics_path_
                 ]
             }
     
+    config = {f"{x}.png": y for x, y in config.items()}
     with open(out_path, "w") as f:
         json.dump(config, f, indent=4)
         

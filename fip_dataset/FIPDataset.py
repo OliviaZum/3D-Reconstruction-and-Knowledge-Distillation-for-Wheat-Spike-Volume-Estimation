@@ -1,5 +1,6 @@
 import sys
 import os
+from typing import Dict, List
 sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
 
 import json
@@ -7,13 +8,15 @@ import numpy as np
 import re
 import pandas as pd
 import random
+from utils import helpers
 
 class FIPDataset:
     def __init__(self, csv_folder, img_folder, ply_folder, precompute_file = None, spikelabels_file = None) -> None:
         if precompute_file:
-            self.precomputed = pd.read_csv(precompute_file, encoding="ISO-8859-1")
+            with open(precompute_file) as f:
+                self.precomputed = json.load(f)
         else:
-            self.precomputed = pd.DataFrame()
+            self.precomputed = {}
         
         # Read design files
         df2023 = pd.read_csv(os.path.join(csv_folder, "Design_Olivia_Zumsteg_2023.csv"), encoding="ISO-8859-1")
@@ -133,36 +136,33 @@ class FIPDataset:
         if update_connections_only:
             assert self.precomputed is not None
         else:
-            self.precomputed = pd.DataFrame()
-            self.precomputed["image_dir"] = self.spikescans["image_dir"].unique()
+            self.precomputed = {}
         from fip_detection import detect
         import torch
         import tqdm
-        def converter(obj):
-            if isinstance(obj, np.int64):
-                return int(obj)
-            elif isinstance(obj, np.float32):
-                return float(obj)
-            
-        for index, row in tqdm.tqdm(self.precomputed.iterrows()):
-            conf = self.get_pose_config(row['image_dir'])
+        
+        result = {}
+        for folder in tqdm.tqdm(self.spikescans["image_dir"].unique()):
+            conf = self.get_pose_config(folder)
             if update_connections_only:
-                w = json.loads(row['spikes'])
-                boxes = {} # Ensure ids are unique
-                for img, boxes_img in w.items():
-                    n = {}
-                    for i, (_, v) in enumerate(boxes_img):
-                        n[i] = v
-                    boxes[img] = n
-                    print(len(n))
+                w = self.precomputed[folder]
+                boxes = {}
+                id = 0 
+                for boxes_img in w:
+                    boxes.setdefault(boxes_img["image"], {})
+                    boxes[boxes_img["image"]][id] = boxes_img["box"]
+                    id += 1
+                print(len(w))
             else:
                 boxes, _ = detect.find_objects_yolo("detection-yolo/weights/detect/medium-train+val/weights/best.pt", 
-                                                row["image_dir"], batch_size=1)
-            connected_boxes = detect.connect_boxes(boxes, conf, min_view=0, )
+                                                folder, batch_size=1)
+            connected_boxes = detect.connect_boxes(boxes, conf, min_view=0)
             if torch.cuda.memory_reserved() // (1024**2) > 3500:
                 torch.cuda.empty_cache()
-            self.precomputed.at[index, "spikes"] = json.dumps(connected_boxes, default=converter)
-        self.precomputed.to_csv(precompute_file, sep=",", index=False)
+            result[folder] = connected_boxes
+        with open(precompute_file, "w") as f:
+            json.dump(result, f)
+        self.precomputed = result
 
     @staticmethod
     def iou(box1, box2):
@@ -184,45 +184,52 @@ class FIPDataset:
         union_area = box1_area + box2_area - inter_area
 
         return inter_area / union_area
-    
-    @staticmethod
-    def extend_box(box, img, padding):
-        box = np.array(box).astype(np.int32)
-        box[0:2] = np.maximum([0, 0], box[0:2] - padding)
-        box[2:4] = np.minimum(box[2:4] + padding, (img.shape[1], img.shape[0]))
-        return img[box[1]:box[3], box[0]:box[2]]
 
-    def precompute_image_dataset(self, base_folder: str, padding = 0, automatic_inferred=True, min_views = 6):
+    def precompute_image_dataset(self, base_folder: str, padding = 0, automatic_inferred=True, box_size=300, segment=True):
         # Compute an image dataset of the individual spikes
         import cv2
         import tqdm
+        from ultralytics import YOLO
+        from fip_detection import detect
 
         if os.path.exists(base_folder):
             input("The base folder exists. Press enter to overwrite...")
         os.makedirs(base_folder, exist_ok=True)
         csv_path = os.path.join(base_folder, "vol_mapping.csv")
-        table = pd.DataFrame(columns=["img_name", "volume"])
+        table = pd.DataFrame(columns=["img_name", "volume", "distance"])
+
+        def get_box_with_max_overlap(box: List[int], boxes: List[Dict]):
+            max_iou = 0
+            max_box = None
+            for w in boxes:
+                iou = self.iou(box, w["box"])
+                if iou > max_iou:
+                    max_iou = iou
+                    max_box = w
+            return max_box, max_iou
         
         camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
+        # for now segmentation is done as a post step.
+        seg_model = YOLO(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\jupyter\runs\segment\train3\weights\best.pt")
         for folder in tqdm.tqdm(self.spikescans["image_dir"].unique()):
             scans: pd.DataFrame = self.spikescans.loc[self.spikescans["image_dir"] == folder]
-            precomp_json = json.loads(self.precomputed.loc[self.precomputed["image_dir"] == folder, "spikes"].iloc[0])
+            precomp_json = {}
+            for w in self.precomputed[folder]:
+                precomp_json.setdefault(w["image"], [])
+                precomp_json[w["image"]].append(w)
 
             export = {}
             for _, scan in scans.iterrows():
-                export[scan["plant_id"]] = {"volume": scan["spikevolume"], "boxes": {}}
+                export[scan["plant_id"]] = {"volume": scan["spikevolume"], "boxes": []}
                 if automatic_inferred:
                     # Create branch of images which were automatically selected. The ground truth here is the box which was selected first
-                    max_iou = 0
-                    max_id = -1
-                    for id, box in precomp_json[scan["label_selectedon"]]:
-                        iou = self.iou(scan[scan["label_selectedon"]], box)
-                        if iou > max_iou:
-                            max_iou = iou
-                            max_id = id
+                    selected = scan[scan["label_selectedon"]]
+                    max_box, max_iou = get_box_with_max_overlap(selected, precomp_json[scan["label_selectedon"]])
                     if max_iou < 0.6:
                         max_id = None
                         print(f"For the scan {scan["range_lot"]}_{scan["row_lot"]}, label {scan["label"]} no matching bounding box was found")
+                    else:
+                        max_id = max_box["cluster"]
 
                 for i, cam_name in enumerate(camkeys):
                     img_name = f"{scan["range_lot"]}_{scan["row_lot"]}_{scan["plant_id"]}_{i + 1}_a.jpg"
@@ -230,13 +237,19 @@ class FIPDataset:
                     if not automatic_inferred:
                         # Write manual images (i.e. boxes which were selected by hand)
                         if scan[cam_name]:
-                            export[scan["plant_id"]]["boxes"][cam_name] = (img_name, scan[cam_name])
+                            max_box, max_iou = get_box_with_max_overlap(scan[cam_name], precomp_json[cam_name])
+                            if max_iou < 0.6:
+                                print(f"For the scan {scan["range_lot"]}_{scan["row_lot"]}, label {scan["label"]} no matching bounding box was found")
+                                continue
+                            if max_box["distance"] is None:
+                                continue
+                            export[scan["plant_id"]]["boxes"].append((img_name, max_box))
                     else:
                         if max_id:
                             c = 0
-                            for id, box in precomp_json[cam_name]:
-                                if max_id == id:
-                                    export[scan["plant_id"]]["boxes"][cam_name] = (img_name, box)
+                            for w in precomp_json[cam_name]:
+                                if max_id == w["cluster"] and w["distance"] is not None:
+                                    export[scan["plant_id"]]["boxes"].append((img_name, w))
                                     break # Ignore the case where multiple boxes appear on one image for now
                                     c += 1
             # Load all images
@@ -246,15 +259,18 @@ class FIPDataset:
                 all_imgs[img_name] = img
 
             # Do the actual export
-            for a in export.values():
-                if len(a["boxes"]) < min_views:
-                    continue
+            for export_value in export.values():
                 
-                for cam_name, box in a["boxes"].items():
-                    new_row = {"img_name": box[0], "volume": a["volume"]}
-                    out_path = os.path.join(base_folder, box[0])
-                    img = FIPDataset.extend_box(box[1], all_imgs[cam_name], padding)
-                    cv2.imwrite(out_path, img)
+                for img_name, box in export_value["boxes"]:
+                    new_row = {"img_name": img_name, "volume": export_value["volume"], "distance": box["distance"]}
+                    out_path = os.path.join(base_folder, img_name)
+                    img = helpers.extend_image_box(box["box"], all_imgs[box["image"]], padding)
+                    if segment:
+                        img = detect.segment_spikes(seg_model, img)
+                        if img is None:
+                            continue
+                    patch = helpers.put_image_on_patch(box_size, img)
+                    cv2.imwrite(out_path, patch)
                     table.loc[len(table)] = new_row
 
             table.to_csv(csv_path, index=False)
@@ -328,11 +344,11 @@ if __name__ == "__main__":
             "csv_folder": r"F:\FIP-data\csv",
             "img_folder": r"F:\FIP-data\images",
             "ply_folder": r"F:\FIP-data\wheat-scans",
-            "precompute_file": r"F:\FIP-data\csv\precomputed.csv",
+            "precompute_file": r"F:\FIP-data\csv\precomputed.json",
         }
 
     data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"])
-    #data.precompute_image_dataset(r"F:\Boxes-ds\spike_dataset_manual_0_pad_min6", 0, False)
-    #data.precompute_image_dataset(r"F:\Boxes-ds\spike_dataset_manual_20_pad_min6", 20, False)
-    data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled_spikes", 100000, 20)
-    #data.precompute_boxes(config["precompute_file"])
+    #data.spikescans.to_csv(r"F:\FIP-data\csv\fip_data_export.csv")
+    #data.precompute_image_dataset(r"F:\Boxes-ds\spike_dataset_test", 20, False, segment=False)
+    #data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled_spikes", 100000, 20)
+    #data.precompute_boxes(r"F:\FIP-data\csv\precomputed_test.json", update_connections_only=True)

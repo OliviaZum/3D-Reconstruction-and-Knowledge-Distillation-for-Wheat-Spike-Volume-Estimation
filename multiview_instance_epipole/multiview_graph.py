@@ -4,8 +4,15 @@ from multiview_instance_epipole import epipolar_geometry
 import torch
 import warnings
 
-def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, List[float]]], num_samples=20,
+def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, List[int]]], num_samples=20,
                              device = 'cuda' if torch.cuda.is_available() else 'cpu', normalize_graph = True) -> Tuple[torch.Tensor, Dict[int, Tuple[str, str]]]:
+    """
+    Given a set of bounding boxes on multiple cameras, builds a weighted undirected graph, where each bounding box corresponds to one node
+    and the edge weight between two nodes is the number of epipolar lines intersecting the bounding boxes. (In practice: Choose random samples in a
+    bounding box, check how many time the epipolar lines defined by it intersect another bounding box. It goes both ways.)
+    There is a normalization for clustering applied if normalize_graph is true. No hits at all receive negative weight, weights are scaled to
+    lie in the 0-1 range. Weak links (below 0.8) are set to 0. Additionally nodes of the same image receive a larger negative weight.
+    """
 
     # Precompute and build mapping from node idx to instance
     idx_to_instance = {}
@@ -15,11 +22,11 @@ def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, Lis
 
     # Lines of boxes for a single image (3 * #boxes, 3)
     box_lines_img = {}
-    # Zero points of connecting lines for a single image
+    # Zero points of box lines for a single image [A corner of the box on the line] (3 * #boxes, 3) 
     v_zero_img = {}
-    # Connecting vectors of boxes one image (3 * #boxes, 3)
+    # Connecting vectors of boxes one image [The vector in direction of the other corner of the box from the zero point] (3 * #boxes, 3)
     v_conn_img = {} 
-    # Sampled points for each bounding box one image  (num_sample * #boxes, 3)
+    # Sampled points for each bounding box on one image  (num_sample * #boxes, 3)
     sample_points_img = {}
 
     with torch.no_grad():
@@ -70,7 +77,7 @@ def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, Lis
                 sample_points_img[n] = torch.zeros((0, 3)).to(device)
         
         cam_names = list(bounding_boxes.keys())
-        graph = torch.zeros([len(idx_to_instance)] * 2, device=device)
+        graph = torch.zeros([len(idx_to_instance)] * 2, device='cpu')
 
         for i in range(len(cam_names)):
             for j in range(len(cam_names)):
@@ -97,8 +104,10 @@ def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, Lis
 
                 pos_1, end_1 = img_name_to_start_end[im1]
                 pos_2, end_2 = img_name_to_start_end[im2]
+                counts = counts.cpu()
                 graph[pos_1:end_1, pos_2:end_2] += counts.T
                 graph[pos_2:end_2, pos_1:end_1] += counts
+                
 
         if normalize_graph:
             graph *= (1 / (2 * num_samples))
@@ -112,13 +121,97 @@ def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, Lis
             graph.fill_diagonal_(0)
 
         return graph, idx_to_instance
+    
+def estimate_distances(poses_conf, bounding_boxes: Dict[str, Dict[str, List[int]]], labels: torch.Tensor,
+                       idx_to_instance: Dict[int, Tuple[str, str]], min_view: int = 6,
+                       num_samples: int = 100, num_view: int = 3) -> Dict[str, Dict[str, float | None]]:
+    """
+    Estimate the position of each cluster (if correct: A single spike) by choosing random samples on a subset of the bounding 
+    boxes of a cluster then triangulate. In practice this is repeated a few times and the mean position is taken as the position
+    of the spike. Then return the distance of the spike on each image.
+    """
+
+    # This implementation is quite inefficient. But anyhow since this is O(n) in contrast to the other two functions here it is "fast enough" in practice.
+    box_id_to_box = {}
+    for (n, v) in bounding_boxes.items():
+        for id, box in v.items():
+            box_id_to_box[(n, id)] = box
+    cluster_to_boxes = {}
+    for i, (cam_name, box_id) in idx_to_instance.items():
+        cluster = labels[i]
+        cluster_to_boxes.setdefault(cluster, [])
+        box = box_id_to_box[(cam_name, box_id)]
+        cluster_to_boxes[cluster].append((cam_name, box_id, box))
+
+    Ps = {cam_name: epipolar_geometry.get_projection(poses_conf, cam_name) for cam_name in bounding_boxes.keys()}
+
+    assert num_view <= min_view, f"Used number of views for triangulation ({num_view}) has to be smaller that min_view"
+    bounding_boxes_to_distance: Dict[str, Dict[str, float | None]] = {}
+    def set_cluster_unknown(boxes):
+        for cam_name, _, _ in boxes:
+            bounding_boxes_to_distance.setdefault(cam_name, {})
+            bounding_boxes_to_distance[cam_name][cluster] = None
+
+    for cluster, boxes in cluster_to_boxes.items():
+        if len(boxes) < min_view:
+            set_cluster_unknown(boxes)
+            continue
+
+        estimates = []
+        weights = []
+        for k in range(num_samples):
+            subset = np.random.choice(len(boxes), num_view, False)
+            A = np.zeros((2*num_view, 4))
+
+            for i, idx in enumerate(subset):
+                cam_name, _, box = boxes[idx]
+                box = np.array(box)
+                sample = box[0:2] + np.array([np.random.rand() * (box[2] - box[0]), np.random.rand() * (box[3] - box[1])])
+                P = Ps[cam_name]
+                # https://temugeb.github.io/computer_vision/2021/02/06/direct-linear-transorms.html
+                A[2*i, :] = sample[1] * P[2, :] - P[1, :]
+                A[2*i+1, :] = P[0, :] - sample[0] * P[2, :]
+            _, s, Vt = np.linalg.svd(A, full_matrices=False)
+            e = Vt[-1]
+            hits = 0
+            for cam_name, _, (x1, y1, x2, y2) in boxes:
+                P = Ps[cam_name]
+                t = P @ e
+                t /= t[2]
+                if t[0] >= x1 and t[1] >= y1 and t[0] <= x2 and t[1] <= y2:
+                    hits += 1
+
+            estimates.append(e)
+            weights.append(hits / len(boxes))
+        
+        estimates = np.stack(estimates, axis=0)
+        weights = np.array(weights)
+        p70 = np.percentile(weights, 70)
+        mask = np.logical_not(np.logical_or(estimates[:, 3] < 0.00001, weights < p70))
+        estimates = estimates / np.expand_dims(estimates[:, 3], 1)
+        count = weights[mask].sum()
+        if count == 0:
+            set_cluster_unknown(boxes)
+            continue
+        estimate = (estimates[mask, :] * np.expand_dims(weights[mask], axis=1)).sum(axis=0) / count
+
+        for cam_name, _, _ in boxes:
+            cam_pos = np.array(poses_conf[cam_name]["extrinsics"]["center"])
+            distance = np.sqrt(np.sum((estimate[0:3] - cam_pos) ** 2))
+            bounding_boxes_to_distance.setdefault(cam_name, {})
+            bounding_boxes_to_distance[cam_name][cluster] = distance
+
+    return bounding_boxes_to_distance
 
 def lp_cluster_torch(graph: np.ndarray, device = 'cuda' if torch.cuda.is_available() else 'cpu') -> torch.Tensor:
+    """
+    Label propagation to cluster the graph created by build_epipolar_graph_opt.
+    """
     with torch.no_grad():
         
         # Essentially reimplemented from networkx (with some degree of parallelism)
         # With an entirely parallel implementation oscilations occur which lead to the 
-        # graph slowly or not converging at all (and worse results). As a
+        # propagation slowly or not converging at all (and worse results). As a
         # tradeoff using just some degree of parallelism.
         graph = torch.tensor(graph, device=device)
         labels = torch.eye(graph.shape[0], device=device)
