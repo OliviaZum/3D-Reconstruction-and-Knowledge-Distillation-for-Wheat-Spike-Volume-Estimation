@@ -12,6 +12,9 @@ import cv2
 import pandas as pd
 import traceback
 import matplotlib.pyplot as plt
+from fip_detection import detect
+from ultralytics import YOLO
+import glob
 
 image_size = 300
 
@@ -62,6 +65,9 @@ class ArtificialImageGenerator(pyrender.Scene):
     def generate(self, base_dir_in: str, dir_out: str, n_images_per_plant: int, get_pose, num_plants: int = None, cut_spike: bool=False, ignore_weird_samples = True):
         os.makedirs(dir_out, exist_ok=True)
 
+        background_images = [f for n in range(1, 13) for f in glob.glob(fr'F:\FIP-data\images\**\cam_{n:02}.png', recursive=True)]
+        background = None
+        seg_model = YOLO(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\jupyter\runs\segment\train3\weights\best.pt")
         ply_files = helpers.get_ply_files(base_dir_in)
         # ply_files = [r"F:\FIP-data\wheat-scans\volumes_2023\2_6_10.ply"] # r"F:\FIP-data\wheat-scans\volumes_2023\2_6_10.ply"
         # First three have a total different scale and produce black images. Last one appears twice (different spike, same name)
@@ -103,11 +109,27 @@ class ArtificialImageGenerator(pyrender.Scene):
                     if cut_spike:
                         img = img[y_min:y_max + 1, x_min:x_max + 1, :]
                     else:
-                         if True:
-                             img = helpers.extend_image_box((x_min, y_min, x_max, y_max), img, 20)
-                             w = 2.35 # Fixed to match sizes of FIP (respectively lead to "good" generalization on fip data)
-                             img = cv2.resize(img, None, fx=w, fy=w)
-                             img = helpers.put_image_on_patch(image_size, img)
+                        img = helpers.extend_image_box((x_min, y_min, x_max, y_max), img, 20)
+                        w = 2.1 # Fixed to match sizes of FIP (respectively lead to "good" generalization on fip data)
+                        img = cv2.resize(img, None, fx=w, fy=w)
+                        if np.random.random() < 0.05 or background is None:
+                            background = cv2.imread(background_images[np.random.randint(0, len(background_images))])
+                        bx, by = np.random.randint(0, background.shape[0] - img.shape[0]), np.random.randint(0, background.shape[1] - img.shape[1])
+                        background_select = background[bx:bx+img.shape[0], by:by+img.shape[1]]
+
+                        mask = np.all(img < 30, axis=2)
+                        mask = ~cv2.erode(mask.astype(np.uint8), kernel=np.ones((10, 10), np.uint8), iterations=1).astype(np.bool_) & mask
+                        
+                        if np.random.random() < 0.3:
+                            w = background_select.copy()
+                            spikes_region = detect.segment_spikes(seg_model, background_select)
+                            background_select = w
+                            if spikes_region is not None:
+                                spikes_mask = np.all(spikes_region > 0, axis=2)
+                                mask[spikes_mask] = True
+
+                        img[mask] = background_select[mask]
+                        img = helpers.put_image_on_patch(image_size, img)
 
                 cv2.imwrite(os.path.join(dir_out, img_name), img)
                 
@@ -118,6 +140,7 @@ class ArtificialImageGenerator(pyrender.Scene):
         df = pd.DataFrame()
         df["img_name"] = img_names
         df["volume"] = img_volumes
+        df["distance"] = 3.2
         df.to_csv(os.path.join(dir_out, "vol_mapping.csv"), index=False)
 
 class PoseGenerator:
@@ -156,7 +179,7 @@ class PoseGenerator:
         # Roughly set to match the size of images from the fip
         scale_base = np.eye(3) * 0.06
         if distance_shift == "none": # Currently none, mild, strong are not really supported anymore (need to adapt distances)
-            trans_shift = np.zeros(3)
+            trans_shift = np.array([0, 0, -2.8 * 3.6])
         elif distance_shift == "mild":
             trans_shift = np.array([0, 0, -np.random.uniform(0, 1)])
         elif distance_shift == "strong":
@@ -189,7 +212,7 @@ a = ArtificialImageGenerator((300, 300))
 
 global_pose = PoseGenerator()
 
-a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical_ext", 12, lambda plant_changed: global_pose.get("random", "fiplike", plant_changed=plant_changed), cut_spike=False)
+a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical_ext", 12, lambda plant_changed: global_pose.get("random", "none", plant_changed=plant_changed), cut_spike=False)
 
 generate_artifical_sets = False
 if not generate_artifical_sets:

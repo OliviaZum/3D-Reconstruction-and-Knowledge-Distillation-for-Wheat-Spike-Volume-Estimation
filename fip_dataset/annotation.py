@@ -396,8 +396,8 @@ if __name__ == "__main__":
         "csv_folder": r"F:\FIP-data\csv",
         "img_folder": r"F:\FIP-data\images",
         "ply_folder": r"F:\FIP-data\wheat-scans",
-        "precompute_file": r"F:\FIP-data\csv\precomputed_new.json",
-        "show": lambda folder, data: True
+        "precompute_file": r"F:\FIP-data\csv\precomputed.json",
+        "show": lambda folder, data: "2024_07_18_14_08_Lot3" in folder
     }
 
     data = FIPDataset.FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"])

@@ -9,6 +9,10 @@ import re
 import pandas as pd
 import random
 from utils import helpers
+import cv2
+import tqdm
+from ultralytics import YOLO
+from fip_detection import detect
 
 class FIPDataset:
     def __init__(self, csv_folder, img_folder, ply_folder, precompute_file = None, spikelabels_file = None) -> None:
@@ -184,19 +188,44 @@ class FIPDataset:
         union_area = box1_area + box2_area - inter_area
 
         return inter_area / union_area
+    
+    def export_plant_images(self, input_folder: str, output_folder: str, export: Dict, padding: int = 20,
+                            box_size: int = 300, seg_model = None):
+        camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
+        table = pd.DataFrame(columns=["img_name", "volume", "distance"])
+        # Load all images
+        all_imgs = {}
+        for img_name in camkeys:
+            img = cv2.imread(os.path.join(input_folder, img_name))
+            all_imgs[img_name] = img
 
-    def precompute_image_dataset(self, base_folder: str, padding = 0, automatic_inferred=True, box_size=300, segment=True):
+        # Do the actual export
+        for export_value in export.values():
+            
+            for img_name, box in export_value["boxes"]:
+                new_row = {"img_name": img_name, "volume": export_value["volume"], "distance": box["distance"]}
+                out_path = os.path.join(output_folder, img_name)
+                img = helpers.extend_image_box(box["box"], all_imgs[box["image"]], padding)
+                patch = helpers.put_image_on_patch(box_size, img)
+                if seg_model:
+                    patch = detect.segment_spikes(seg_model, patch)
+                    if patch is None:
+                        continue
+                cv2.imwrite(out_path, patch)
+                table.loc[len(table)] = new_row
+        return table
+    
+    def get_segmodel(self):
+        return YOLO(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\jupyter\runs\segment\train3\weights\best.pt")
+
+    def precompute_image_dataset(self, base_folder: str, padding = 20, automatic_inferred=True, box_size=300, segment=True):
         # Compute an image dataset of the individual spikes
-        import cv2
-        import tqdm
-        from ultralytics import YOLO
-        from fip_detection import detect
 
         if os.path.exists(base_folder):
             input("The base folder exists. Press enter to overwrite...")
         os.makedirs(base_folder, exist_ok=True)
         csv_path = os.path.join(base_folder, "vol_mapping.csv")
-        table = pd.DataFrame(columns=["img_name", "volume", "distance"])
+        tables = []
 
         def get_box_with_max_overlap(box: List[int], boxes: List[Dict]):
             max_iou = 0
@@ -210,7 +239,7 @@ class FIPDataset:
         
         camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
         # for now segmentation is done as a post step.
-        seg_model = YOLO(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\jupyter\runs\segment\train3\weights\best.pt")
+        seg_model = self.get_segmodel()
         for folder in tqdm.tqdm(self.spikescans["image_dir"].unique()):
             scans: pd.DataFrame = self.spikescans.loc[self.spikescans["image_dir"] == folder]
             precomp_json = {}
@@ -252,52 +281,66 @@ class FIPDataset:
                                     export[scan["plant_id"]]["boxes"].append((img_name, w))
                                     break # Ignore the case where multiple boxes appear on one image for now
                                     c += 1
-            # Load all images
-            all_imgs = {}
-            for img_name in camkeys:
-                img = cv2.imread(os.path.join(folder, img_name))
-                all_imgs[img_name] = img
+            
+            table = self.export_plant_images(folder, base_folder, export, padding, box_size, seg_model if segment else None)
+            tables.append(table)
 
-            # Do the actual export
-            for export_value in export.values():
-                
-                for img_name, box in export_value["boxes"]:
-                    new_row = {"img_name": img_name, "volume": export_value["volume"], "distance": box["distance"]}
-                    out_path = os.path.join(base_folder, img_name)
-                    img = helpers.extend_image_box(box["box"], all_imgs[box["image"]], padding)
-                    if segment:
-                        img = detect.segment_spikes(seg_model, img)
-                        if img is None:
-                            continue
-                    patch = helpers.put_image_on_patch(box_size, img)
-                    cv2.imwrite(out_path, patch)
-                    table.loc[len(table)] = new_row
+        table = pd.concat(tables, axis=1)
+        table.to_csv(csv_path, index=False)
 
-            table.to_csv(csv_path, index=False)
+    def generate_unlabeled_spikes(self, base_folder: str, num_plants = None, num_plants_per_scan = None, min_image_per_plant = 10, 
+                                  padding: int = 20, box_size: int = 300, segment: bool = True):
+        if os.path.exists(base_folder):
+            input("The base folder exists. Press enter to overwrite...")
+        os.makedirs(base_folder, exist_ok=True)
+        scans: pd.DataFrame = self.spikescans.drop_duplicates(subset=["image_dir", "row_lot", "range_lot"])
+        scans = (
+            scans.groupby(["row_lot", "range_lot"], as_index=False)
+            .agg({"image_dir": list})
+        )
+        scans = scans.values.tolist()
+        csv_path = os.path.join(base_folder, "vol_mapping.csv")
+        tables = []
+        seg_model = self.get_segmodel() if segment else None
 
-    def generate_unlabeled_spikes(self, base_folder: str, max_images: int = None, padding: int = 0):
-        folders = self.spikescans["image_dir"].unique()
-        camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
+        count_plants = 0
 
-        import cv2
-        all_images = []
-        for folder in folders:
-            for cam in camkeys:
-                all_images.append((folder, cam))
-        random.seed(10)
-        random.shuffle(all_images)
-        
-        exported = 0
-        for folder, cam_name in all_images:
-            precomp_json = json.loads(self.precomputed.loc[self.precomputed["image_dir"] == folder, "spikes"].iloc[0])
-            img = cv2.imread(os.path.join(folder, cam_name))
+        for row_lot, range_lot, dirs in scans:
+            plantindex = 0
+            for scan in dirs:
+                prec = self.precomputed[scan]
+                t = {}
+                for p in prec:
+                    t.setdefault(p["cluster"], [])
+                    t[p["cluster"]].append(p)
+                prec = {}
+                for x, y in t.items():
+                    if len(y) >= min_image_per_plant:
+                        prec[x] = y
 
-            for _, box in precomp_json[cam_name]:
-                box = FIPDataset.extend_box(box, img, padding)
-                cv2.imwrite(os.path.join(base_folder, f"{exported}.jpg"), box)
-                exported += 1
-                if max_images and exported >= max_images:
-                    return
+                export = {}
+                scan_plant_counter = 0
+                for _, cluster in prec.items():
+                    plant_id = f"{range_lot}_{row_lot}_{plantindex+15}"
+                    export[plant_id] = {"volume": None, "boxes": []}
+                    for box, i in zip(cluster, range(len(cluster))):
+                        img_name = f"{plant_id}_{i}.jpg"
+                        export[plant_id]["boxes"].append((img_name, box))
+                    count_plants += 1
+                    plantindex += 1
+                    scan_plant_counter += 1
+                    if count_plants >= num_plants or scan_plant_counter >= num_plants_per_scan:
+                        break
+                        
+                table = self.export_plant_images(scan, base_folder, export, padding, box_size, seg_model)
+                tables.append(table)
+                if count_plants >= num_plants:
+                    break
+            if count_plants >= num_plants:
+                    break
+
+        table = pd.concat(tables, ignore_index=True)
+        table.to_csv(csv_path, index=False)
 
     @staticmethod
     def labels2num2023mapping():
@@ -349,6 +392,6 @@ if __name__ == "__main__":
 
     data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"])
     #data.spikescans.to_csv(r"F:\FIP-data\csv\fip_data_export.csv")
-    #data.precompute_image_dataset(r"F:\Boxes-ds\spike_dataset_test", 20, False, segment=False)
-    #data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled_spikes", 100000, 20)
+    #data.precompute_image_dataset(r"F:\Boxes-ds\spike_dataset_test", 20, False, segment=True)
+    data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled", 1000, 10)
     #data.precompute_boxes(r"F:\FIP-data\csv\precomputed_test.json", update_connections_only=True)

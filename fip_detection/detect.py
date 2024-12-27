@@ -33,7 +33,7 @@ def find_objects_yolo(yolo_weights_path: str, scan_folder: str, min_conf = 0.25,
     return converted, results
 
 def segment_spikes(seg_model, img):
-    r = seg_model(img, imgsz=224, verbose=False, conf=0.2)
+    r = seg_model(img, imgsz=288, verbose=False, conf=0.2)
     r: Results = r[0].cpu()
     if r.boxes.shape[0] > 0:
         boxes = r.boxes.xywh
