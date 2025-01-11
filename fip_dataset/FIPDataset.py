@@ -15,7 +15,7 @@ from ultralytics import YOLO
 from fip_detection import detect
 
 class FIPDataset:
-    def __init__(self, csv_folder, img_folder, ply_folder, precompute_file = None, spikelabels_file = None) -> None:
+    def __init__(self, csv_folder, img_folder, ply_folder, precompute_file = None, spikelabels_file = None, pose_folder = None) -> None:
         if precompute_file:
             with open(precompute_file) as f:
                 self.precomputed = json.load(f)
@@ -86,11 +86,11 @@ class FIPDataset:
         self.spikescans["image_dir"] = self.spikescans.apply(set_folder, axis=1)
 
         # Load poses
-        self.poses = {}
-        pose_folder = 'assets/poses'
-        for file in os.listdir(pose_folder):
-            with open(os.path.join(pose_folder, file)) as f:
-                self.poses[os.path.splitext(file)[0]] = json.load(f)
+        if pose_folder is not None:
+            self.poses = {}
+            for file in os.listdir(pose_folder):
+                with open(os.path.join(pose_folder, file)) as f:
+                    self.poses[os.path.splitext(file)[0]] = json.load(f)
 
         # Load annotations
         if spikelabels_file:
@@ -324,7 +324,7 @@ class FIPDataset:
                     plant_id = f"{range_lot}_{row_lot}_{plantindex+15}"
                     export[plant_id] = {"volume": None, "boxes": []}
                     for box, i in zip(cluster, range(len(cluster))):
-                        img_name = f"{plant_id}_{i}.jpg"
+                        img_name = f"{plant_id}_{i}_b.jpg"
                         export[plant_id]["boxes"].append((img_name, box))
                     count_plants += 1
                     plantindex += 1
@@ -388,9 +388,10 @@ if __name__ == "__main__":
             "img_folder": r"F:\FIP-data\images",
             "ply_folder": r"F:\FIP-data\wheat-scans",
             "precompute_file": r"F:\FIP-data\csv\precomputed.json",
+            "pose_folder": r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\assets\poses"
         }
 
-    data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"])
+    data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["pose_folder"])
     #data.spikescans.to_csv(r"F:\FIP-data\csv\fip_data_export.csv")
     #data.precompute_image_dataset(r"F:\Boxes-ds\spike_dataset_test", 20, False, segment=True)
     data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled", 1000, 10)

@@ -120,7 +120,7 @@ class ArtificialImageGenerator(pyrender.Scene):
                         mask = np.all(img < 30, axis=2)
                         mask = ~cv2.erode(mask.astype(np.uint8), kernel=np.ones((10, 10), np.uint8), iterations=1).astype(np.bool_) & mask
                         
-                        if np.random.random() < 0.3:
+                        if False and np.random.random() < 0.3:
                             w = background_select.copy()
                             spikes_region = detect.segment_spikes(seg_model, background_select)
                             background_select = w
@@ -128,7 +128,7 @@ class ArtificialImageGenerator(pyrender.Scene):
                                 spikes_mask = np.all(spikes_region > 0, axis=2)
                                 mask[spikes_mask] = True
 
-                        img[mask] = background_select[mask]
+                        #img[mask] = background_select[mask]
                         img = helpers.put_image_on_patch(image_size, img)
 
                 cv2.imwrite(os.path.join(dir_out, img_name), img)
@@ -209,10 +209,9 @@ class PoseGenerator:
 
 np.random.seed(0)
 a = ArtificialImageGenerator((300, 300))
-
 global_pose = PoseGenerator()
 
-a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical_ext", 12, lambda plant_changed: global_pose.get("random", "none", plant_changed=plant_changed), cut_spike=False)
+a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\test", 12, lambda plant_changed: global_pose.get("best", "none", plant_changed=plant_changed), cut_spike=False, num_plants=60)
 
 generate_artifical_sets = False
 if not generate_artifical_sets:

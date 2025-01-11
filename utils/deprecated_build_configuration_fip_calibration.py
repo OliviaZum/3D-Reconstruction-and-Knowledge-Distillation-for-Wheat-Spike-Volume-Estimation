@@ -1,9 +1,13 @@
+# Deprecated. Left here for convenience, in case it might ever become handy again.
+# The calibration seems to be to imprecise to actually work with. Instead generate a calibration via Sfm.
+# Extrinsics from the calibration are only used to later scale.
+
 import numpy as np
 import yaml
 import json
 import sys
 
-# untested for now
+
 def convert_fip_calibration_to_simplified(extrinsics_path: str, intrinsics_path_base: str, out_path: str):
     """
     extrinsics_path: The path to a file containing intrinsics for all fip cameras (FIP format)
