@@ -949,7 +949,7 @@ def reconstruct_3d(openmvg_path: Path,
     out_dir.mkdir(parents=True, exist_ok=False)
 
     # Create an sfm data file from scaled configuration (For simplicity just adapt an existing sfm file)
-    with tempfile.TemporaryDirectory(dir=r"D:\temp") as temp_dir:
+    with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir = Path(temp_dir)
         with open(scaled_calibration_path) as f:
             calibration = json.load(f)

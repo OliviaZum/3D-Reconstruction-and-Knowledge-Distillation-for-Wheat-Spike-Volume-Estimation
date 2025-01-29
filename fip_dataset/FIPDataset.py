@@ -129,10 +129,13 @@ class FIPDataset:
 
             self.spikescans = pd.merge(self.spikescans, df, how='inner', on=["image_dir", "label"])
 
-    def get_pose_config(self, folder):
+    def get_pose_config(self, folder, k_only=False):
         for k, v in self.poses.items():
             if k in folder:
-                return v
+                if k_only:
+                    return k
+                else:
+                    return v
 
     def precompute_boxes(self, precompute_file, update_connections_only = False):
         # Precompute bounding boxes and connections between them
@@ -190,39 +193,64 @@ class FIPDataset:
         return inter_area / union_area
     
     def export_plant_images(self, input_folder: str, output_folder: str, export: Dict, padding: int = 20,
-                            box_size: int = 300, seg_model = None):
+                            box_size: int = 300, seg_model = None, use_depthmap = True):
         camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
-        table = pd.DataFrame(columns=["img_name", "volume", "distance"])
+        table = pd.DataFrame(columns=["img_name", "volume", "distance"] + ["depth_name", "corner", "pose_file", "pose_key"] if use_depthmap else [])
         # Load all images
         all_imgs = {}
         for img_name in camkeys:
             img = cv2.imread(os.path.join(input_folder, img_name))
             all_imgs[img_name] = img
+        all_depths = {}
+        if use_depthmap:
+            maps = np.load(os.path.join(input_folder, "depth", "depths.npz"))
+            for k, v in maps.items():
+                k: str = os.path.split(k)[1]
+                k = k.removesuffix("_depth")
+                v = cv2.resize(v, all_imgs[k].shape[0:2][::-1], interpolation=cv2.INTER_LINEAR)
+                all_depths[k] = v
 
         # Do the actual export
         for export_value in export.values():
-            
             for img_name, box in export_value["boxes"]:
-                new_row = {"img_name": img_name, "volume": export_value["volume"], "distance": box["distance"]}
-                out_path = os.path.join(output_folder, img_name)
                 img = helpers.extend_image_box(box["box"], all_imgs[box["image"]], padding)
-                patch = helpers.put_image_on_patch(box_size, img)
+                crop_params = helpers.get_crop_params(box_size, img)
+                patch, _ = helpers.put_image_on_patch(box_size, img, crop_params)
                 if seg_model:
                     patch = detect.segment_spikes(seg_model, patch)
                     if patch is None:
                         continue
+
+                distance = box["distance"]
+                if distance is None:
+                    continue
+                if use_depthmap:
+                    depth_img, cutbox = helpers.extend_image_box(box["box"], all_depths[box["image"]], padding, True)
+                    depth_patch, patchbox = helpers.put_image_on_patch(box_size, depth_img, crop_params)
+                    cutbox = cutbox[0:2] + patchbox[0:2]
+                    if seg_model:
+                        mask = (patch < 30).all(axis=2)
+                        depth_patch[mask] = 0
+                    depth_name = f"{os.path.splitext(img_name)[0]}_d.npy"
+                    np.save(os.path.join(output_folder, depth_name), depth_patch)
+                    depth_row = {"depth_name": depth_name, "corner": [cutbox[0], cutbox[1]],
+                                 "pose_file": f"{self.get_pose_config(input_folder, True)}.json", "pose_key": box["image"]}
+                out_path = os.path.join(output_folder, img_name)
                 cv2.imwrite(out_path, patch)
+                new_row = {"img_name": img_name, "volume": export_value["volume"], "distance": distance}
+                if use_depthmap:
+                    new_row = new_row | depth_row
                 table.loc[len(table)] = new_row
         return table
     
     def get_segmodel(self):
         return YOLO(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\jupyter\runs\segment\train3\weights\best.pt")
 
-    def precompute_image_dataset(self, base_folder: str, padding = 20, automatic_inferred=True, box_size=300, segment=True):
+    def precompute_image_dataset(self, base_folder: str, padding = 20, automatic_inferred=True, box_size=300, segment=True, use_depthmap=True):
         # Compute an image dataset of the individual spikes
 
-        if os.path.exists(base_folder):
-            input("The base folder exists. Press enter to overwrite...")
+        #if os.path.exists(base_folder):
+            #input("The base folder exists. Press enter to overwrite...")
         os.makedirs(base_folder, exist_ok=True)
         csv_path = os.path.join(base_folder, "vol_mapping.csv")
         tables = []
@@ -236,6 +264,11 @@ class FIPDataset:
                     max_iou = iou
                     max_box = w
             return max_box, max_iou
+        if use_depthmap:
+            for k, v in self.poses.items():
+                p = os.path.join(base_folder, f"{k}.json")
+                with open(p, "w") as f:
+                    json.dump(v, f, indent=4)
         
         camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
         # for now segmentation is done as a post step.
@@ -270,8 +303,6 @@ class FIPDataset:
                             if max_iou < 0.6:
                                 print(f"For the scan {scan["range_lot"]}_{scan["row_lot"]}, label {scan["label"]} no matching bounding box was found")
                                 continue
-                            if max_box["distance"] is None:
-                                continue
                             export[scan["plant_id"]]["boxes"].append((img_name, max_box))
                     else:
                         if max_id:
@@ -282,10 +313,10 @@ class FIPDataset:
                                     break # Ignore the case where multiple boxes appear on one image for now
                                     c += 1
             
-            table = self.export_plant_images(folder, base_folder, export, padding, box_size, seg_model if segment else None)
+            table = self.export_plant_images(folder, base_folder, export, padding, box_size, seg_model if segment else None, use_depthmap)
             tables.append(table)
 
-        table = pd.concat(tables, axis=1)
+        table = pd.concat(tables)
         table.to_csv(csv_path, index=False)
 
     def generate_unlabeled_spikes(self, base_folder: str, num_plants = None, num_plants_per_scan = None, min_image_per_plant = 10, 
@@ -393,6 +424,6 @@ if __name__ == "__main__":
 
     data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["pose_folder"])
     #data.spikescans.to_csv(r"F:\FIP-data\csv\fip_data_export.csv")
-    #data.precompute_image_dataset(r"F:\Boxes-ds\spike_dataset_test", 20, False, segment=True)
-    data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled", 1000, 10)
+    data.precompute_image_dataset(r"F:\Boxes-ds\segmented_distance_depth", 20, False, segment=True, use_depthmap=True)
+    #data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled", 1000, 10)
     #data.precompute_boxes(r"F:\FIP-data\csv\precomputed_test.json", update_connections_only=True)

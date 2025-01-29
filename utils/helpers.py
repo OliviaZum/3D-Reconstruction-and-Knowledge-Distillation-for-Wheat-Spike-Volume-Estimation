@@ -76,23 +76,36 @@ def get_ply_files(ply_dir_base):
                 ply_files.append(full_path)
     return ply_files
 
-def put_image_on_patch(box_size, img):
+def get_crop_params(box_size, img):
     h, w = img.shape[:2]
-    patch = np.zeros((box_size, box_size, 3), dtype=np.uint8)
+    top = np.random.randint(0, max(h - box_size, 1))
+    left = np.random.randint(0, max(w - box_size, 1))
+    return left, top
+
+def put_image_on_patch(box_size, img, crop_params):
+    if len(img.shape) != 3:
+        pshape = (box_size, box_size)
+    else:
+        pshape = (box_size, box_size, 3)
+    patch = np.zeros(pshape, dtype=img.dtype)
     
-    if h > box_size or w > box_size:
-        top = np.random.randint(0, max(h - box_size, 1))
-        left = np.random.randint(0, max(w - box_size, 1))
-        img = img[top:top + min(h, box_size), left:left + min(w, box_size)]
-        h, w = img.shape[:2]
-    
+    left, top = crop_params
+    h, w = img.shape[:2]
+    img = img[top:top + min(h, box_size), left:left + min(w, box_size)]
+    h, w = img.shape[:2]
+
     start_y = (box_size - h) // 2
     start_x = (box_size - w) // 2
     patch[start_y:start_y + h, start_x:start_x + w] = img
-    return patch
+    box = np.array([-start_x + left, -start_y + top, -start_x + w + left, -start_y + h + left])
+    return patch, box
 
-def extend_image_box(box, img, padding):
+def extend_image_box(box, img, padding, return_box = False):
     box = np.array(box).astype(np.int32)
     box[0:2] = np.maximum([0, 0], box[0:2] - padding)
     box[2:4] = np.minimum(box[2:4] + padding, (img.shape[1], img.shape[0]))
-    return img[box[1]:box[3], box[0]:box[2]]
+    sub_img = img[box[1]:box[3], box[0]:box[2]]
+    if return_box:
+        return sub_img, box
+    else:
+        return sub_img
