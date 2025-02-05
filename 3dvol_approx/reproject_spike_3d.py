@@ -98,13 +98,6 @@ class ReprojectSpike3d:
         else:
             return points_3d_world
 
-    @staticmethod
-    def save_ply(data, normals, output_path="ppptux.ply", colors = None):
-        import trimesh
-        positions = data[:, :3]
-        point_cloud_trimesh = trimesh.Trimesh(vertices=positions, faces=np.zeros((0, 3)), vertex_normals=normals, vertex_colors=colors)
-        point_cloud_trimesh.export(output_path)
-
     def voxel_filter(points, normals, voxel_size: float, minhits: int):
         # Removes points with less than minhits in their voxel
         w = points * (1 / voxel_size)
@@ -117,7 +110,6 @@ class ReprojectSpike3d:
     def reproject_images_3d(self, rows: pd.DataFrame, selection_size = 2000):
         points = []
         normals = []
-        colors = []
         for _, row in rows.iterrows():
             p, normal = self.reproject_to_3d(row)
             points.append(p)
@@ -128,8 +120,8 @@ class ReprojectSpike3d:
 
         #points, normals = voxel_filter(points, normals, voxel_size, min_hits) # Remove noise and sample down in a regular fashion
         points -= points.mean(axis=0, keepdims=True)
-        # Can lead to same point picked multiple times. Arbitrary unrealistic in practice, unless there is a very low number of points
+        # Can lead to same point picked multiple times. Arbitrary unrealistic in practice (also not a big issue), unless there is a very low number of points
         selection = np.random.choice(np.arange(0, len(points)), selection_size, True) 
         points, normals = points[selection, :], normals[selection, :]
-        return points, normals, colors
+        return points, normals
 

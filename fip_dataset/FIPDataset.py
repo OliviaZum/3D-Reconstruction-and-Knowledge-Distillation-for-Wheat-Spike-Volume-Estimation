@@ -195,7 +195,10 @@ class FIPDataset:
     def export_plant_images(self, input_folder: str, output_folder: str, export: Dict, padding: int = 20,
                             box_size: int = 300, seg_model = None, use_depthmap = True):
         camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
-        table = pd.DataFrame(columns=["img_name", "volume", "distance"] + ["depth_name", "corner", "pose_file", "pose_key"] if use_depthmap else [])
+        tablecols = ["img_name", "volume", "distance"]
+        if use_depthmap:
+            tablecols.extend(["depth_name", "corner", "pose_file", "pose_key"])
+        table = pd.DataFrame(columns=tablecols)
         # Load all images
         all_imgs = {}
         for img_name in camkeys:
@@ -305,7 +308,7 @@ class FIPDataset:
                                 continue
                             export[scan["plant_id"]]["boxes"].append((img_name, max_box))
                     else:
-                        if max_id:
+                        if max_id and cam_name in precomp_json:
                             c = 0
                             for w in precomp_json[cam_name]:
                                 if max_id == w["cluster"] and w["distance"] is not None:
@@ -363,7 +366,7 @@ class FIPDataset:
                     if count_plants >= num_plants or scan_plant_counter >= num_plants_per_scan:
                         break
                         
-                table = self.export_plant_images(scan, base_folder, export, padding, box_size, seg_model)
+                table = self.export_plant_images(scan, base_folder, export, padding, box_size, seg_model, use_depthmap=False)
                 tables.append(table)
                 if count_plants >= num_plants:
                     break
@@ -424,6 +427,6 @@ if __name__ == "__main__":
 
     data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["pose_folder"])
     #data.spikescans.to_csv(r"F:\FIP-data\csv\fip_data_export.csv")
-    data.precompute_image_dataset(r"F:\Boxes-ds\segmented_distance_depth", 20, False, segment=True, use_depthmap=True)
-    #data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled", 1000, 10)
+    data.precompute_image_dataset(r"F:\Boxes-ds\auto_split", 20, True, segment=True, use_depthmap=False)
+    #data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled-5000", 5000, 30)
     #data.precompute_boxes(r"F:\FIP-data\csv\precomputed_test.json", update_connections_only=True)
