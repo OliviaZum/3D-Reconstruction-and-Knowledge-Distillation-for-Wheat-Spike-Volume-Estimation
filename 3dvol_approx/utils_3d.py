@@ -75,3 +75,50 @@ def measure_volume(data, save_path = None, save_name = None):
     if save_path:
         ms.save_current_mesh(str(save_path / f"{save_name}_{volume}.ply"))
     return volume
+
+def distance_sample(points: torch.Tensor, num_samples = 200, generator = None) -> torch.Tensor:
+    batch, n, d = points.shape
+    sampled_indices = torch.stack([torch.randperm(n, device=points.device, generator=generator)[:num_samples] for _ in range(batch)])
+    sampled_points = torch.gather(points, 1, sampled_indices.unsqueeze(-1).expand(-1, -1, d))
+    
+    distances = torch.cdist(sampled_points, points, p=2)  # (b, num_samples, n)
+    return distances
+
+def batched_torch_hist(x: torch.Tensor, start: float, end: float, bins: int):
+    bin_width = (end - start) / bins
+    end = end - start
+    x = x - start
+    x = (x / bin_width).floor().to(torch.int32)
+    bins = torch.arange(bins, device=x.device)
+    mask_eq = x.unsqueeze(-1) == bins
+    counts = mask_eq.sum(dim=-2)
+    return counts
+
+def to_rigid_invariant_representation(x: torch.Tensor, num_samples = 200, bins = 10, generator = None):
+    with torch.no_grad():
+        w = distance_sample(x, num_samples, generator)
+        u = batched_torch_hist(w, 0, 80, bins).to(x.dtype)
+        # Normalization is a bit random. Works well in practice though and has the nice advantage
+        # that total number of points does not matter (distribution rather than histogram)
+        ns = u.sum(dim=2, keepdim=True)
+        ns[ns == 0] = 1
+        u = u / ns
+        return u
+
+"""
+def compare_rigid_invariant_wasserstein(hist_in, hist_target):
+    cdfin = hist_in.cumsum(dim=-1) # (b, n, bins)
+    cdftarget = hist_target.cumsum(dim=-1)
+    sub = torch.abs(cdfin.unsqueeze(-3) - cdftarget.unsqueeze(-2) )
+    wss = sub.sum(dim=-1) # (b, n, n) # Correct dim?
+    min1, _ = wss.min(dim=-1) # (b, n)
+    min2, _ = wss.min(dim=-2)
+    return torch.mean(min1) + torch.mean(min2)
+"""
+
+def compare_rigid_invariant_wasserstein(hist_in, hist_target):
+    sub = torch.square(hist_in.unsqueeze(-3) - hist_target.unsqueeze(-2) )
+    wss = sub.sum(dim=-1) # (b, n, n) # Correct dim?
+    min1, _ = wss.min(dim=-1) # (b, n)
+    min2, _ = wss.min(dim=-2)
+    return torch.mean(min1) + torch.mean(min2)

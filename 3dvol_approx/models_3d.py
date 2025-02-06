@@ -1,3 +1,4 @@
+from typing import Literal
 from torch import nn
 import torch
 
@@ -150,11 +151,9 @@ class PointCloudAutoDecoder(nn.Module):
         """
         return coarse, fine
     
-class AffineInvariantPointNet(nn.Module):
-    def __init__(self, k=160, bins=10, latent_size=128):
+class RigidInvariantPointNet(nn.Module):
+    def __init__(self, latent_size=128, bins=10, output: Literal["volume", "latent"] = "volume"):
         super().__init__()
-        self.k = k
-        self.bins = bins
         encfun = lambda x_in, x_out: nn.Sequential(
             nn.Conv1d(x_in, 64, 1),
             nn.ReLU(),
@@ -173,41 +172,63 @@ class AffineInvariantPointNet(nn.Module):
         )
         self.l1 = encfun(bins, latent_size)
         self.l2 = encfun(bins + latent_size, latent_size)
-        self.lastlin = nn.Linear(128, 1)
+        self.output = output
+        if self.output == "volume":
+            self.lastlin = nn.Linear(latent_size, 1)
+        elif self.output == "latent":
+            w = list(self.l2.children())[:-1]
+            self.l2 = nn.Sequential(*w)
     
     def forward(self, x: torch.Tensor):
-        u = torch.zeros((x.shape[0], self.k, self.bins), device=x.device)
-        with torch.no_grad():
-            w = self.distance_sample(x)
-            u = self.batched_torch_hist(w, 0, 60, self.bins)
-            u = u.to(x.dtype)
-        x = u.permute((0, 2, 1))
+        x = x.permute((0, 2, 1))
         x_in = x
         x = self.l1(x)
         x = x.repeat(1, 1, x_in.shape[2])
         x = torch.concat((x_in, x), dim=1)
         x = self.l2(x).squeeze()
-        x = self.lastlin(x)
-        if self.training:
-            return x, (None, None), None
-        else:
-            return x, None
+        if self.output == "volume":
+            x = self.lastlin(x)
+        elif self.output == "latent":
+            x = x.permute(0, 2, 1)
+        return x
 
-    def distance_sample(self, points: torch.Tensor) -> torch.Tensor:
-        batch, n, _ = points.shape
-        sampled_indices = torch.randint(0, n, (batch, self.k), device=points.device).unsqueeze(-1).expand(-1, -1, points.shape[-1])
-        sampled_points = torch.gather(points, 1, sampled_indices)
+class RigidInvariantCompletion(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pnet = RigidInvariantPointNet(output="latent")
+        self.last = nn.Sequential(
+            nn.Conv1d(128 + 20, 64, 1),
+            nn.ReLU(),
+            nn.BatchNorm1d(64),
+            nn.Conv1d(64, 128, 1),
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Conv1d(128, 128, 1),
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Conv1d(128, 256, 1),
+            nn.ReLU(),
+            nn.BatchNorm1d(256),
+            nn.Conv1d(256, 10, 1),
+        )
+        pos_enc = self.positional_encoding(200, 20)
+        self.register_buffer("pos_enc", pos_enc)
+
+    def positional_encoding(self, n: int, k: int) -> torch.Tensor:
+        positions = torch.arange(n).unsqueeze(1)  # Shape: (n, 1)
+        div_term = torch.exp(torch.arange(0, k, 2) * (-9.21) / k)
         
-        # Compute pairwise L2 distances
-        distances = torch.cdist(sampled_points, points, p=2)  # (k, n)
-        return distances
+        encodings = torch.zeros(n, k)
+        encodings[:, 0::2] = torch.sin(positions * div_term)
+        encodings[:, 1::2] = torch.cos(positions * div_term)
+
+        return encodings
     
-    def batched_torch_hist(self, x: torch.Tensor, start: float, end: float, bins: int):
-        bin_width = (end - start) / bins
-        end = end - start
-        x = x - start
-        x = (x / bin_width).floor().to(torch.int32)
-        bins = torch.arange(bins, device=x.device)
-        mask_eq = x.unsqueeze(-1) == bins
-        counts = mask_eq.sum(dim=-2)
-        return counts
+    def forward(self, x):
+        x = self.pnet(x)
+        pe = self.pos_enc.expand(x.shape[0], -1, -1)
+        x = torch.concat((x, pe), dim=2)
+        x = x.permute(0, 2, 1)
+        x = self.last(x)
+        x = x.permute(0, 2, 1)
+        return x
