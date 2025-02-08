@@ -98,16 +98,35 @@ class ReprojectSpike3d:
         else:
             return points_3d_world
 
-    def voxel_filter(points, normals, voxel_size: float, minhits: int):
-        # Removes points with less than minhits in their voxel
+    def voxelize(self, points, normals, voxel_size: float = 0.002, point_weights = None, weight_sorted = False):
         w = points * (1 / voxel_size)
-        w = w.astype(np.int64)
-        voxels, unique_counts  = np.unique(w, axis=0, return_counts=True)
-        selected_voxels = voxels[unique_counts >= minhits]
-        mask = np.isin(voxels, selected_voxels)
-        return points[mask, :], normals[mask, :]
+        w = np.floor(w).astype(np.int64)
+        voxels, first_index, inverse  = np.unique(w, axis=0, return_index=True, return_inverse=True)
+        vp = voxels.astype(np.float64) * voxel_size + np.ones((1, 3)) * (voxel_size / 2)
 
-    def reproject_images_3d(self, rows: pd.DataFrame, selection_size = 2000):
+        if point_weights is None:
+            point_weights = np.ones_like(inverse)
+        unique_counts = np.bincount(inverse, weights=point_weights)
+        normals = normals[first_index, :]
+
+        if weight_sorted:
+            ind = np.flip(np.argsort(unique_counts, kind="stable")).copy()
+            vp = vp[ind]
+            normals = normals[ind]
+            unique_counts = unique_counts[ind]
+
+        return vp, normals, unique_counts
+    
+    def voxelize_packed(self, data, voxel_size: float = 0.002, weight_sorted=False):
+        if data.shape[-1] == 7:
+            weight = data[:, 6]
+        else:
+            weight = None
+        v, n, u = self.voxelize(data[:, 0:3], data[:, 3:6], voxel_size, weight, weight_sorted)
+        data = np.concatenate((v, n, np.expand_dims(u, 1)), axis=1)
+        return data
+
+    def reproject_images_3d(self, rows: pd.DataFrame):
         points = []
         normals = []
         for _, row in rows.iterrows():
@@ -117,11 +136,6 @@ class ReprojectSpike3d:
 
         points = np.concatenate(points, axis=0)
         normals = np.concatenate(normals, axis=0)
-
-        #points, normals = voxel_filter(points, normals, voxel_size, min_hits) # Remove noise and sample down in a regular fashion
-        points -= points.mean(axis=0, keepdims=True)
-        # Can lead to same point picked multiple times. Arbitrary unrealistic in practice (also not a big issue), unless there is a very low number of points
-        selection = np.random.choice(np.arange(0, len(points)), selection_size, True) 
-        points, normals = points[selection, :], normals[selection, :]
+        
         return points, normals
 

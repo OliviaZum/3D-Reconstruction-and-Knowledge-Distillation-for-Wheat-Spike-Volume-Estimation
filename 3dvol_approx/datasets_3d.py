@@ -1,3 +1,4 @@
+import warnings
 import reproject_spike_3d
 from torch.utils.data import Dataset
 from pathlib import Path
@@ -83,22 +84,13 @@ class PlyDataset(Dataset):
         return idx, samples, torch.tensor(DepthMapDataset.vol_norm(self.plant_mapping.loc[idx, "volume"]), dtype=torch.float32)
     
 class DepthMapDataset(Dataset):
-    def __init__(self, base_folder: Path | str, plant_mapping_path: Path | str, point_cloud_size: int = 2000, min_seq_len: int = 3, max_seq_len: int = 12, augment=True):
+    def __init__(self, base_folder: Path | str, plant_mapping_path: Path | str, point_cloud_size: int = 1000):
         self.point_cloud_size = point_cloud_size
         plant_mapping = pd.read_json(plant_mapping_path, orient='index', convert_axes=False, dtype={"plant_id" : str})
         plant_mapping = plant_mapping.rename_axis("plant_id")
         self.plant_mapping = plant_mapping.reset_index()
-        self.min_seq_len = min_seq_len
-        self.max_seq_len = max_seq_len
         self.reprojector = reproject_spike_3d.ReprojectSpike3d(base_folder, self.plant_mapping["pose_file"].explode(True).unique())
         self.cache = None
-        self.augment = augment
-        self.torch_generator = torch.Generator()
-        self.reset_generator()
-    
-    def reset_generator(self):
-        self.torch_generator.manual_seed(0)
-        self.np_generator = np.random.default_rng(0)
 
     def __len__(self):
         return len(self.plant_mapping)
@@ -115,45 +107,25 @@ class DepthMapDataset(Dataset):
         if path.exists() and not force_recompute:
             self.cache = torch.load(path, weights_only=True)
         else:
-            self.cache = torch.zeros((len(self.plant_mapping), 12, self.point_cloud_size, 6))
+            self.cache = torch.zeros((len(self.plant_mapping), self.point_cloud_size, 7))
             for idx in tqdm.tqdm(range(len(self.plant_mapping)), "Creating cache"):
                 row = self.plant_mapping.iloc[[idx]]
                 rows = row.explode(column=["depth_name", "pose_file", "pose_key", "distance", "corner"])
-                for img_idx, (_, row) in enumerate(rows.iterrows()):
-                    points, normals = self.reprojector.reproject_to_3d(row)
-                    data = torch.tensor(np.concatenate((points, normals), axis=1), dtype=torch.float32)
-                    subset = torch.randperm(data.shape[0])[:min(self.point_cloud_size, data.shape[0])]
-                    self.cache[idx, img_idx, 0:len(subset), :] = data[subset]
+                points, normals = self.reprojector.reproject_images_3d(rows)
+                points, normals, weight = self.reprojector.voxelize(points, normals, weight_sorted=True)
+                data = torch.tensor(np.concatenate((points, normals, np.expand_dims(weight, 1)), axis=1), dtype=torch.float32)
+                data[:, 0:3] = (data[:, 0:3] - torch.mean(data[:, 0:3], dim=0, keepdim=True)) * 1000
+
+                inclen = min(self.point_cloud_size, data.shape[0])
+                self.cache[idx, 0:inclen, :] = data[0:inclen]
+
             torch.save(self.cache, path)
     
     def __getitem__(self, index):
-        row = self.plant_mapping.iloc[[index]]
-        images = row["depth_name"].tolist()[0]
-        if self.augment:
-            num_img = self.np_generator.integers(min(self.min_seq_len, len(images)), min(self.max_seq_len, len(images)) + 1)
-        else:
-            num_img = len(images)
-        selection = self.np_generator.choice(np.arange(0, len(images)), num_img, replace=False)
         if self.cache is None:
-            rows = row.explode(column=["depth_name", "pose_file", "pose_key", "distance", "corner"])
-            rows = rows.iloc[selection]
-            points, normals = self.reprojector.reproject_images_3d(rows, self.point_cloud_size)
-            data = torch.tensor(np.concatenate((points, normals), axis=1), dtype=torch.float32)
+            raise NotImplemented
         else:
-            points = self.cache[index, selection, ]
-            points = points.flatten(0, 1)
-            points = points[~(points == 0).all(dim=1)]
-            if points.shape[0] < self.point_cloud_size: # More of outlier handling than a real thing, in practice expected to rarely ever happen
-                data = torch.zeros((self.point_cloud_size, 6))
-                data[0:points.shape[0]] = points
-                #return self.__getitem__(torch.randint(0, len(self), (1,)).item())
-            else:
-                selected_points = torch.randperm(points.shape[0], generator=self.torch_generator)[:self.point_cloud_size]
-                data = points[selected_points]
-            
-        data[:, 0:3] = (data[:, 0:3] - torch.mean(data[:, 0:3], dim=0, keepdim=True)) * 1000
-        #if self.augment:
-        #    data = random_affine(data, False)
+            data = self.cache[index]
             
         return index, data, torch.tensor(DepthMapDataset.vol_norm(self.plant_mapping.loc[index, "volume"]), dtype=torch.float32)
     

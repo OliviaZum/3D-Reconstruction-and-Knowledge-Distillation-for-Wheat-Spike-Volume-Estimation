@@ -77,32 +77,37 @@ def measure_volume(data, save_path = None, save_name = None):
     return volume
 
 def distance_sample(points: torch.Tensor, num_samples = 200, generator = None) -> torch.Tensor:
-    batch, n, d = points.shape
-    sampled_indices = torch.stack([torch.randperm(n, device=points.device, generator=generator)[:num_samples] for _ in range(batch)])
-    sampled_points = torch.gather(points, 1, sampled_indices.unsqueeze(-1).expand(-1, -1, d))
+    if num_samples is not None:
+        batch, n, d = points.shape
+        sampled_indices = torch.stack([torch.randperm(n, device=points.device, generator=generator)[:num_samples] for _ in range(batch)])
+        sampled_points = torch.gather(points, 1, sampled_indices.unsqueeze(-1).expand(-1, -1, d))
+    else:
+        sampled_points = points
     
     distances = torch.cdist(sampled_points, points, p=2)  # (b, num_samples, n)
     return distances
 
-def batched_torch_hist(x: torch.Tensor, start: float, end: float, bins: int):
+def batched_torch_hist(x: torch.Tensor, weigths, start: float, end: float, bins: int):
+    bins = bins - 1
     bin_width = (end - start) / bins
     end = end - start
     x = x - start
     x = (x / bin_width).floor().to(torch.int32)
-    bins = torch.arange(bins, device=x.device)
-    mask_eq = x.unsqueeze(-1) == bins
+    binlist = torch.arange(bins, device=x.device)
+    mask_eq = x.unsqueeze(-1) == binlist
+    mask_gt = (x >= bins).unsqueeze(-1)
+    mask_eq = torch.concat((mask_eq, mask_gt), dim=-1)
+    mask_eq = mask_eq * weigths.reshape((weigths.shape[0], 1, weigths.shape[1], 1))
     counts = mask_eq.sum(dim=-2)
     return counts
 
-def to_rigid_invariant_representation(x: torch.Tensor, num_samples = 200, bins = 10, generator = None):
+def to_rigid_invariant_representation(x: torch.Tensor, weights: torch.Tensor, num_samples = 200, bins = 10, generator = None):
     with torch.no_grad():
         w = distance_sample(x, num_samples, generator)
-        u = batched_torch_hist(w, 0, 80, bins).to(x.dtype)
-        # Normalization is a bit random. Works well in practice though and has the nice advantage
-        # that total number of points does not matter (distribution rather than histogram)
+        u = batched_torch_hist(w, weights, 0, 60, bins).to(x.dtype)
         ns = u.sum(dim=2, keepdim=True)
-        ns[ns == 0] = 1
         u = u / ns
+
         return u
 
 """

@@ -168,7 +168,7 @@ class RigidInvariantPointNet(nn.Module):
             nn.ReLU(),
             nn.BatchNorm1d(256),
             nn.Conv1d(256, x_out, 1),
-            nn.AdaptiveMaxPool1d(1),
+            nn.AdaptiveAvgPool1d(1),
         )
         self.l1 = encfun(bins, latent_size)
         self.l2 = encfun(bins + latent_size, latent_size)

@@ -22,7 +22,7 @@ real - direct (~100 epochs)
     - MAE: 605
 """
 
-def evaluate(dataloader: DataLoader, model: nn.Module):
+def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
     model = model.eval()
     with torch.no_grad():
         generator = torch.Generator(device)
@@ -32,7 +32,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module):
         vol_real = []
         for _, batch, vol_batch in dataloader:
             batch = batch.to(device)
-            r = utils_3d.to_rigid_invariant_representation(batch[:, :, 0:3], generator=None)
+            r = utils_3d.to_rigid_invariant_representation(batch[:, :, 0:3], batch[:, :, 6], generator=generator, num_samples=None)
             volume = model(r)
             volume = volume.cpu().squeeze()
             vol_pred.append(volume)
@@ -46,9 +46,9 @@ def evaluate(dataloader: DataLoader, model: nn.Module):
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
         linregcoeff, _, _, _ = np.linalg.lstsq(A, vol_pred, rcond=None)
         print(f"Steepness: {linregcoeff[0]}")
-        if True:
+        if show_plot:
             plt.plot((2000, 8500), (2000, 8500))
-            plt.scatter(datasets_3d.DepthMapDataset.vol_unorm(vol_pred), datasets_3d.DepthMapDataset.vol_unorm(vol_real))
+            plt.scatter(datasets_3d.DepthMapDataset.vol_unorm(vol_real), datasets_3d.DepthMapDataset.vol_unorm(vol_pred))
             plt.show()
         return loss
 
@@ -57,9 +57,10 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
 
-    model = torch.load("3dvol_approx/local_stuff/ply2volume_model.pth", weights_only=False).to(device).eval()
-    evaluate(val_loader, model)
-    exit(0)
+    if False:
+        model = torch.load("3dvol_approx/local_stuff/ply2volume_model.pth", weights_only=False).to(device).eval()
+        evaluate(val_loader, model, show_plot=True)
+        exit(0)
 
     model = models_3d.RigidInvariantPointNet().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.002)
@@ -67,13 +68,15 @@ if __name__ == "__main__":
 
     best_val = None
     best_model = None
-    for epoch in range(51):
+    for epoch in range(101):
         errs_train = []
         model.train()
         for idx, batch, vol_batch in train_loader:
-            batch = batch.to(device)
             vol_batch = vol_batch.to(device)
-            r = utils_3d.to_rigid_invariant_representation(batch[:, :, 0:3])
+            batch = batch.to(device)
+            #for i in range(len(batch)):
+            #    utils_3d.visualize_point_clouds(batch[i, :, 0:3].cpu().detach().numpy())
+            r = utils_3d.to_rigid_invariant_representation(batch[:, :, 0:3], batch[:, :, 6], num_samples=None)
             volume = model(r)
                 
             loss = F.mse_loss(volume.squeeze(), vol_batch)
@@ -84,7 +87,7 @@ if __name__ == "__main__":
             optimizer.step()
         scheduler.step()
         
-        if epoch % 10 == 0 and epoch > 0:
+        if epoch % 3 == 0 and epoch > 0:
             err_val = evaluate(val_loader, model)
 
             if best_val is None or err_val < best_val:

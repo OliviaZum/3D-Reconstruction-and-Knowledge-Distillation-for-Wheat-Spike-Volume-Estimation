@@ -4,9 +4,9 @@ from pathlib import Path
 def get_real_dataset():
     split_folder = Path("split_without2024")
     base_folder = Path(r"F:\Boxes-ds\segmented_distance_depth")
-    train_dataset = datasets_3d.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_train.json", augment=True, min_seq_len=5)
+    train_dataset = datasets_3d.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_train.json")
     train_dataset.create_or_load_cache(Path(r"3dvol_approx\local_stuff\dmap_cache\dmap_cache_train.pth"), force_recompute=False)
-    val_dataset = datasets_3d.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_val.json", augment=False)
+    val_dataset = datasets_3d.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_val.json")
     val_dataset.create_or_load_cache(Path(r"3dvol_approx\local_stuff\dmap_cache\dmap_cache_val.pth"), force_recompute=False)
     return train_dataset, val_dataset
 
