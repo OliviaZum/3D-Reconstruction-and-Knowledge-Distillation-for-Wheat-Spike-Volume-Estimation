@@ -19,6 +19,19 @@ def visualize_point_clouds(points_red, points_green = None):
 
     viewer = pyrender.Viewer(scene, use_raymond_lighting=True, point_size=7)
 
+def visualize_point_cloud_single(points: np.ndarray, weights: np.ndarray):
+    scene = pyrender.Scene()
+    arr_min, arr_max = weights.min(), weights.max()
+    rcol = (weights - arr_min) / (arr_max - arr_min)
+    col = np.zeros((weights.shape[0], 3))
+    col[:, 0] = rcol
+
+    red_cloud = trimesh.points.PointCloud(points, colors=col)
+    red_mesh = pyrender.Mesh.from_points(points, colors=red_cloud.colors, )
+    scene.add(red_mesh)
+    pyrender.Viewer(scene, use_raymond_lighting=True, point_size=7)
+
+
 def chamfer_dist_slow(x1, x2):
     sub = x1.unsqueeze(1) - x2.unsqueeze(2)
     dist = (sub ** 2).sum(dim=3)
@@ -101,7 +114,7 @@ def batched_torch_hist(x: torch.Tensor, weigths, start: float, end: float, bins:
     counts = mask_eq.sum(dim=-2)
     return counts
 
-def to_rigid_invariant_representation(x: torch.Tensor, weights: torch.Tensor, num_samples = 200, bins = 10, generator = None):
+def to_rigid_invariant_representation(x: torch.Tensor, weights: torch.Tensor, num_samples = None, bins = 10, generator = None):
     with torch.no_grad():
         w = distance_sample(x, num_samples, generator)
         u = batched_torch_hist(w, weights, 0, 60, bins).to(x.dtype)
@@ -110,20 +123,12 @@ def to_rigid_invariant_representation(x: torch.Tensor, weights: torch.Tensor, nu
 
         return u
 
-"""
-def compare_rigid_invariant_wasserstein(hist_in, hist_target):
-    cdfin = hist_in.cumsum(dim=-1) # (b, n, bins)
-    cdftarget = hist_target.cumsum(dim=-1)
-    sub = torch.abs(cdfin.unsqueeze(-3) - cdftarget.unsqueeze(-2) )
-    wss = sub.sum(dim=-1) # (b, n, n) # Correct dim?
-    min1, _ = wss.min(dim=-1) # (b, n)
-    min2, _ = wss.min(dim=-2)
-    return torch.mean(min1) + torch.mean(min2)
-"""
-
-def compare_rigid_invariant_wasserstein(hist_in, hist_target):
+def compare_rigid_invariant_mse(hist_in, hist_target, average = True):
     sub = torch.square(hist_in.unsqueeze(-3) - hist_target.unsqueeze(-2) )
     wss = sub.sum(dim=-1) # (b, n, n) # Correct dim?
     min1, _ = wss.min(dim=-1) # (b, n)
     min2, _ = wss.min(dim=-2)
-    return torch.mean(min1) + torch.mean(min2)
+    if average:
+        return torch.mean(min1) + torch.mean(min2)
+    else:
+        return torch.mean(min1, dim=1) + torch.mean(min2, dim=1)

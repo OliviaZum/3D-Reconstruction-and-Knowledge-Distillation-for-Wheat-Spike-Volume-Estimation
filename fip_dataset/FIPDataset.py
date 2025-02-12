@@ -248,6 +248,16 @@ class FIPDataset:
     
     def get_segmodel(self):
         return YOLO(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\jupyter\runs\segment\train3\weights\best.pt")
+    
+    def get_box_with_max_overlap(self, box: List[int], boxes: List[Dict]):
+            max_iou = 0
+            max_box = None
+            for w in boxes:
+                iou = self.iou(box, w["box"])
+                if iou > max_iou:
+                    max_iou = iou
+                    max_box = w
+            return max_box, max_iou
 
     def precompute_image_dataset(self, base_folder: str, padding = 20, automatic_inferred=True, box_size=300, segment=True, use_depthmap=True):
         # Compute an image dataset of the individual spikes
@@ -258,15 +268,6 @@ class FIPDataset:
         csv_path = os.path.join(base_folder, "vol_mapping.csv")
         tables = []
 
-        def get_box_with_max_overlap(box: List[int], boxes: List[Dict]):
-            max_iou = 0
-            max_box = None
-            for w in boxes:
-                iou = self.iou(box, w["box"])
-                if iou > max_iou:
-                    max_iou = iou
-                    max_box = w
-            return max_box, max_iou
         if use_depthmap:
             for k, v in self.poses.items():
                 p = os.path.join(base_folder, f"{k}.json")
@@ -289,7 +290,7 @@ class FIPDataset:
                 if automatic_inferred:
                     # Create branch of images which were automatically selected. The ground truth here is the box which was selected first
                     selected = scan[scan["label_selectedon"]]
-                    max_box, max_iou = get_box_with_max_overlap(selected, precomp_json[scan["label_selectedon"]])
+                    max_box, max_iou = self.get_box_with_max_overlap(selected, precomp_json[scan["label_selectedon"]])
                     if max_iou < 0.6:
                         max_id = None
                         print(f"For the scan {scan["range_lot"]}_{scan["row_lot"]}, label {scan["label"]} no matching bounding box was found")
@@ -302,7 +303,7 @@ class FIPDataset:
                     if not automatic_inferred:
                         # Write manual images (i.e. boxes which were selected by hand)
                         if scan[cam_name]:
-                            max_box, max_iou = get_box_with_max_overlap(scan[cam_name], precomp_json[cam_name])
+                            max_box, max_iou = self.get_box_with_max_overlap(scan[cam_name], precomp_json[cam_name])
                             if max_iou < 0.6:
                                 print(f"For the scan {scan["range_lot"]}_{scan["row_lot"]}, label {scan["label"]} no matching bounding box was found")
                                 continue
@@ -323,7 +324,7 @@ class FIPDataset:
         table.to_csv(csv_path, index=False)
 
     def generate_unlabeled_spikes(self, base_folder: str, num_plants = None, num_plants_per_scan = None, min_image_per_plant = 10, 
-                                  padding: int = 20, box_size: int = 300, segment: bool = True):
+                                  padding: int = 20, box_size: int = 300, segment: bool = True, use_depthmap: bool = True):
         if os.path.exists(base_folder):
             input("The base folder exists. Press enter to overwrite...")
         os.makedirs(base_folder, exist_ok=True)
@@ -333,6 +334,21 @@ class FIPDataset:
             .agg({"image_dir": list})
         )
         scans = scans.values.tolist()
+
+        # Exclude all clusters which exist in the dataset. (It does not really make sense to include the training set in most cases. And surely it does not make sense to include the test/val set.)
+        exclude = set()
+        camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
+        for _, scan in self.spikescans.iterrows():
+            precomp_json = {}
+            for w in self.precomputed[scan["image_dir"]]:
+                precomp_json.setdefault(w["image"], [])
+                precomp_json[w["image"]].append(w)
+            for cam in camkeys:
+                if scan[cam]:
+                    max_box, max_iou = self.get_box_with_max_overlap(scan[cam], precomp_json[cam])
+                    if max_iou > 0.6:
+                        exclude.add((scan["image_dir"], max_box["cluster"]))
+
         csv_path = os.path.join(base_folder, "vol_mapping.csv")
         tables = []
         seg_model = self.get_segmodel() if segment else None
@@ -354,7 +370,9 @@ class FIPDataset:
 
                 export = {}
                 scan_plant_counter = 0
-                for _, cluster in prec.items():
+                for cluster_id, cluster in prec.items():
+                    if (scan, cluster_id) in exclude:
+                        continue
                     plant_id = f"{range_lot}_{row_lot}_{plantindex+15}"
                     export[plant_id] = {"volume": None, "boxes": []}
                     for box, i in zip(cluster, range(len(cluster))):
@@ -366,7 +384,7 @@ class FIPDataset:
                     if count_plants >= num_plants or scan_plant_counter >= num_plants_per_scan:
                         break
                         
-                table = self.export_plant_images(scan, base_folder, export, padding, box_size, seg_model, use_depthmap=False)
+                table = self.export_plant_images(scan, base_folder, export, padding, box_size, seg_model, use_depthmap=use_depthmap)
                 tables.append(table)
                 if count_plants >= num_plants:
                     break
@@ -427,6 +445,6 @@ if __name__ == "__main__":
 
     data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["pose_folder"])
     #data.spikescans.to_csv(r"F:\FIP-data\csv\fip_data_export.csv")
-    data.precompute_image_dataset(r"F:\Boxes-ds\auto_split", 20, True, segment=True, use_depthmap=False)
-    #data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled-5000", 5000, 30)
+    #data.precompute_image_dataset(r"F:\Boxes-ds\auto_split", 20, True, segment=True, use_depthmap=False)
+    data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled-5000-depth", 6000, 10)
     #data.precompute_boxes(r"F:\FIP-data\csv\precomputed_test.json", update_connections_only=True)

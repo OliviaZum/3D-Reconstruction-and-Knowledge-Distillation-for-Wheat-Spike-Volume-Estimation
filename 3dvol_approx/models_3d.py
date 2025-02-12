@@ -174,61 +174,37 @@ class RigidInvariantPointNet(nn.Module):
         self.l2 = encfun(bins + latent_size, latent_size)
         self.output = output
         if self.output == "volume":
-            self.lastlin = nn.Linear(latent_size, 1)
-        elif self.output == "latent":
-            w = list(self.l2.children())[:-1]
-            self.l2 = nn.Sequential(*w)
+            self.lastlin = nn.Sequential(
+                nn.Linear(latent_size, 1)
+            )
     
     def forward(self, x: torch.Tensor):
         x = x.permute((0, 2, 1))
         x_in = x
-        x = self.l1(x)
+        latent = self.l1(x).squeeze()
+        """
         x = x.repeat(1, 1, x_in.shape[2])
         x = torch.concat((x_in, x), dim=1)
         x = self.l2(x).squeeze()
+        """
         if self.output == "volume":
-            x = self.lastlin(x)
-        elif self.output == "latent":
-            x = x.permute(0, 2, 1)
-        return x
-
+            x = self.lastlin(latent)
+        return x, latent
+    
 class RigidInvariantCompletion(nn.Module):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, encoder, latent_size = 128, point_cloud_size_output = 1000, bins = 10, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.pnet = RigidInvariantPointNet(output="latent")
-        self.last = nn.Sequential(
-            nn.Conv1d(128 + 20, 64, 1),
+        self.encoder = encoder
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_size, 2 * latent_size),
             nn.ReLU(),
-            nn.BatchNorm1d(64),
-            nn.Conv1d(64, 128, 1),
-            nn.ReLU(),
-            nn.BatchNorm1d(128),
-            nn.Conv1d(128, 128, 1),
-            nn.ReLU(),
-            nn.BatchNorm1d(128),
-            nn.Conv1d(128, 256, 1),
-            nn.ReLU(),
-            nn.BatchNorm1d(256),
-            nn.Conv1d(256, 10, 1),
+            nn.Linear(2 * latent_size, point_cloud_size_output * bins),
         )
-        pos_enc = self.positional_encoding(200, 20)
-        self.register_buffer("pos_enc", pos_enc)
-
-    def positional_encoding(self, n: int, k: int) -> torch.Tensor:
-        positions = torch.arange(n).unsqueeze(1)  # Shape: (n, 1)
-        div_term = torch.exp(torch.arange(0, k, 2) * (-9.21) / k)
-        
-        encodings = torch.zeros(n, k)
-        encodings[:, 0::2] = torch.sin(positions * div_term)
-        encodings[:, 1::2] = torch.cos(positions * div_term)
-
-        return encodings
+        self.point_cloud_size_output = point_cloud_size_output
+        self.bins = bins
     
     def forward(self, x):
-        x = self.pnet(x)
-        pe = self.pos_enc.expand(x.shape[0], -1, -1)
-        x = torch.concat((x, pe), dim=2)
-        x = x.permute(0, 2, 1)
-        x = self.last(x)
-        x = x.permute(0, 2, 1)
-        return x
+        latent = self.encoder(x)
+        x = self.decoder(latent)
+        x = x.reshape(-1, self.point_cloud_size_output, self.bins)
+        return x, latent
