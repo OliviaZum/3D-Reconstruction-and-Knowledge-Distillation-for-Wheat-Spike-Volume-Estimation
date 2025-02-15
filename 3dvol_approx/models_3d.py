@@ -168,7 +168,7 @@ class RigidInvariantPointNet(nn.Module):
             nn.ReLU(),
             nn.BatchNorm1d(256),
             nn.Conv1d(256, x_out, 1),
-            nn.AdaptiveAvgPool1d(1),
+            #nn.AdaptiveAvgPool1d(1),
         )
         self.l1 = encfun(bins, latent_size)
         self.l2 = encfun(bins + latent_size, latent_size)
@@ -178,12 +178,17 @@ class RigidInvariantPointNet(nn.Module):
                 nn.Linear(latent_size, 1)
             )
     
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, mask: torch.Tensor):
         x = x.permute((0, 2, 1))
         x_in = x
         latent = self.l1(x).squeeze()
+        msum = mask.sum(dim=-1).unsqueeze(1)
+        msum[msum == 0] = 1
+        latent = latent.permute((0, 2, 1))
+        latent[~mask, :] = 0
+        latent = torch.sum(latent, dim=1) / msum
         """
-        x = x.repeat(1, 1, x_in.shape[2])
+        x = x.expand(-1, -1, x_in.shape[2])
         x = torch.concat((x_in, x), dim=1)
         x = self.l2(x).squeeze()
         """
@@ -208,3 +213,29 @@ class RigidInvariantCompletion(nn.Module):
         x = self.decoder(latent)
         x = x.reshape(-1, self.point_cloud_size_output, self.bins)
         return x, latent
+    
+class RigidInvariantTr(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        dim = 400
+        self.preproc = nn.Sequential(
+            nn.Linear(10, dim)
+        )
+        layer = nn.TransformerEncoderLayer(dim, 2, 800, batch_first=True)
+        self.tr = nn.TransformerEncoder(layer, 2, norm=None)
+        self.last = nn.Sequential(
+            nn.Linear(dim, dim),
+            nn.ReLU(),
+            nn.Linear(dim, 1)
+        )
+        self.cls_token = nn.Parameter(torch.randn(1, 1, dim))
+
+    def forward(self, x):
+        x = self.preproc(x)
+        x = torch.concat((x, self.cls_token.expand(x.shape[0], -1, -1)), dim=1)
+        x = self.tr(x)
+        cls = x[:, -1, :]
+        x = x[:, :-1, :].mean(dim=1) + cls
+
+        x = self.last(x)
+        return x, None

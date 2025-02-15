@@ -119,6 +119,7 @@ def to_rigid_invariant_representation(x: torch.Tensor, weights: torch.Tensor, nu
         w = distance_sample(x, num_samples, generator)
         u = batched_torch_hist(w, weights, 0, 60, bins).to(x.dtype)
         ns = u.sum(dim=2, keepdim=True)
+        ns[ns == 0] = 1
         u = u / ns
 
         return u

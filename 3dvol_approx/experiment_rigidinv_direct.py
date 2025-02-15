@@ -6,7 +6,7 @@ import copy
 import datasets_3d
 import utils_3d
 import models_3d
-import experiment_utils
+import utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -33,10 +33,11 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
     with torch.no_grad():
         vol_pred = []
         vol_real = []
-        for _, batch, vol_batch in dataloader:
+        for _, batch, vol_batch, mask in dataloader:
             batch = batch.to(device)
+            mask = mask.to(device)
             r = utils_3d.to_rigid_invariant_representation(batch[:, :, 0:3], batch[:, :, 6], num_samples=None)
-            volume, _ = model(r)
+            volume, _ = model(r, mask)
             volume = volume.cpu().squeeze()
             vol_pred.append(volume)
             vol_real.append(vol_batch)
@@ -59,12 +60,12 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
 if __name__ == "__main__":
     model_name = "real_volume_model.pth" # real_volume
     if model_name == "ply2volume_model.pth":
-        train_dataset, val_dataset = experiment_utils.get_ply_dataset()
+        train_dataset, val_dataset = utils_experiment.get_ply_dataset()
     elif model_name == "real_volume_model.pth":
-        train_dataset, val_dataset = experiment_utils.get_real_dataset()
+        train_dataset, val_dataset = utils_experiment.get_real_dataset(force_recompute=False)
     else:
         assert False
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
 
 
@@ -74,6 +75,7 @@ if __name__ == "__main__":
         exit(0)
 
     model = models_3d.RigidInvariantPointNet(bins=10).to(device)
+    #model = models_3d.RigidInvariantTr().to(device)
 
     """
     Using a pretrained model
@@ -92,20 +94,21 @@ if __name__ == "__main__":
     """
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.002)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 15, 0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, 0.5)
 
     best_val = None
     best_model = None
-    for epoch in range(30):
+    for epoch in range(40):
         errs_train = []
         model.train()
-        for idx, batch, vol_batch in train_loader:
+        for idx, batch, vol_batch, mask in train_loader:
             vol_batch = vol_batch.to(device)
+            mask = mask.to(device)
             batch = batch.to(device)
             #for i in range(len(batch)):
             #    utils_3d.visualize_point_clouds(batch[i, :, 0:3].cpu().detach().numpy())
             r = utils_3d.to_rigid_invariant_representation(batch[:, :, 0:3], batch[:, :, 6], num_samples=None)
-            volume, _ = model(r)
+            volume, _ = model(r, mask)
                 
             #loss = ((volume.squeeze() - vol_batch) ** 2 * scale).mean()
             loss = ((volume.squeeze() - vol_batch) ** 2).mean()
@@ -116,12 +119,11 @@ if __name__ == "__main__":
             optimizer.step()
         scheduler.step()
         
-        if epoch % 3 == 0 and epoch > 0:
-            err_val = evaluate(val_loader, model)
+        err_val = evaluate(val_loader, model)
 
-            if best_val is None or err_val < best_val:
-                best_val = err_val
-                best_model = copy.deepcopy(model).cpu()
+        if best_val is None or err_val < best_val:
+            best_val = err_val
+            best_model = copy.deepcopy(model).cpu()
 
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 

@@ -7,7 +7,7 @@ def get_real_dataset(force_recompute = False):
     train_dataset = datasets_3d.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_train.json")
     train_dataset.create_or_load_cache(Path(r"3dvol_approx\local_stuff\dmap_cache\dmap_cache_train.pth"), force_recompute=force_recompute)
     val_dataset = datasets_3d.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_val.json")
-    val_dataset.create_or_load_cache(Path(r"3dvol_approx\local_stuff\dmap_cache\dmap_cache_val.pth"), force_recompute=False)
+    val_dataset.create_or_load_cache(Path(r"3dvol_approx\local_stuff\dmap_cache\dmap_cache_val.pth"), force_recompute=force_recompute)
     #test_dataset = datasets_3d.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_test.json")
     return train_dataset, val_dataset
 

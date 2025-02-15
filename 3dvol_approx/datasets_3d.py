@@ -194,6 +194,9 @@ class DepthMapDataset(Dataset):
     def vol_unorm(v):
         return v * 1000 + 4500
     
+    def set_errors(self, errors: torch.Tensor):
+        self.plant_mapping["error_estimate"] = errors.numpy()
+    
     def create_or_load_cache(self, path: Path, force_recompute = False):
         if path.exists() and not force_recompute:
             self.cache = torch.load(path, weights_only=True)
@@ -202,8 +205,8 @@ class DepthMapDataset(Dataset):
             for idx in tqdm.tqdm(range(len(self.plant_mapping)), "Creating cache"):
                 row = self.plant_mapping.iloc[[idx]]
                 rows = row.explode(column=["depth_name", "pose_file", "pose_key", "distance", "corner"])
-                points, normals = self.reprojector.reproject_images_3d(rows)
-                points, normals, weight = self.reprojector.voxelize(points, normals, weight_sorted=True)
+                points, normals, weight = self.reprojector.reproject_images_3d(rows, voxel_size=0.002)
+                #points, normals, weight = self.reprojector.voxelize(points, normals, weight_sorted=True)
                 data = torch.tensor(np.concatenate((points, normals, np.expand_dims(weight, 1)), axis=1), dtype=torch.float32)
                 data[:, 0:3] = (data[:, 0:3] - torch.mean(data[:, 0:3], dim=0, keepdim=True)) * 1000
 
@@ -218,9 +221,14 @@ class DepthMapDataset(Dataset):
         else:
             data = self.cache[index]
 
-        vol = torch.tensor(DepthMapDataset.vol_norm(self.plant_mapping.loc[index, "volume"]), dtype=torch.float32)
+        if "error_estimate" in self.plant_mapping.columns:
+            vol = torch.tensor([DepthMapDataset.vol_norm(self.plant_mapping.loc[index, "volume"]), self.plant_mapping.loc[index, "error_estimate"]], dtype=torch.float32)
+        else:
+            vol = torch.tensor(DepthMapDataset.vol_norm(self.plant_mapping.loc[index, "volume"]), dtype=torch.float32)
+
+        mask = ~(data == 0).all(dim=1)
             
-        return index, data, vol#, self.loss_scaling.get_weight(index)
+        return index, data, vol, mask
     
 
 class Combined3dDataset(Dataset):

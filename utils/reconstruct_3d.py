@@ -997,21 +997,6 @@ def reconstruct_3d(openmvg_path: Path,
         np.savez_compressed(out_dir / f"depths", **depths)
         shutil.move(mvs_path / "mvs_dense.ply", out_dir)
 
-        """
-        # Cleanup folder (It is so verbose to absolutely avoid deleting the wrong stuff)
-        for file in temp_dir.rglob("*"):
-            if file.is_file() and (file.name == "sfm_data.json" or file.suffix in [".log", ".dmap", ".mvs"]):
-                file.unlink()
-        
-        for folder_name in ["mvs/images", "images"]:
-            folder = temp_dir / folder_name
-            if folder.exists() and folder.is_dir():
-                for file in folder.rglob("*"):
-                    if file.suffix in [".jpg", ".png"]:
-                        file.unlink()
-        (temp_dir / "mvs/images").rmdir()
-        (temp_dir / "mvs").rmdir()
-        """
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="3D Reconstruction with OpenMVG and OpenMVS")

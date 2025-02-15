@@ -126,7 +126,7 @@ class ReprojectSpike3d:
         data = np.concatenate((v, n, np.expand_dims(u, 1)), axis=1)
         return data
 
-    def reproject_images_3d(self, rows: pd.DataFrame):
+    def reproject_images_3d(self, rows: pd.DataFrame, voxel_size = 0.001):
         points = []
         normals = []
         for _, row in rows.iterrows():
@@ -136,6 +136,34 @@ class ReprojectSpike3d:
 
         points = np.concatenate(points, axis=0)
         normals = np.concatenate(normals, axis=0)
+        points, normals, weights = self.voxelize(points, normals, voxel_size, weight_sorted=True)
         
-        return points, normals
+        return points, normals, weights
 
+    """
+    Kept since cool. Filters points based on image correspondence, weights based on all points falling
+    within a voxel. Works worse than simply weighting voxels based on #points inside (a tiny bit)
+
+    def reproject_images_3d(self, rows: pd.DataFrame, voxel_size = 0.001, min_view = 3):
+        points = []
+        normals = []
+        sweights = []
+        for _, row in rows.iterrows():
+            p, normal = self.reproject_to_3d(row)
+            p, normal, sweight = self.voxelize(p, normal, voxel_size)
+            points.append(p)
+            normals.append(normal)
+            sweights.append(sweight)
+
+        points = np.concatenate(points, axis=0)
+        normals = np.concatenate(normals, axis=0)
+        sweights = np.concatenate(sweights, axis=0)
+        _, _, nviews = self.voxelize(points, normals, voxel_size, weight_sorted=False, point_weights=None)
+        points, normals, weights = self.voxelize(points, normals, voxel_size, weight_sorted=False, point_weights=sweights)
+        points = points[nviews >= min_view]
+        normals = normals[nviews >= min_view]
+        weights = weights[nviews >= min_view]
+        points, normals, weights = self.voxelize(points, normals, voxel_size, weight_sorted=True, point_weights=weights)
+        
+        return points, normals, weights
+    """
