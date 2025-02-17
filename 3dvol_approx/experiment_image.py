@@ -1,0 +1,141 @@
+import utils_experiment
+from torch.utils.data import DataLoader
+from torch import nn
+import numpy as np
+import copy
+import datasets_3d
+import utils_3d
+import models_3d
+import utils_experiment
+from torch.nn import functional as F
+import matplotlib.pyplot as plt
+import pandas as pd
+import torch
+
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should_print=True):
+    model = model.eval()
+    with torch.no_grad():
+        vol_pred = []
+        vol_real = []
+        weights = []
+        for images, plant, imagemask, label, weight in dataloader:
+            images = images.to(device)
+            imagemask = imagemask.to(device)
+            
+            volume = model(images, imagemask)
+            volume = volume.cpu().squeeze()
+            vol_pred.append(volume)
+            vol_real.append(label)
+            weights.append(weight)
+        vol_pred = torch.concat(vol_pred)
+        vol_real = torch.concat(vol_real)
+        weights = torch.concat(weights)
+
+        l = {}
+        l["MAE"] = F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real)).item()
+        l["Correlation"] = np.corrcoef(vol_real, vol_pred)[0, 1]
+        l["Loss"] = ((vol_pred - vol_real) ** 2 * weights).mean().item()
+        A = np.vstack([vol_real, np.ones(len(vol_real))]).T
+        linregcoeff, _, _, _ = np.linalg.lstsq(A, vol_pred, rcond=None)
+        l["Steepness"] = linregcoeff[0]
+        if should_print:
+             print(l)
+        if show_plot:
+            plt.plot((2000, 8500), (2000, 8500))
+            plt.scatter(datasets_3d.vol_unorm(vol_real), datasets_3d.vol_unorm(vol_pred))
+            plt.show()
+        
+        return l
+
+def warmup_multiplicative_schedule(e):
+     return 0.01 if e < 40 else min(1/ (e * 0.03), 1)
+
+class SingleMlpMseLoss(nn.Module):
+        def __init__(self, weights = (1, 0.5, 0.3, 0.05), *args, **kwargs):
+              super().__init__(*args, **kwargs)
+              self.weights = weights
+
+        def conf_err_fun(self, err, conf):
+             e = err - conf
+             mask = e < 0
+             e[mask] = torch.abs(e[mask]) * 0.1
+             e[~mask] = e[~mask] ** 2
+             return e
+
+        def forward(self, input: torch.Tensor, target: torch.Tensor, loss_scale: torch.Tensor) -> torch.Tensor:
+            input, conf, tpred, tconf = input
+            mask = input != 0
+            target = target.unsqueeze(1)
+            loss_scale = loss_scale.unsqueeze(1)
+            err_single_img = ((input - target) ** 2)
+            conf_single_img = self.conf_err_fun(err_single_img, conf)
+            err_single_img = (err_single_img * loss_scale)[mask]
+            conf_single_img = (conf_single_img * loss_scale)[mask]
+            err_combined = (tpred - target) ** 2 * loss_scale
+            conf_combined = self.conf_err_fun(err_combined, tconf) * loss_scale
+            wsi, wci, wec, wcc = self.weights
+            return err_single_img.mean() * wsi + conf_single_img.mean() * wci + err_combined.mean() * wec + conf_combined.mean() * wcc
+
+def is_better_model(stats, best_stats):
+    #corr_improve = stats["Correlation"] - best_stats["Correlation"]
+    #mae_improve =  best_stats["MAE"] - stats["MAE"]
+    #steep_improve = abs(1 - best_stats["Steepness"]) - abs(1 - stats["Steepness"])
+    #rate = corr_improve * (50 / 0.03) + mae_improve + steep_improve * (70 / 0.1)
+    rate = best_stats["Loss"] - stats["Loss"]
+
+    return rate > 0 or torch.isnan(torch.tensor(rate))
+
+if __name__ == "__main__":
+    torch.random.manual_seed(42)
+    torch.cuda.manual_seed_all(42)
+    train_dataset, val_dataset, test_dataset = utils_experiment.get_image_dataset()
+
+    train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, collate_fn=datasets_3d.img_validation_collate_fn)
+    test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False, collate_fn=datasets_3d.img_validation_collate_fn)
+
+    model_name = "image_model.pth"
+
+    if True:
+        model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
+        evaluate(test_loader, model, show_plot=True)
+        exit(0)
+
+    model = models_3d.SingleMlp().to(device)
+    lossfn = SingleMlpMseLoss()
+    
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    scheduler = scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warmup_multiplicative_schedule)
+
+    best_val = None
+    best_model = None
+    for epoch in range(800):
+        errs_train = []
+        model.train()
+        for images, label, imagemask, weight in train_loader:
+            images, label, imagemask, weight = [t.to(device) for t in [images, label, imagemask, weight]]
+
+            x = model(images, imagemask)
+                
+            #loss = ((volume.squeeze() - label) ** 2).mean()
+            loss = lossfn(x, label, weight)
+            errs_train.append(loss.item())
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        scheduler.step()
+        
+        err_val = evaluate(val_loader, model)
+
+        if best_val is None or is_better_model(err_val, best_val):
+            best_val = err_val
+            best_model = copy.deepcopy(model).cpu()
+            best_epoch = epoch
+
+        print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
+
+    print(f"\n Best stats {best_val}")
+    torch.save(model, f"3dvol_approx/local_stuff/{model_name}")

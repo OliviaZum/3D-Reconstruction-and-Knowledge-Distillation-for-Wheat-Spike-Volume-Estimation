@@ -33,19 +33,22 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
     with torch.no_grad():
         vol_pred = []
         vol_real = []
-        for _, batch, vol_batch, mask in dataloader:
+        weights = []
+        for _, batch, vol_batch, mask, weight in dataloader:
             batch = batch.to(device)
             mask = mask.to(device)
             r = utils_3d.to_rigid_invariant_representation(batch[:, :, 0:3], batch[:, :, 6], num_samples=None)
-            volume, _ = model(r, mask)
+            volume = model(r, mask)
             volume = volume.cpu().squeeze()
             vol_pred.append(volume)
             vol_real.append(vol_batch)
+            weights.append(weight)
         vol_pred = torch.concat(vol_pred)
         vol_real = torch.concat(vol_real)
+        weights = torch.concat(weights)
 
-        loss = F.mse_loss(vol_pred, vol_real)
-        print(f"Val MAE: {F.l1_loss(datasets_3d.DepthMapDataset.vol_unorm(vol_pred), datasets_3d.DepthMapDataset.vol_unorm(vol_real))}")
+        loss = ((vol_pred - vol_real) ** 2 * weights).mean().item()
+        print(f"Val MAE: {F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real))}")
         print(f"Val Corr: {np.corrcoef(vol_real, vol_pred)[0, 1]}")
         print(f"Val Loss: {loss}")
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
@@ -53,25 +56,29 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         print(f"Steepness: {linregcoeff[0]}")
         if show_plot:
             plt.plot((2000, 8500), (2000, 8500))
-            plt.scatter(datasets_3d.DepthMapDataset.vol_unorm(vol_real), datasets_3d.DepthMapDataset.vol_unorm(vol_pred))
+            plt.scatter(datasets_3d.vol_unorm(vol_real), datasets_3d.vol_unorm(vol_pred))
             plt.show()
         return loss
 
 if __name__ == "__main__":
+    torch.random.manual_seed(42)
+    torch.cuda.manual_seed_all(42)
+    
     model_name = "real_volume_model.pth" # real_volume
     if model_name == "ply2volume_model.pth":
         train_dataset, val_dataset = utils_experiment.get_ply_dataset()
     elif model_name == "real_volume_model.pth":
-        train_dataset, val_dataset = utils_experiment.get_real_dataset(force_recompute=False)
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_real_dataset3d(force_recompute=False)
     else:
         assert False
     train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
 
-    if False:
+    if True:
         model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
-        evaluate(val_loader, model, show_plot=True)
+        evaluate(test_loader, model, show_plot=True)
         exit(0)
 
     model = models_3d.RigidInvariantPointNet(bins=10).to(device)
@@ -94,24 +101,24 @@ if __name__ == "__main__":
     """
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.002)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, 0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, 0.5)
 
     best_val = None
     best_model = None
-    for epoch in range(40):
+    for epoch in range(150):
         errs_train = []
         model.train()
-        for idx, batch, vol_batch, mask in train_loader:
+        for idx, batch, vol_batch, mask, weight in train_loader:
             vol_batch = vol_batch.to(device)
             mask = mask.to(device)
             batch = batch.to(device)
-            #for i in range(len(batch)):
-            #    utils_3d.visualize_point_clouds(batch[i, :, 0:3].cpu().detach().numpy())
+            weight = weight.to(device)
+            
             r = utils_3d.to_rigid_invariant_representation(batch[:, :, 0:3], batch[:, :, 6], num_samples=None)
-            volume, _ = model(r, mask)
+            volume = model(r, mask)
                 
             #loss = ((volume.squeeze() - vol_batch) ** 2 * scale).mean()
-            loss = ((volume.squeeze() - vol_batch) ** 2).mean()
+            loss = ((volume.squeeze() - vol_batch) ** 2 * weight).mean()
             errs_train.append(loss.item())
 
             optimizer.zero_grad()
@@ -127,4 +134,4 @@ if __name__ == "__main__":
 
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 
-    torch.save(model, f"3dvol_approx/local_stuff/{model_name}")
+    torch.save(best_model, f"3dvol_approx/local_stuff/{model_name}")

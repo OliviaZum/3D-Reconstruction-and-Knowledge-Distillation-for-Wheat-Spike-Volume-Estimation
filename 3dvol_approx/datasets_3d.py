@@ -7,6 +7,19 @@ import trimesh
 import pandas as pd
 import numpy as np
 import tqdm
+import hashlib
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
+import torch
+import warnings
+
+from torch.utils.data import Dataset, DataLoader, Sampler
+from torchvision.io import read_image
+from torchvision.transforms import v2, functional as FT
+from torch import nn
+from pathlib import Path
+from typing import List, Literal, Tuple
 
 def random_rigid(data, translate = True):
     axis = np.random.normal(size=3)
@@ -24,7 +37,13 @@ def random_rigid(data, translate = True):
     data[:, 3:6] = torch.matmul(rotation_matrix, data[:, 3:6].T).T
     return data
 
-class EqualBinSampler:
+def vol_norm(v):
+        return (v - 4763) / 1000
+    
+def vol_unorm(v):
+    return v * 1000 + 4763
+
+class EqualBinSampler(Sampler):
     """
     Creates bins with at least min_num_samples (rather exactly min_num_samples if possible),
     and samples them with equal probability. Can be used as sampler or to get the weight of a sample
@@ -169,7 +188,7 @@ class PlyDataset(Dataset):
             samples = self.data[idx]
         else:
             raise NotImplemented
-        return idx, samples, torch.tensor(DepthMapDataset.vol_norm(self.plant_mapping.loc[idx, "volume"]), dtype=torch.float32)
+        return idx, samples, torch.tensor(vol_norm(self.plant_mapping.loc[idx, "volume"]), dtype=torch.float32)
     
 class DepthMapDataset(Dataset):
     def __init__(self, base_folder: Path | str, plant_mapping_path: Path | str, point_cloud_size: int = 1000):
@@ -177,22 +196,12 @@ class DepthMapDataset(Dataset):
         plant_mapping = pd.read_json(plant_mapping_path, orient='index', convert_axes=False, dtype={"plant_id" : str})
         plant_mapping = plant_mapping.rename_axis("plant_id")
         self.plant_mapping = plant_mapping.reset_index()
-        # Catastrophic failure in segmentation for this one
-        self.plant_mapping = self.plant_mapping.loc[self.plant_mapping["plant_id"] != "17_10_6", :].reset_index()
         self.reprojector = reproject_spike_3d.ReprojectSpike3d(base_folder, self.plant_mapping["pose_file"].explode(True).unique())
         self.cache = None
-        #self.loss_scaling = EqualBinSampler(self.plant_mapping["volume"])
+        self.loss_scaling = EqualBinSampler(self.plant_mapping["volume"])
 
     def __len__(self):
         return len(self.plant_mapping)
-    
-    @staticmethod
-    def vol_norm(v):
-        return (v - 4500) / 1000
-    
-    @staticmethod
-    def vol_unorm(v):
-        return v * 1000 + 4500
     
     def set_errors(self, errors: torch.Tensor):
         self.plant_mapping["error_estimate"] = errors.numpy()
@@ -206,7 +215,6 @@ class DepthMapDataset(Dataset):
                 row = self.plant_mapping.iloc[[idx]]
                 rows = row.explode(column=["depth_name", "pose_file", "pose_key", "distance", "corner"])
                 points, normals, weight = self.reprojector.reproject_images_3d(rows, voxel_size=0.002)
-                #points, normals, weight = self.reprojector.voxelize(points, normals, weight_sorted=True)
                 data = torch.tensor(np.concatenate((points, normals, np.expand_dims(weight, 1)), axis=1), dtype=torch.float32)
                 data[:, 0:3] = (data[:, 0:3] - torch.mean(data[:, 0:3], dim=0, keepdim=True)) * 1000
 
@@ -222,13 +230,14 @@ class DepthMapDataset(Dataset):
             data = self.cache[index]
 
         if "error_estimate" in self.plant_mapping.columns:
-            vol = torch.tensor([DepthMapDataset.vol_norm(self.plant_mapping.loc[index, "volume"]), self.plant_mapping.loc[index, "error_estimate"]], dtype=torch.float32)
+            vol = torch.tensor([vol_norm(self.plant_mapping.loc[index, "volume"]), self.plant_mapping.loc[index, "error_estimate"]], dtype=torch.float32)
         else:
-            vol = torch.tensor(DepthMapDataset.vol_norm(self.plant_mapping.loc[index, "volume"]), dtype=torch.float32)
+            vol = torch.tensor(vol_norm(self.plant_mapping.loc[index, "volume"]), dtype=torch.float32)
 
         mask = ~(data == 0).all(dim=1)
-            
-        return index, data, vol, mask
+        weight = torch.tensor(self.loss_scaling.get_weight(index), dtype=torch.float32)
+
+        return index, data, vol, mask, weight
     
 
 class Combined3dDataset(Dataset):
@@ -248,4 +257,374 @@ class Combined3dDataset(Dataset):
         _, data_ply, vol = self.ply_dataset.__getitem__(index)
         _, data_depthmap, _ = self.depthmap_dataset.__getitem__(dmidx)
         return index, data_ply, data_depthmap, vol
+
+class PlantDataError(Exception):
+    """Error meant to point at missing data"""
+    pass
+
+def extract_image_features(pretrained_model, features, mask):
+    """
+    Apply pretrained model to images stored in features.
+    """
+    with torch.no_grad():
+        features = pretrained_model(features[~mask])
+        features = nn.utils.rnn.pad_sequence(
+            features.split((~mask).sum(dim=1).tolist()),
+            batch_first=True,
+        )
+        mask = ~(features.any(dim=-1))
+        return features, mask
+
+def resize_pad_transform(x):
+        w, h = x.shape[-1], x.shape[-2]
+        if w > h:
+            n_w = 224
+            n_h = int(224 * h / w)
+        else:
+            n_h = 224
+            n_w = int(224 * w / h)
+
+        x = FT.resize(x, (n_h, n_w), antialias=True)
+        x = FT.pad(x, (0, 0, 224 - n_w, 224 - n_h))
+        return x
+
+def get_transform(train: bool) -> List:
+     start = [v2.Lambda(resize_pad_transform)]
+     augmentation = [
+          v2.RandomRotation(180, v2.InterpolationMode.BILINEAR),
+     ] 
+     end = [v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]
+     return start + augmentation + end if train else start + end
+
+class SingleImgDataset(Dataset):
+    """
+    Returns all the images in a MultiImageTrainDataset.
+    Mainly used to create cache in MultiImageTrainDataset.
+    No inheritance, since then the parent would use its own child, which is conceptually weird.
+    """
+    def __init__(self, parent_multiImageTrainDataset) -> None:
+        super().__init__()
+        self.index_to_plant_and_index = {}
+        self.parent_ds = parent_multiImageTrainDataset
+        key = 0
+        # Map index to a tuple of (plant_id, image index)
+        for plant_index in range(parent_multiImageTrainDataset.plant_mapping.shape[0]):
+            image_list : List[str] = parent_multiImageTrainDataset.plant_mapping.loc[plant_index, 'images']
+            for index, _ in enumerate(image_list):
+                self.index_to_plant_and_index[key] = (plant_index, index)
+                key += 1
+
+    def __len__(self):
+        return len(self.index_to_plant_and_index)
+    
+    def __getitem__(self, index):
+        w = self.index_to_plant_and_index[index]
+        return self.parent_ds._get_image(*w)
+
+class MultiImageTrainDataset(Dataset):
+
+    def __init__(self,
+                 image_dir : Path | str,
+                 plant_mapping_path : Path | str,
+                 transform: list,
+                 value_column : str,
+                 max_seq_len : int,
+                 min_seq_len : int,
+                 random_seq_len : bool = True,
+                 random_generator : np.random.Generator = np.random.default_rng(10),
+                 dtype : torch.dtype = torch.float32,
+                 validation_mode = False):
+        """Image loader with lazy image loading.
         
+        For image to be recognized, it must exist in the directory
+        under the name given in the plant_mapping file
+        file in value_mapping_path.
+        
+        Downsizes images to 256 times 256 as resnet only works
+        Images are. Herefore we first do a center crop
+        so it is advantageous to place the desired object in the middle
+        of the image. After the corping image gets rescaled.
+        
+        Randomly rotates the image if `rotate` true is given.
+        This can be done for exaple in combination with n_duplicates
+        to 'upsample' dataset.
+        
+
+        Args:
+            image_dir (Path | str): image direcotry containing images
+            plant_mapping (Dataframe): dataframe file with columns: value_column and `images`
+            containing a list of images for the index, which is the `plant_id`
+            value_column (str): Name of the column to be read for the value
+            rotate (bool, optional): Flag indicating whether or not to rotate images. Defaults to False.
+            transform (list): Model specific transform settings which should include crop, normalize and resize.
+            dtype (dtype, optional): dtype of image. Defaults to float32.
+        
+        Raises:
+            FileExistsError: If Image directory does not exists
+        """
+        image_dir = Path(image_dir)
+        plant_mapping_path = Path(plant_mapping_path)
+
+        self.max_seq_len = max_seq_len
+        self.min_seq_len = np.maximum(min_seq_len, 1)
+        if self.min_seq_len > self.max_seq_len:
+            raise IndexError(("Chosen min seqence lenght is larger than chosen "
+                             "Max seqence lenght in MiltiImageTrainDataset."))
+        self.random_sequence_len = random_seq_len
+        
+        self.image_dir = Path(image_dir)
+        self.value_column = value_column
+        self.dtype = dtype
+        self.generator = random_generator
+        self.transform = v2.Compose(transform)
+        self.validation_mode = validation_mode
+
+        # fix torch seed for image rotations
+        torch.manual_seed(self.generator.integers(0,1000000))
+
+        plant_mapping = pd.read_json(plant_mapping_path, orient='index', convert_axes=False, dtype={"plant_id" : str})
+        plant_mapping = plant_mapping.rename_axis("plant_id")
+        self.plant_mapping = plant_mapping.reset_index()
+        self.cache = None
+        self.no_label_scale = 1.0
+        self.loss_scaler = EqualBinSampler(self.plant_mapping.loc[:, "volume"])
+
+        if not image_dir.exists() or not image_dir.is_dir():
+            raise FileExistsError(f"Image directory, {str(image_dir)}, does not exist.")
+
+    def __len__(self):
+        return self.plant_mapping.shape[0]
+
+    def _get_image(self, plant_idx : int, image_idx : int) -> torch.Tensor:
+        """Loads image and transforms it.
+
+        Args:
+            plant_idx (int): Chosen plant index.
+            image_idx (int): Chosen image index.
+
+        Raises:
+            Index_Error: For indexes out of bounds the existing plants / images corresponding to the plant
+            PlantDataError: No images are found in the image folder which correspond to the plant.
+            
+        Warnings:
+            If the chosen image does not exist in `image_dir` the next existing image
+            corresponding to the given `plant_idx` will be chosen
+
+        Returns:
+            torch.Tensor: Transformed image as torch tensor of size (3 x 256 x 256).
+        """
+        image_list : List[str] = self.plant_mapping.loc[plant_idx, 'images']
+        if 0 > plant_idx or plant_idx >= self.__len__():
+            raise IndexError(f"Plant index {image_idx} out of boundes [0, {self.__len__()}.")
+        if 0 > image_idx or image_idx >= len(image_list):
+            raise IndexError(f"Image index {image_idx} out of boundes [0, {len(image_list)}) for {image_list}.")
+        
+        if self.cache:
+            w = self.cache["index"][(plant_idx, image_idx)]
+            feature = self.cache["features"][w, :, self.generator.integers(0, self.cache["features"].shape[2])]
+            return feature
+        else:
+
+            image_name = image_list[image_idx]
+            image_path = self.image_dir / image_name
+
+            if not image_path.exists():
+                raise PlantDataError(f"{image_path} listed in  {image_list} for plant {plant_idx} does not exist.")
+            
+            # read image and transform to floating point type
+            torch_image = read_image(str(image_path))
+
+            distance = self.plant_mapping.loc[plant_idx, "distance"][image_idx]
+            orig_size = torch_image.shape[-2:]
+            factor = distance / 3.2
+            torch_image = FT.resize(torch_image, (int(torch_image.shape[-2] * factor), int(torch_image.shape[-1] * factor)), antialias=True)
+            if factor <= 1:
+                def l2(tin):
+                    t = tin // 2
+                    if 2 * t == tin:
+                        l, r = t, t
+                    else:
+                        l, r = t, t+1
+                    return l, r
+                dw, dh = orig_size[-2] - torch_image.shape[-2], orig_size[-1] - torch_image.shape[-1]
+                wl, wr = l2(dw)
+                hl, hr = l2(dh)
+                torch_image = FT.pad(torch_image, [wl, hl, wr, hr])
+            else:
+                torch_image = FT.center_crop(torch_image, orig_size)
+
+            torch_image = self.transform(torch_image)
+            #plt.imshow(torch_image.permute(2, 1, 0).numpy())
+            #plt.show()
+
+            return torch_image
+        
+    def update_labels(self):
+        """
+        Should be called after any label has been changed
+        """
+        #self.loss_scaler = EqualBinSampler(self.plant_mapping.loc[:, "volume"])
+        df = self.plant_mapping.copy(True)
+        df.loc[df["labeled"], "volume"] = pd.NA
+        self.no_label_vol_scaler = EqualBinSampler(df["volume"])
+        pass
+    
+    def _get_random_image_sequence(self, plant_idx : int) -> npt.NDArray:
+        """Generate a random image subset corresponding the plant
+
+        Args:
+            plant_idx (int): Index of the plant
+
+        Returns:
+            npt.NDArray: Array with plant indices
+        """
+        image_list = self.plant_mapping.loc[plant_idx,'images']
+        image_indexes = np.arange(len(image_list))
+        n_images = len(image_indexes)
+        
+        # make sure to choose a valid number of images
+        max_seq_len = np.minimum(self.max_seq_len, n_images)
+        min_seq_len = np.minimum(self.min_seq_len, max_seq_len)
+        
+        if min_seq_len < self.min_seq_len:
+            warning_string = (f"The chosen min sequence length of {self.min_seq_len} is "
+                           f"larger than the available max seqence lenght {max_seq_len} items.")
+            warnings.warn(UserWarning(warning_string))
+            
+        if self.random_sequence_len and min_seq_len < max_seq_len:
+            num_out = self.generator.integers(min_seq_len, max_seq_len + 1)
+        else:
+            num_out = max_seq_len
+
+        image_index_choice = self.generator.choice(image_indexes, size=num_out, replace=False)
+        img_names = [image_list[i] for i in image_index_choice]
+        return image_index_choice, img_names
+
+    def create_or_load_cache(self, pretrained_model: nn.Module, cache_path: Path | str, n_duplicates: int, device = 'cuda' if torch.cuda.is_available() else 'cpu',
+                             num_workers: int = 2):
+        
+        if n_duplicates == 0:
+            return
+        cache_path = Path(cache_path)
+        
+        # Create hash for current setup
+        plant_mapping = self.plant_mapping.map(lambda x : tuple(x) if isinstance(x,list) else x)
+        hash_ = hashlib.sha256(pd.util.hash_pandas_object(plant_mapping, index=True).values)
+        pretrained_model.train()
+        pretrained_model = pretrained_model.to('cpu')
+        hash_.update(str(pretrained_model).encode())
+        hash_.update(str(pretrained_model.state_dict()).encode())
+        hash_list = [self.image_dir, n_duplicates, self.transform]
+        for x in hash_list:
+            hash_.update(str(x).encode()) 
+        hash_ = hash_.hexdigest()
+
+        # Check if cache is generated
+        generate_embeddings = True
+        if cache_path.is_file():
+            dict_ = torch.load(cache_path, weights_only=True)
+            if 'hash' in dict_.keys():
+                generate_embeddings = dict_['hash'] != hash_
+
+        if generate_embeddings:
+            self.cache = None # Cache needs to be disabled so dataloader loads actual images
+            ds = SingleImgDataset(self)
+            dataloader = DataLoader(ds, 500, False, pin_memory=True, pin_memory_device=device, num_workers=num_workers, persistent_workers=(n_duplicates > 1 and num_workers > 0))
+            pretrained_model.eval()
+            pretrained_model = pretrained_model.to(device)
+
+            with torch.no_grad():
+                all_features = []
+                for _ in range(n_duplicates):
+                    epoch_features = []
+                    for img in tqdm.tqdm(dataloader, f"Creating {cache_path}, #duplicates {n_duplicates}"):
+                            img = img.to(device)
+                            features = pretrained_model(img)
+                            epoch_features.append(features.cpu())
+                    epoch_features = torch.concat(epoch_features, dim=0)
+                    all_features.append(epoch_features)
+                all_features = torch.stack(all_features, dim=2)
+            
+            self.cache = {"features": all_features, "index": {y: x for x, y in ds.index_to_plant_and_index.items()}, "hash": hash_}
+            torch.save(self.cache, cache_path)
+        else:
+            self.cache = dict_
+                            
+    def __getitem__(self, idx : int) -> Tuple[torch.Tensor, float]:
+        """Get a training seqence of images for one plant
+
+        Args:
+            idx (int): plant index
+
+        Returns:
+            Tuple[torch.Tensor, float, torch.Tensor]: torch image seqence (self.max_seq_len x 3 x 256 x 256),
+                scaled and shifted output label, unused mask (self.max_seq_len) (true if seqence element is not used)
+        """
+        
+        # chose image indices for the given plant index
+        # consider the random number of images as well
+
+        image_index_choice, image_names = self._get_random_image_sequence(idx)
+        num_out = image_index_choice.shape[0]
+
+        key_padding_mask = torch.zeros(self.max_seq_len, dtype=bool)
+        key_padding_mask[num_out:] = True # mask all entries not to be considered
+        
+        # load images
+        torch_image_list = []
+        for image_idx in image_index_choice:
+            torch_image = self._get_image(plant_idx=idx, image_idx=image_idx)
+            torch_image_list.append(torch_image)
+        
+        torch_images_ = torch.stack(torch_image_list,dim=0)
+        torch_images = torch.zeros((self.max_seq_len,*tuple(torch_images_.shape[1:])),dtype=torch_images_.dtype)
+        torch_images[:num_out] = torch_images_
+        
+        plant: pd.Series = self.plant_mapping.loc[idx,]
+        out_label = plant[self.value_column]
+        out_label = torch.tensor(vol_norm(out_label), dtype=self.dtype)
+        if "labeled" in self.plant_mapping.columns and not plant["labeled"]:
+            #loss_weight = self.no_label_scale * self.no_label_vol_scaler.get_weight(idx)
+            loss_weight = self.no_label_scale
+        else:
+            loss_weight = self.loss_scaler.get_weight(idx)
+        loss_weight = torch.tensor(loss_weight, dtype=self.dtype)
+
+        if self.validation_mode:
+            plant["images"] = image_names
+            return torch_images, plant, key_padding_mask, out_label, loss_weight
+        else:
+            return torch_images, out_label, key_padding_mask, loss_weight
+
+def img_validation_collate_fn(batch : List[Tuple[torch.Tensor, pd.Series, torch.Tensor, torch.Tensor]]):
+    tensors, dict_tuple, masks, labels, weights = zip(*batch)
+    tensors = torch.stack(tensors=tensors, dim=0)
+    masks = torch.stack(tensors=masks, dim=0)
+    labels = torch.stack(tensors=labels, dim=0)
+    weights = torch.stack(weights)
+    return tensors, list(dict_tuple), masks, labels, weights
+
+    
+class Image3dCombidataset(Dataset):
+    def __init__(self, image_dataset: MultiImageTrainDataset, point_dataset: DepthMapDataset):
+        super().__init__()
+        self.image_dataset = image_dataset
+        self.point_dataset = point_dataset
+        self.validation_mode = image_dataset.validation_mode
+
+        assert (self.point_dataset.plant_mapping["plant_id"] == self.image_dataset.plant_mapping["plant_id"]).all(), "Dataset have to be equal"
+
+    def __len__(self):
+        return len(self.image_dataset)
+    
+    def __getitem__(self, index):
+        if self.validation_mode:
+            #torch_images, plant, key_padding_mask, out_label, loss_weight
+            images, _, imagemask, label, _ = self.image_dataset.__getitem__(index)
+        else:
+            images, label, imagemask, _ = self.image_dataset.__getitem__(index)
+        _, points, label2, pointmask, weight  = self.point_dataset.__getitem__(index)
+
+        assert abs(label - label2) < 0.001
+        return images, points, imagemask, pointmask, label, weight

@@ -168,30 +168,97 @@ class RigidInvariantPointNet(nn.Module):
             nn.ReLU(),
             nn.BatchNorm1d(256),
             nn.Conv1d(256, x_out, 1),
-            #nn.AdaptiveAvgPool1d(1),
         )
         self.l1 = encfun(bins, latent_size)
-        self.l2 = encfun(bins + latent_size, latent_size)
         self.output = output
         if self.output == "volume":
             self.lastlin = nn.Sequential(
+                nn.Linear(latent_size, latent_size),
+                nn.Dropout(0.3),
+                nn.GELU(),
                 nn.Linear(latent_size, 1)
             )
+
+    def compute_mean(self, latent, mask):
+        msum = mask.sum(dim=-1).reshape((-1, 1, 1))
+        msum[msum == 0] = 1
+
+        latent = latent.permute((0, 2, 1))
+        latent[~mask, :] = 0
+        latent = torch.sum(latent, dim=1, keepdim=True) / msum
+        latent = latent.permute((0, 2, 1))
+
+        return latent
+    
+    def forward(self, x: torch.Tensor, mask: torch.Tensor):
+        x = x.permute((0, 2, 1))
+        features = self.l1(x)
+        features = self.compute_mean(features, mask).squeeze()
+
+        if self.output == "volume":
+            features = self.lastlin(features)
+        return features
+    
+class RigidInvariantPointNet2Layered(nn.Module):
+    # Overfits
+    def __init__(self, latent_size=128, bins=10, output: Literal["volume", "latent"] = "volume"):
+        super().__init__()
+        encfunup = lambda x_in, x_out: nn.Sequential(
+            nn.Conv1d(x_in, x_out, 1),
+        )
+        encfun = lambda x_in, x_out: nn.Sequential(
+            nn.Conv1d(x_in, 64, 1),
+            nn.ReLU(),
+            nn.BatchNorm1d(64),
+            nn.Conv1d(64, 128, 1),
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Conv1d(128, 128, 1),
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Conv1d(128, 256, 1),
+            nn.ReLU(),
+            nn.BatchNorm1d(256),
+            nn.Conv1d(256, x_out, 1),
+            #nn.AdaptiveAvgPool1d(1),
+        )
+        self.l1 = encfun(bins, latent_size)
+        self.l1up = encfunup(bins, latent_size)
+        self.l2 = encfun(bins + latent_size, latent_size)
+        self.l2up = encfunup(bins + latent_size, latent_size)
+        self.output = output
+        if self.output == "volume":
+            self.lastlin = nn.Sequential(
+                nn.Linear(latent_size, latent_size),
+                nn.Dropout(0.3),
+                nn.GELU(),
+                nn.Linear(latent_size, 1)
+            )
+
+    def compute_mean(self, latent, mask):
+        msum = mask.sum(dim=-1).reshape((-1, 1, 1))
+        msum[msum == 0] = 1
+
+        latent = latent.permute((0, 2, 1))
+        latent[~mask, :] = 0
+        latent = torch.sum(latent, dim=1, keepdim=True) / msum
+        latent = latent.permute((0, 2, 1))
+
+        return latent
     
     def forward(self, x: torch.Tensor, mask: torch.Tensor):
         x = x.permute((0, 2, 1))
         x_in = x
-        latent = self.l1(x).squeeze()
-        msum = mask.sum(dim=-1).unsqueeze(1)
-        msum[msum == 0] = 1
-        latent = latent.permute((0, 2, 1))
-        latent[~mask, :] = 0
-        latent = torch.sum(latent, dim=1) / msum
-        """
-        x = x.expand(-1, -1, x_in.shape[2])
+        latent = self.l1(x)
+        short = self.l1up(x)
+        latent = self.compute_mean(latent + short, mask)
+
+        x = latent.expand(-1, -1, x_in.shape[2])
         x = torch.concat((x_in, x), dim=1)
-        x = self.l2(x).squeeze()
-        """
+        latent = self.l2(x)
+        short = self.l2up(x)
+        latent = self.compute_mean(latent + short, mask).squeeze()
+
         if self.output == "volume":
             x = self.lastlin(latent)
         return x, latent
@@ -239,3 +306,109 @@ class RigidInvariantTr(nn.Module):
 
         x = self.last(x)
         return x, None
+
+class SingleMlp(nn.Module):
+    def __init__(self, output: Literal["features", "volume"] = "volume", *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.subdim = 192
+
+        fmlp1 = lambda: nn.Sequential(
+            nn.Linear(384, 384),
+            nn.GELU(),
+            nn.Dropout(0.5),
+            nn.Linear(384, self.subdim),
+        )
+        fmlp2 = lambda: nn.Sequential(
+            nn.Linear(self.subdim, 1)
+        )
+        fmlp3 = lambda: nn.Sequential(
+            nn.Linear(self.subdim * 2, self.subdim * 2),
+            nn.GELU(),
+            nn.Linear(self.subdim * 2, 1)
+        )
+        self.subdim_pred = fmlp1()
+        self.subdim_conf = fmlp1()
+        self.head_pred = fmlp2()
+        self.head_conf = fmlp2()
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=self.subdim * 2,
+            nhead=2,
+            dim_feedforward=110,
+            dropout=0.5,
+            batch_first=True,
+        )
+        self.encoder = nn.TransformerEncoder(
+            encoder_layer=encoder_layer, num_layers=4, norm=None
+        )
+        self.volume_token = nn.Parameter(torch.randn(1, 1, self.subdim * 2))
+        self.output = output
+        if self.output == "volume":
+            self.last_pred = fmlp3()
+            self.last_conf = fmlp3()
+
+    def unflat(self, shape, mask, input):
+        unflat_array = torch.zeros(shape, device=input.device, dtype=input.dtype)
+        unflat_array[~mask] = input
+        return unflat_array
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor):
+        pred_sdim: torch.Tensor = self.subdim_pred(x[~mask])
+        conf_sdim = self.subdim_conf(x[~mask])
+
+        direct_pred = self.head_pred(pred_sdim)
+        direct_conf = self.head_conf(conf_sdim)
+
+        direct_pred_unflat = self.unflat((x.shape[0], x.shape[1]), mask, direct_pred.squeeze())
+        direct_conf_unflat = self.unflat((x.shape[0], x.shape[1]), mask, direct_conf.squeeze())
+        pred_sdim_unflat = self.unflat((x.shape[0], x.shape[1], self.subdim), mask, pred_sdim)
+        conf_sdim_unflat = self.unflat((x.shape[0], x.shape[1], self.subdim), mask, conf_sdim)
+        conf_sdim_unflat = self.unflat((x.shape[0], x.shape[1], self.subdim), mask, conf_sdim)
+
+        pred_conf_cat = torch.cat((pred_sdim_unflat, conf_sdim_unflat), dim=2)
+        transformer_input = torch.cat((pred_conf_cat, self.volume_token.repeat(x.shape[0], 1, 1)), dim=1)
+        mask_n = torch.zeros((mask.shape[0], mask.shape[1] + 1), dtype=torch.bool, device=mask.device)
+        mask_n[:, -1] = 0
+        mask_n[:, 0:-1] = mask
+
+        transformer_output = self.encoder(src=transformer_input, src_key_padding_mask=mask_n)
+        vol_pred_token = transformer_output[:, -1]
+
+        if self.output == "volume":
+            tpred = self.last_pred(vol_pred_token)
+            tconf = self.last_conf(vol_pred_token)
+
+        if self.training and self.output == "volume":
+            return direct_pred_unflat, direct_conf_unflat, tpred, tconf
+        elif self.output == "features":
+            return vol_pred_token
+        else:
+            return tpred
+    
+class Image3dEnsemble(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.img_net = SingleMlp(output="features")
+        self.point_net = RigidInvariantPointNet(output="latent")
+
+        self.prec_img = nn.Sequential(
+            nn.Linear(384, 384),
+            nn.GELU(),
+            nn.Linear(384, 128)
+        )
+
+
+        self.final = nn.Sequential(
+            nn.Linear(256, 256),
+            nn.Dropout(0.1),
+            nn.GELU(),
+            nn.Linear(256, 1)
+        )
+
+    def forward(self, images, images_mask, points, point_mask):
+        imgfeat = self.img_net(images, images_mask)
+        imgfeat = self.prec_img(imgfeat)
+        pointfeat = self.point_net(points, point_mask)
+
+        combined = torch.concat((imgfeat, pointfeat), dim=-1)
+        pred = self.final(combined)
+        return pred

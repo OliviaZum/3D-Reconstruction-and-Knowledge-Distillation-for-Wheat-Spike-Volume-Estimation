@@ -96,6 +96,8 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, vari_i
             vol_real.append(vol_batch)
         vol_pred = torch.concat(vol_pred)
         vol_real = torch.concat(vol_real)
+
+        
         print(f"Val MAE: {F.l1_loss(datasets_3d.DepthMapDataset.vol_unorm(vol_pred), datasets_3d.DepthMapDataset.vol_unorm(vol_real))}")
         print(f"Val Corr: {np.corrcoef(vol_real, vol_pred)[0, 1]}")
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
