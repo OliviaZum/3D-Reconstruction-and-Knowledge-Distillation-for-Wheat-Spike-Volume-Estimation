@@ -10,6 +10,7 @@ import utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
 import pandas as pd
+import accelerate
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -48,6 +49,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         weights = torch.concat(weights)
 
         loss = ((vol_pred - vol_real) ** 2 * weights).mean().item()
+        #loss = ((vol_pred - vol_real) ** 2).mean().item()
         print(f"Val MAE: {F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real))}")
         print(f"Val Corr: {np.corrcoef(vol_real, vol_pred)[0, 1]}")
         print(f"Val Loss: {loss}")
@@ -61,8 +63,8 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         return loss
 
 if __name__ == "__main__":
-    torch.random.manual_seed(42)
-    torch.cuda.manual_seed_all(42)
+    # Results vary quite a bit depending on seed
+    accelerate.utils.set_seed(1, deterministic=True)
     
     model_name = "real_volume_model.pth" # real_volume
     if model_name == "ply2volume_model.pth":
@@ -76,13 +78,12 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
 
-    if True:
+    if False:
         model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)
 
     model = models_3d.RigidInvariantPointNet(bins=10).to(device)
-    #model = models_3d.RigidInvariantTr().to(device)
 
     """
     Using a pretrained model
@@ -97,7 +98,7 @@ if __name__ == "__main__":
 
     optimizer = torch.optim.Adam(
         [{"params": model.l1.parameters(), "lr": 0.0001},
-         {"params": model.lastlin.parameters(), "lr": 0.002}], lr=0.002)
+        {"params": model.lastlin.parameters(), "lr": 0.002}], lr=0.002)
     """
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.002)
@@ -105,7 +106,7 @@ if __name__ == "__main__":
 
     best_val = None
     best_model = None
-    for epoch in range(150):
+    for epoch in range(60):
         errs_train = []
         model.train()
         for idx, batch, vol_batch, mask, weight in train_loader:
@@ -117,7 +118,7 @@ if __name__ == "__main__":
             r = utils_3d.to_rigid_invariant_representation(batch[:, :, 0:3], batch[:, :, 6], num_samples=None)
             volume = model(r, mask)
                 
-            #loss = ((volume.squeeze() - vol_batch) ** 2 * scale).mean()
+            #loss = ((volume.squeeze() - vol_batch) ** 2).mean()
             loss = ((volume.squeeze() - vol_batch) ** 2 * weight).mean()
             errs_train.append(loss.item())
 

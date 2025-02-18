@@ -275,8 +275,8 @@ class RigidInvariantCompletion(nn.Module):
         self.point_cloud_size_output = point_cloud_size_output
         self.bins = bins
     
-    def forward(self, x):
-        latent = self.encoder(x)
+    def forward(self, x, mask):
+        latent = self.encoder(x, mask)
         x = self.decoder(latent)
         x = x.reshape(-1, self.point_cloud_size_output, self.bins)
         return x, latent

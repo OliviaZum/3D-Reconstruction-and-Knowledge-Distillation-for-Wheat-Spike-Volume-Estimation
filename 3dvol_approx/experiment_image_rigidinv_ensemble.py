@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 import itertools
+import accelerate
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -51,8 +52,8 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         return rate
 
 if __name__ == "__main__":
-    torch.random.manual_seed(42)
-    torch.cuda.manual_seed_all(42)
+    accelerate.utils.set_seed(0)
+
     train_dataset, val_dataset, test_dataset = utils_experiment.get_combined_image_point_dataset()
 
     train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
@@ -63,7 +64,7 @@ if __name__ == "__main__":
 
     if False:
         model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
-        evaluate(val_loader, model, show_plot=True)
+        evaluate(test_loader, model, show_plot=True)
         exit(0)
 
     model = models_3d.Image3dEnsemble()
@@ -75,12 +76,12 @@ if __name__ == "__main__":
     model.point_net.load_state_dict(pretrained_point.state_dict(), strict=False)
     model = model.to(device)
     
-    optimizer = torch.optim.Adam(itertools.chain(model.final.parameters(), model.prec_img.parameters()), lr=0.0005)
+    optimizer = torch.optim.Adam(itertools.chain(model.final.parameters(), model.prec_img.parameters()), lr=0.001)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 100, 0.5)
 
     best_val = None
     best_model = None
-    for epoch in range(40):
+    for epoch in range(30):
         errs_train = []
         model.train()
         for images, points, imagemask, pointmask, label, weight in train_loader:

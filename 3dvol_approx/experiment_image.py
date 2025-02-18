@@ -4,7 +4,7 @@ from torch import nn
 import numpy as np
 import copy
 import datasets_3d
-import utils_3d
+import accelerate
 import models_3d
 import utils_experiment
 from torch.nn import functional as F
@@ -79,17 +79,12 @@ class SingleMlpMseLoss(nn.Module):
             return err_single_img.mean() * wsi + conf_single_img.mean() * wci + err_combined.mean() * wec + conf_combined.mean() * wcc
 
 def is_better_model(stats, best_stats):
-    #corr_improve = stats["Correlation"] - best_stats["Correlation"]
-    #mae_improve =  best_stats["MAE"] - stats["MAE"]
-    #steep_improve = abs(1 - best_stats["Steepness"]) - abs(1 - stats["Steepness"])
-    #rate = corr_improve * (50 / 0.03) + mae_improve + steep_improve * (70 / 0.1)
     rate = best_stats["Loss"] - stats["Loss"]
 
     return rate > 0 or torch.isnan(torch.tensor(rate))
 
 if __name__ == "__main__":
-    torch.random.manual_seed(42)
-    torch.cuda.manual_seed_all(42)
+    accelerate.utils.set_seed(0)
     train_dataset, val_dataset, test_dataset = utils_experiment.get_image_dataset()
 
     train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
