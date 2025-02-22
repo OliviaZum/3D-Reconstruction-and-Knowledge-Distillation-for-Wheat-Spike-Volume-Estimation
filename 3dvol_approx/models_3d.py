@@ -307,6 +307,11 @@ class RigidInvariantTr(nn.Module):
         x = self.last(x)
         return x, None
 
+def unflat(shape, mask, input):
+    unflat_array = torch.zeros(shape, device=input.device, dtype=input.dtype)
+    unflat_array[~mask] = input
+    return unflat_array
+
 class SingleMlp(nn.Module):
     def __init__(self, output: Literal["features", "volume"] = "volume", *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -346,11 +351,6 @@ class SingleMlp(nn.Module):
             self.last_pred = fmlp3()
             self.last_conf = fmlp3()
 
-    def unflat(self, shape, mask, input):
-        unflat_array = torch.zeros(shape, device=input.device, dtype=input.dtype)
-        unflat_array[~mask] = input
-        return unflat_array
-
     def forward(self, x: torch.Tensor, mask: torch.Tensor):
         pred_sdim: torch.Tensor = self.subdim_pred(x[~mask])
         conf_sdim = self.subdim_conf(x[~mask])
@@ -358,11 +358,11 @@ class SingleMlp(nn.Module):
         direct_pred = self.head_pred(pred_sdim)
         direct_conf = self.head_conf(conf_sdim)
 
-        direct_pred_unflat = self.unflat((x.shape[0], x.shape[1]), mask, direct_pred.squeeze())
-        direct_conf_unflat = self.unflat((x.shape[0], x.shape[1]), mask, direct_conf.squeeze())
-        pred_sdim_unflat = self.unflat((x.shape[0], x.shape[1], self.subdim), mask, pred_sdim)
-        conf_sdim_unflat = self.unflat((x.shape[0], x.shape[1], self.subdim), mask, conf_sdim)
-        conf_sdim_unflat = self.unflat((x.shape[0], x.shape[1], self.subdim), mask, conf_sdim)
+        direct_pred_unflat = unflat((x.shape[0], x.shape[1]), mask, direct_pred.squeeze())
+        direct_conf_unflat = unflat((x.shape[0], x.shape[1]), mask, direct_conf.squeeze())
+        pred_sdim_unflat = unflat((x.shape[0], x.shape[1], self.subdim), mask, pred_sdim)
+        conf_sdim_unflat = unflat((x.shape[0], x.shape[1], self.subdim), mask, conf_sdim)
+        conf_sdim_unflat = unflat((x.shape[0], x.shape[1], self.subdim), mask, conf_sdim)
 
         pred_conf_cat = torch.cat((pred_sdim_unflat, conf_sdim_unflat), dim=2)
         transformer_input = torch.cat((pred_conf_cat, self.volume_token.repeat(x.shape[0], 1, 1)), dim=1)
@@ -412,3 +412,27 @@ class Image3dEnsemble(nn.Module):
         combined = torch.concat((imgfeat, pointfeat), dim=-1)
         pred = self.final(combined)
         return pred
+    
+class SingleImageModel(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        fmlp = lambda: nn.Sequential(
+            nn.Linear(384, 384),
+            nn.Dropout(0.5),
+            nn.LeakyReLU(),
+            nn.Linear(384, 192),
+            nn.LeakyReLU(),
+            nn.Linear(192, 1),
+        )
+        self.mean_l = fmlp()
+        self.var_l = fmlp()
+
+    def forward(self, x, mask):
+        unflat_shape = (x.shape[0], x.shape[1])
+        x = x[~mask]
+        mean = self.mean_l(x)
+        var = self.var_l(x)
+        mean = unflat(unflat_shape, mask, mean.squeeze())
+        var = unflat(unflat_shape, mask, var.squeeze())
+
+        return mean, var

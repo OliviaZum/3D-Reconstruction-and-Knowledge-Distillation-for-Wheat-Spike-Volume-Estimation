@@ -109,9 +109,9 @@ if __name__ == "__main__":
         coords = mds.fit_transform(features)  # Shape: (n, 2)
 
         fig, ax = plt.subplots()
-        p80e = np.percentile(errors, 80)
-        print(f"p80 Error: {p80e}")
-        errors = ((errors / p80e) + 0.1).clip(0, 1)
+        p90e = np.percentile(errors, 90)
+        print(f"p80 Error: {p90e}")
+        errors = ((errors / p90e) + 0.1).clip(0, 1)
         sc = ax.scatter(coords[:, 0], coords[:, 1], c=errors, cmap="Reds")
 
         def on_click(event):
