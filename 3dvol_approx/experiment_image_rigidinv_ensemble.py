@@ -62,9 +62,9 @@ if __name__ == "__main__":
 
     model_name = "3dglobimgensemble.pth"
 
-    if False:
+    if True:
         model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
-        evaluate(test_loader, model, show_plot=True)
+        evaluate(val_loader, model, show_plot=True)
         exit(0)
 
     model = models_3d.Image3dEnsemble()
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     model = model.to(device)
     
     optimizer = torch.optim.Adam(itertools.chain(model.final.parameters(), model.prec_img.parameters()), lr=0.001)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 100, 0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, 0.5)
 
     best_val = None
     best_model = None

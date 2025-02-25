@@ -188,7 +188,9 @@ class PlyDataset(Dataset):
             samples = self.data[idx]
         else:
             raise NotImplemented
-        return idx, samples, torch.tensor(vol_norm(self.plant_mapping.loc[idx, "volume"]), dtype=torch.float32)
+        
+        mask = torch.ones(len(samples), dtype=torch.bool)
+        return idx, samples, torch.tensor(vol_norm(self.plant_mapping.loc[idx, "volume"]), dtype=torch.float32), mask, torch.tensor(1)
     
 class DepthMapDataset(Dataset):
     def __init__(self, base_folder: Path | str, plant_mapping_path: Path | str, point_cloud_size: int = 1000):
@@ -254,9 +256,9 @@ class Combined3dDataset(Dataset):
         pid = self.ply_dataset.plant_mapping.loc[index, "plant_id"]
         dmidx = self.depthmap_dataset.plant_mapping.index[self.depthmap_dataset.plant_mapping["plant_id"] == pid][0]
 
-        _, data_ply, vol = self.ply_dataset.__getitem__(index)
-        _, data_depthmap, _ = self.depthmap_dataset.__getitem__(dmidx)
-        return index, data_ply, data_depthmap, vol
+        _, data_ply, vol, plymask, _ = self.ply_dataset.__getitem__(index)
+        _, data_depthmap, _, mask, weight  = self.depthmap_dataset.__getitem__(dmidx)
+        return index, data_ply, data_depthmap, plymask, mask, vol, weight
 
 class PlantDataError(Exception):
     """Error meant to point at missing data"""

@@ -48,7 +48,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         vol_real = torch.concat(vol_real)
         weights = torch.concat(weights)
 
-        loss = ((vol_pred - vol_real) ** 2 * weights).mean().item()
+        loss = ((vol_pred - vol_real) ** 2).mean().item()
         #loss = ((vol_pred - vol_real) ** 2).mean().item()
         print(f"Val MAE: {F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real))}")
         print(f"Val Corr: {np.corrcoef(vol_real, vol_pred)[0, 1]}")
@@ -66,10 +66,10 @@ if __name__ == "__main__":
     # Results vary quite a bit depending on seed
     accelerate.utils.set_seed(1, deterministic=True)
     
-    model_name = "real_volume_model.pth" # real_volume
+    model_name = "real_volume_model-direct.pth" # real_volume
     if model_name == "ply2volume_model.pth":
-        train_dataset, val_dataset = utils_experiment.get_ply_dataset()
-    elif model_name == "real_volume_model.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset()
+    elif model_name == "real_volume_model-direct.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_real_dataset3d(force_recompute=False)
     else:
         assert False
@@ -118,8 +118,7 @@ if __name__ == "__main__":
             r = utils_3d.to_rigid_invariant_representation(batch[:, :, 0:3], batch[:, :, 6], num_samples=None)
             volume = model(r, mask)
                 
-            #loss = ((volume.squeeze() - vol_batch) ** 2).mean()
-            loss = ((volume.squeeze() - vol_batch) ** 2 * weight).mean()
+            loss = ((volume.squeeze() - vol_batch) ** 2).mean()
             errs_train.append(loss.item())
 
             optimizer.zero_grad()

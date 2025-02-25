@@ -133,3 +133,7 @@ def compare_rigid_invariant_mse(hist_in, hist_target, average = True):
         return torch.mean(min1) + torch.mean(min2)
     else:
         return torch.mean(min1, dim=1) + torch.mean(min2, dim=1)
+    
+def mean_where(x: torch.Tensor, mask: torch.Tensor, dim=0):
+    masked_mean = torch.sum(x * mask, dim=dim) / mask.sum(dim=dim)
+    return masked_mean

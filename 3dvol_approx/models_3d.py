@@ -152,7 +152,7 @@ class PointCloudAutoDecoder(nn.Module):
         return coarse, fine
     
 class RigidInvariantPointNet(nn.Module):
-    def __init__(self, latent_size=128, bins=10, output: Literal["volume", "latent"] = "volume"):
+    def __init__(self, latent_size=128, bins=10, output: Literal["volume", "latent", "volumevar", "volumelatent"] = "volume"):
         super().__init__()
         encfun = lambda x_in, x_out: nn.Sequential(
             nn.Conv1d(x_in, 64, 1),
@@ -171,13 +171,16 @@ class RigidInvariantPointNet(nn.Module):
         )
         self.l1 = encfun(bins, latent_size)
         self.output = output
-        if self.output == "volume":
-            self.lastlin = nn.Sequential(
+        if self.output != "latent":
+            flast = lambda: nn.Sequential(
                 nn.Linear(latent_size, latent_size),
                 nn.Dropout(0.3),
                 nn.GELU(),
                 nn.Linear(latent_size, 1)
             )
+            self.lastlin = flast()
+            self.lastvar = flast()
+            
 
     def compute_mean(self, latent, mask):
         msum = mask.sum(dim=-1).reshape((-1, 1, 1))
@@ -195,9 +198,18 @@ class RigidInvariantPointNet(nn.Module):
         features = self.l1(x)
         features = self.compute_mean(features, mask).squeeze()
 
-        if self.output == "volume":
-            features = self.lastlin(features)
-        return features
+        if self.output == "volume" or self.output == "volumelatent":
+            v = self.lastlin(features)
+            if self.output == "volume":
+                return v
+            else:
+                return v, features
+        elif self.output == "volumevar":
+            vol = self.lastlin(features)
+            var = self.lastvar(features)
+            return vol, var
+        else:
+            return features
     
 class RigidInvariantPointNet2Layered(nn.Module):
     # Overfits
@@ -338,7 +350,7 @@ class SingleMlp(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=self.subdim * 2,
             nhead=2,
-            dim_feedforward=110,
+            dim_feedforward=4 * self.subdim,
             dropout=0.5,
             batch_first=True,
         )
@@ -382,7 +394,7 @@ class SingleMlp(nn.Module):
         elif self.output == "features":
             return vol_pred_token
         else:
-            return tpred
+            return tpred, tconf
     
 class Image3dEnsemble(nn.Module):
     def __init__(self, *args, **kwargs):
@@ -414,7 +426,7 @@ class Image3dEnsemble(nn.Module):
         return pred
     
 class SingleImageModel(nn.Module):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, output: Literal["normal", "features"] = "normal", *args, **kwargs):
         super().__init__(*args, **kwargs)
         fmlp = lambda: nn.Sequential(
             nn.Linear(384, 384),
@@ -422,17 +434,71 @@ class SingleImageModel(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(384, 192),
             nn.LeakyReLU(),
-            nn.Linear(192, 1),
         )
+        self.last_mean = nn.Linear(192, 1)
+        self.last_var = nn.Linear(192, 1)
         self.mean_l = fmlp()
         self.var_l = fmlp()
+        self.output = output
 
     def forward(self, x, mask):
         unflat_shape = (x.shape[0], x.shape[1])
+        unflat_shape_features = (*unflat_shape, 192)
         x = x[~mask]
-        mean = self.mean_l(x)
-        var = self.var_l(x)
-        mean = unflat(unflat_shape, mask, mean.squeeze())
-        var = unflat(unflat_shape, mask, var.squeeze())
+        meanfeatures = self.mean_l(x)
+        varfeatures = self.var_l(x)
+        
+        if self.output == "normal":
+            mean = self.last_mean(meanfeatures)
+            var = self.last_var(varfeatures)
+            mean = unflat(unflat_shape, mask, mean.squeeze())
+            var = unflat(unflat_shape, mask, var.squeeze())
+            return mean, var
+        else:
+            meanfeatures = unflat(unflat_shape_features, mask, meanfeatures)
+            varfeatures = unflat(unflat_shape_features, mask, varfeatures)
+            return meanfeatures, varfeatures
+        
+    
+class ImprovedTransformer(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.img_feature_model = SingleImageModel("features").eval()
+        self.subdim = 192
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=self.subdim * 2,
+            nhead=2,
+            dim_feedforward=110,
+            dropout=0.5,
+            batch_first=True,
+        )
+        self.encoder = nn.TransformerEncoder(
+            encoder_layer=encoder_layer, num_layers=4, norm=None
+        )
+        self.volume_token = nn.Parameter(torch.randn(1, 1, self.subdim * 2))
+        flast = lambda: nn.Sequential(
+            nn.Linear(self.subdim, self.subdim),
+            nn.GELU(),
+            nn.Linear(self.subdim, 1)
+        )
+        self.last_mean = flast()
+        self.last_var = flast()
 
-        return mean, var
+
+    def forward(self, x, mask):
+        volfeatures = self.img_feature_model(x, mask)
+        trans_input_features = torch.concat(volfeatures, dim=-1)
+        transformer_input = torch.concat((trans_input_features, self.volume_token.repeat(x.shape[0], 1, 1)), dim=1)
+        
+        mask_n = torch.zeros((mask.shape[0], mask.shape[1] + 1), dtype=torch.bool, device=mask.device)
+        mask_n[:, 0:-1] = mask
+        transformer_output = self.encoder(src=transformer_input, src_key_padding_mask=mask_n)
+
+        if self.training or True:
+            vol_means = self.last_mean(transformer_output[:, :, :self.subdim]).squeeze()
+            vol_vars = self.last_var(transformer_output[:, :, self.subdim:]).squeeze()
+            return vol_means, vol_vars, transformer_output
+        else:
+            vol_mean = self.last_mean(transformer_output[:, -1, :192]).squeeze()
+            vol_var = self.last_mean(transformer_output[:, -1, 192:]).squeeze()
+            return vol_mean, vol_var

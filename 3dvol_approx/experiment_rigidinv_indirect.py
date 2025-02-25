@@ -66,7 +66,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, vari_i
         vol_real = []
         vars = []
         losses = []
-        for _, batch_artificial, batch_real, vol_batch in train_loader:
+        for _, batch_artificial, batch_real, vol_batch in dataloader:
             batch_real = batch_real.to(device)
             batch_artificial = batch_artificial.to(device)
             batch_artificial = utils_3d.to_rigid_invariant_representation(batch_artificial[:, :, 0:3], batch_artificial[:, :, 6])

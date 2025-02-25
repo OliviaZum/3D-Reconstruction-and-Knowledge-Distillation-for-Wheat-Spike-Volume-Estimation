@@ -19,19 +19,23 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
     with torch.no_grad():
         vol_pred = []
         vol_real = []
+        logvars = []
         weights = []
         for images, plant, imagemask, label, weight in dataloader:
             images = images.to(device)
             imagemask = imagemask.to(device)
             
-            volume = model(images, imagemask)
+            volume, logvar = model(images, imagemask)
             volume = volume.cpu().squeeze()
             vol_pred.append(volume)
             vol_real.append(label)
             weights.append(weight)
+            logvars.append(logvar.cpu())
         vol_pred = torch.concat(vol_pred)
         vol_real = torch.concat(vol_real)
         weights = torch.concat(weights)
+        logvars = torch.concat(logvars)
+
 
         l = {}
         l["MAE"] = F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real)).item()
@@ -44,44 +48,48 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
              print(l)
         if show_plot:
             plt.plot((2000, 8500), (2000, 8500))
+            plt.plot((2000, 8500), (3000, 9500), c="red")
+            plt.plot((2000, 8500), (1000, 7500), c="red")
             plt.scatter(datasets_3d.vol_unorm(vol_real), datasets_3d.vol_unorm(vol_pred))
             plt.show()
+            
+            """
+            plt.scatter(torch.abs(vol_real - vol_pred), torch.exp(logvars))
+            plt.show()
+            """
         
         return l
 
 def warmup_multiplicative_schedule(e):
-     return 0.01 if e < 40 else min(1/ (e * 0.03), 1)
-
+     return 0.01 if e < 40 else min(1/ (e * 0.03), 0.1)
+        
 class SingleMlpMseLoss(nn.Module):
-        def __init__(self, weights = (1, 0.5, 0.3, 0.05), *args, **kwargs):
+        def __init__(self, weights = (1, 0.5), *args, **kwargs):
               super().__init__(*args, **kwargs)
               self.weights = weights
 
-        def conf_err_fun(self, err, conf):
-             e = err - conf
-             mask = e < 0
-             e[mask] = torch.abs(e[mask]) * 0.1
-             e[~mask] = e[~mask] ** 2
-             return e
-
         def forward(self, input: torch.Tensor, target: torch.Tensor, loss_scale: torch.Tensor) -> torch.Tensor:
-            input, conf, tpred, tconf = input
-            mask = input != 0
+            imgmeans, logimgvars, mean, logvars = input
+            mask = imgmeans != 0
+
             target = target.unsqueeze(1)
             loss_scale = loss_scale.unsqueeze(1)
-            err_single_img = ((input - target) ** 2)
-            conf_single_img = self.conf_err_fun(err_single_img, conf)
+
+            err_single_img = ((imgmeans - target) ** 2) / (2 * torch.exp(logimgvars)) + 0.5 * logimgvars
             err_single_img = (err_single_img * loss_scale)[mask]
-            conf_single_img = (conf_single_img * loss_scale)[mask]
-            err_combined = (tpred - target) ** 2 * loss_scale
-            conf_combined = self.conf_err_fun(err_combined, tconf) * loss_scale
-            wsi, wci, wec, wcc = self.weights
-            return err_single_img.mean() * wsi + conf_single_img.mean() * wci + err_combined.mean() * wec + conf_combined.mean() * wcc
+            
+            err_combined = ((mean - target) ** 2 / (2 * torch.exp(logvars)) + 0.5 * logvars) * loss_scale
+
+            wsi, wec = self.weights
+            return err_single_img.mean() * wsi + err_combined.mean() * wec
 
 def is_better_model(stats, best_stats):
-    rate = best_stats["Loss"] - stats["Loss"]
+    corr_improve = stats["Correlation"] - best_stats["Correlation"]
+    mae_improve =  best_stats["MAE"] - stats["MAE"]
+    steep_improve = abs(1 - best_stats["Steepness"]) - abs(1 - stats["Steepness"])
+    rate = corr_improve * (50 / 0.03) + mae_improve + steep_improve * (50 / 0.1)
 
-    return rate > 0 or torch.isnan(torch.tensor(rate))
+    return rate > 0
 
 if __name__ == "__main__":
     accelerate.utils.set_seed(0)
@@ -106,7 +114,7 @@ if __name__ == "__main__":
 
     best_val = None
     best_model = None
-    for epoch in range(800):
+    for epoch in range(400):
         errs_train = []
         model.train()
         for images, label, imagemask, weight in train_loader:
@@ -114,7 +122,6 @@ if __name__ == "__main__":
 
             x = model(images, imagemask)
                 
-            #loss = ((volume.squeeze() - label) ** 2).mean()
             loss = lossfn(x, label, weight)
             errs_train.append(loss.item())
 
@@ -133,4 +140,4 @@ if __name__ == "__main__":
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 
     print(f"\n Best stats {best_val}")
-    torch.save(model, f"3dvol_approx/local_stuff/{model_name}")
+    torch.save(best_model, f"3dvol_approx/local_stuff/{model_name}")

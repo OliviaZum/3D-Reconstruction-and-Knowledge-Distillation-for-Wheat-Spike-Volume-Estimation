@@ -21,14 +21,17 @@ def get_ply_dataset(force_recompute = False):
     train_dataset.create_or_load_cache(Path(r"3dvol_approx\local_stuff\ply_cache\ply_train.pth"), force_recompute=force_recompute)
     val_dataset = datasets_3d.PlyDataset(base_folder, split_folder / "mapping_val.json")
     val_dataset.create_or_load_cache(Path(r"3dvol_approx\local_stuff\ply_cache\ply_val.pth"), force_recompute=force_recompute)
-    return train_dataset, val_dataset
+    test_dataset = datasets_3d.PlyDataset(base_folder, split_folder / "mapping_test.json")
+    test_dataset.create_or_load_cache(Path(r"3dvol_approx\local_stuff\ply_cache\ply_test.pth"), force_recompute=force_recompute)
+    return train_dataset, val_dataset, test_dataset
 
 def get_combined_point_real_arti_dataset():
-    r_tds, r_vds = get_real_dataset3d()
-    p_tds, p_vds = get_ply_dataset()
-    train_dataset = datasets_3d.Combined3dDataset(r_tds, p_tds)
-    val_dataset = datasets_3d.Combined3dDataset(r_vds, p_vds)
-    return train_dataset, val_dataset
+    r_train_ds, r_val_ds, r_test_ds = get_real_dataset3d()
+    a_train_ds, a_val_ds, a_test_ds = get_ply_dataset()
+    train_dataset = datasets_3d.Combined3dDataset(r_train_ds, a_train_ds)
+    val_dataset = datasets_3d.Combined3dDataset(r_val_ds, a_val_ds)
+    test_dataset = datasets_3d.Combined3dDataset(r_test_ds, a_test_ds)
+    return train_dataset, val_dataset, test_dataset
 
 def get_unlabeled_dataset(force_recompute = False):
     split_folder = Path(r"F:\Boxes-ds\unlabeled-5000-depth\split")
