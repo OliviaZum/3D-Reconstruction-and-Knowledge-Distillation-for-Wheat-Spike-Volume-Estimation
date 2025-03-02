@@ -200,7 +200,8 @@ class DepthMapDataset(Dataset):
         self.plant_mapping = plant_mapping.reset_index()
         self.reprojector = reproject_spike_3d.ReprojectSpike3d(base_folder, self.plant_mapping["pose_file"].explode(True).unique())
         self.cache = None
-        self.loss_scaling = EqualBinSampler(self.plant_mapping["volume"])
+        if plant_mapping["labeled"].any():
+            self.loss_scaling = EqualBinSampler(self.plant_mapping["volume"])
 
     def __len__(self):
         return len(self.plant_mapping)
@@ -237,7 +238,11 @@ class DepthMapDataset(Dataset):
             vol = torch.tensor(vol_norm(self.plant_mapping.loc[index, "volume"]), dtype=torch.float32)
 
         mask = ~(data == 0).all(dim=1)
-        weight = torch.tensor(self.loss_scaling.get_weight(index), dtype=torch.float32)
+        if "labeled" in self.plant_mapping.columns and self.plant_mapping.loc[index, "labeled"]:
+            weight = self.loss_scaling.get_weight(index)
+        else:
+            weight = 1
+        weight = torch.tensor(weight, dtype=torch.float32)
 
         return index, data, vol, mask, weight
     
@@ -246,8 +251,9 @@ class Combined3dDataset(Dataset):
     def __init__(self, depthmap_dataset: DepthMapDataset, ply_dataset: PlyDataset):
         self.depthmap_dataset = depthmap_dataset
         self.ply_dataset = ply_dataset
+        self.plant_mapping = self.ply_dataset.plant_mapping
 
-        assert set(self.ply_dataset.plant_mapping["plant_id"]) == set(self.depthmap_dataset.plant_mapping["plant_id"]), "Dataset have to be equal"
+        assert (self.ply_dataset.plant_mapping["plant_id"] == self.depthmap_dataset.plant_mapping["plant_id"]).all(), "Dataset have to be equal"
 
     def __len__(self):
         return len(self.ply_dataset)
@@ -390,7 +396,8 @@ class MultiImageTrainDataset(Dataset):
         self.plant_mapping = plant_mapping.reset_index()
         self.cache = None
         self.no_label_scale = 1.0
-        self.loss_scaler = EqualBinSampler(self.plant_mapping.loc[:, "volume"])
+        if plant_mapping["labeled"].any():
+            self.loss_scaler = EqualBinSampler(self.plant_mapping.loc[:, "volume"])
 
         if not image_dir.exists() or not image_dir.is_dir():
             raise FileExistsError(f"Image directory, {str(image_dir)}, does not exist.")
@@ -609,10 +616,12 @@ def img_validation_collate_fn(batch : List[Tuple[torch.Tensor, pd.Series, torch.
 
     
 class Image3dCombidataset(Dataset):
-    def __init__(self, image_dataset: MultiImageTrainDataset, point_dataset: DepthMapDataset):
+    def __init__(self, image_dataset: MultiImageTrainDataset, point_dataset: DepthMapDataset | Combined3dDataset, return_ply=False):
         super().__init__()
         self.image_dataset = image_dataset
         self.point_dataset = point_dataset
+        self.has_ply = isinstance(point_dataset, Combined3dDataset)
+        self.return_ply = return_ply
         self.validation_mode = image_dataset.validation_mode
 
         assert (self.point_dataset.plant_mapping["plant_id"] == self.image_dataset.plant_mapping["plant_id"]).all(), "Dataset have to be equal"
@@ -626,7 +635,14 @@ class Image3dCombidataset(Dataset):
             images, _, imagemask, label, _ = self.image_dataset.__getitem__(index)
         else:
             images, label, imagemask, _ = self.image_dataset.__getitem__(index)
-        _, points, label2, pointmask, weight  = self.point_dataset.__getitem__(index)
+        
+        if self.has_ply:
+            _, points_ply, points, plymask, pointmask, label2, weight = self.point_dataset.__getitem__(index)
+        else:
+            _, points, label2, pointmask, weight  = self.point_dataset.__getitem__(index)
 
-        assert abs(label - label2) < 0.001
-        return images, points, imagemask, pointmask, label, weight
+        assert (torch.isnan(label) and torch.isnan(label2)) or abs(label - label2) < 0.001
+        if self.return_ply:
+            return images, points, points_ply, imagemask, pointmask, plymask, label, weight
+        else:
+            return images, points, imagemask, pointmask, label, weight

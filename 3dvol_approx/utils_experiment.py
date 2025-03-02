@@ -37,11 +37,19 @@ def get_unlabeled_dataset(force_recompute = False):
     split_folder = Path(r"F:\Boxes-ds\unlabeled-5000-depth\split")
     base_folder = Path(r"F:\Boxes-ds\unlabeled-5000-depth")
     cache_folder = Path(r"3dvol_approx\local_stuff\dmap_cache")
-    train_dataset = datasets_3d.DepthMapDataset(base_folder, split_folder / "mapping_train.json")
-    train_dataset.create_or_load_cache(cache_folder / "dmap_cache_unlabeled_train.pth", force_recompute=force_recompute)
-    val_dataset = datasets_3d.DepthMapDataset(base_folder, split_folder / "mapping_test.json")
-    val_dataset.create_or_load_cache(cache_folder / "dmap_cache_unlabeled_val.pth", force_recompute=force_recompute)
-    return train_dataset, val_dataset
+    train_dataset_dm = datasets_3d.DepthMapDataset(base_folder, split_folder / "mapping_train.json")
+    train_dataset_dm.create_or_load_cache(cache_folder / "dmap_cache_unlabeled_train.pth", force_recompute=force_recompute)
+    val_dataset_dm = datasets_3d.DepthMapDataset(base_folder, split_folder / "mapping_test.json")
+    val_dataset_dm.create_or_load_cache(cache_folder / "dmap_cache_unlabeled_val.pth", force_recompute=force_recompute)
+    pretrained_model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
+    train_dataset_img = datasets_3d.MultiImageTrainDataset(base_folder, split_folder / "mapping_train.json",
+                                                           datasets_3d.get_transform(True), "volume", 12, 4, True)
+    train_dataset_img.create_or_load_cache(pretrained_model, cache_folder / "img_cache_unlabeled_train.pth", 5, num_workers=4)
+    val_dataset_img = datasets_3d.MultiImageTrainDataset(base_folder, split_folder / "mapping_test.json", 
+                                                         datasets_3d.get_transform(False), "volume", 12, 6, False, validation_mode=True)
+    val_dataset_img.create_or_load_cache(pretrained_model, cache_folder / "img_cache_unlabeled_val.pth", 1, num_workers=0)
+    
+    return train_dataset_dm, val_dataset_dm, train_dataset_img, val_dataset_img
 
 def get_image_dataset():
     split_folder = Path(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
@@ -58,9 +66,12 @@ def get_image_dataset():
 
     return train_dataset_image, val_dataset_image, test_dataset_image
 
-def get_combined_image_point_dataset():
+def get_combined_image_point_dataset(include_ply = False):
     trainimg, valimg, testimg = get_image_dataset()
-    train3d, val3d, test3d = get_real_dataset3d()
+    if include_ply:
+        train3d, val3d, test3d = get_combined_point_real_arti_dataset()
+    else:    
+        train3d, val3d, test3d = get_real_dataset3d()
 
     train_dataset = datasets_3d.Image3dCombidataset(trainimg, train3d)
     val_dataset = datasets_3d.Image3dCombidataset(valimg, val3d)

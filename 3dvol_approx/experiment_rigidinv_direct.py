@@ -66,7 +66,7 @@ if __name__ == "__main__":
     # Results vary quite a bit depending on seed
     accelerate.utils.set_seed(1, deterministic=True)
     
-    model_name = "real_volume_model-direct.pth" # real_volume
+    model_name = "ply2volume_model.pth" # real_volume
     if model_name == "ply2volume_model.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset()
     elif model_name == "real_volume_model-direct.pth":

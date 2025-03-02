@@ -459,46 +459,47 @@ class SingleImageModel(nn.Module):
             varfeatures = unflat(unflat_shape_features, mask, varfeatures)
             return meanfeatures, varfeatures
         
+class AttentionBased(nn.Module):
     
-class ImprovedTransformer(nn.Module):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.img_feature_model = SingleImageModel("features").eval()
-        self.subdim = 192
+    def __init__(self, 
+                 dropout_rate : float = 0.5,
+                 layer: int = 4,
+                 head: int = 2,
+                 dim_forward: int = 4 * 384):
+        super(AttentionBased, self).__init__()
+        
+        self.single_img_mlp = nn.Linear(384, 384)
         encoder_layer = nn.TransformerEncoderLayer(
-            d_model=self.subdim * 2,
-            nhead=2,
-            dim_feedforward=110,
-            dropout=0.5,
+            d_model=384,
+            nhead=head,
+            dim_feedforward=dim_forward,
+            dropout=dropout_rate,
             batch_first=True,
         )
         self.encoder = nn.TransformerEncoder(
-            encoder_layer=encoder_layer, num_layers=4, norm=None
+            encoder_layer=encoder_layer, num_layers=layer, norm=None
         )
-        self.volume_token = nn.Parameter(torch.randn(1, 1, self.subdim * 2))
-        flast = lambda: nn.Sequential(
-            nn.Linear(self.subdim, self.subdim),
+
+        self.volume_token = nn.Parameter(torch.randn(1, 1, 384))
+
+        self.last_lin = nn.Sequential(
+            nn.Linear(384, 384),
             nn.GELU(),
-            nn.Linear(self.subdim, 1)
+            nn.Linear(384, 1)
         )
-        self.last_mean = flast()
-        self.last_var = flast()
 
-
-    def forward(self, x, mask):
-        volfeatures = self.img_feature_model(x, mask)
-        trans_input_features = torch.concat(volfeatures, dim=-1)
-        transformer_input = torch.concat((trans_input_features, self.volume_token.repeat(x.shape[0], 1, 1)), dim=1)
+    def forward(self, x: torch.Tensor, mask: torch.Tensor):
         
-        mask_n = torch.zeros((mask.shape[0], mask.shape[1] + 1), dtype=torch.bool, device=mask.device)
-        mask_n[:, 0:-1] = mask
-        transformer_output = self.encoder(src=transformer_input, src_key_padding_mask=mask_n)
+        x = self.single_img_mlp(x)
 
-        if self.training or True:
-            vol_means = self.last_mean(transformer_output[:, :, :self.subdim]).squeeze()
-            vol_vars = self.last_var(transformer_output[:, :, self.subdim:]).squeeze()
-            return vol_means, vol_vars, transformer_output
-        else:
-            vol_mean = self.last_mean(transformer_output[:, -1, :192]).squeeze()
-            vol_var = self.last_mean(transformer_output[:, -1, 192:]).squeeze()
-            return vol_mean, vol_var
+        x = torch.cat((x, self.volume_token.repeat(x.size(0), 1, 1)), dim=1)
+        mask_n = torch.zeros((mask.shape[0], mask.shape[1] + 1), dtype=torch.bool, device=mask.device)
+        mask_n[:, -1] = 0
+        mask_n[:, 0:-1] = mask
+
+        x = self.encoder(src=x, src_key_padding_mask=mask_n)
+        x = x[:, -1]
+
+        x = self.last_lin(x)
+        
+        return x

@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     model_name = "3dglobimgensemble.pth"
 
-    if True:
+    if False:
         model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
         evaluate(val_loader, model, show_plot=True)
         exit(0)
@@ -71,6 +71,7 @@ if __name__ == "__main__":
 
     pretrained_point = torch.load(f"3dvol_approx/local_stuff/real_volume_model.pth", weights_only=False)
     pretrained_img = torch.load(f"3dvol_approx/local_stuff/image_model.pth", weights_only=False)
+    #pretrained_img = torch.load(f"3dvol_approx/local_stuff/self-distill-regulated_transformer.pth", weights_only=False)
 
     model.img_net.load_state_dict(pretrained_img.state_dict(), strict=False)
     model.point_net.load_state_dict(pretrained_point.state_dict(), strict=False)

@@ -19,23 +19,19 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
     with torch.no_grad():
         vol_pred = []
         vol_real = []
-        logvars = []
         weights = []
         for images, plant, imagemask, label, weight in dataloader:
             images = images.to(device)
             imagemask = imagemask.to(device)
             
-            volume, logvar = model(images, imagemask)
+            volume = model(images, imagemask)
             volume = volume.cpu().squeeze()
             vol_pred.append(volume)
             vol_real.append(label)
             weights.append(weight)
-            logvars.append(logvar.cpu())
         vol_pred = torch.concat(vol_pred)
         vol_real = torch.concat(vol_real)
         weights = torch.concat(weights)
-        logvars = torch.concat(logvars)
-
 
         l = {}
         l["MAE"] = F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real)).item()
@@ -52,36 +48,11 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
             plt.plot((2000, 8500), (1000, 7500), c="red")
             plt.scatter(datasets_3d.vol_unorm(vol_real), datasets_3d.vol_unorm(vol_pred))
             plt.show()
-            
-            """
-            plt.scatter(torch.abs(vol_real - vol_pred), torch.exp(logvars))
-            plt.show()
-            """
         
         return l
 
 def warmup_multiplicative_schedule(e):
-     return 0.01 if e < 40 else min(1/ (e * 0.03), 0.1)
-        
-class SingleMlpMseLoss(nn.Module):
-        def __init__(self, weights = (1, 0.5), *args, **kwargs):
-              super().__init__(*args, **kwargs)
-              self.weights = weights
-
-        def forward(self, input: torch.Tensor, target: torch.Tensor, loss_scale: torch.Tensor) -> torch.Tensor:
-            imgmeans, logimgvars, mean, logvars = input
-            mask = imgmeans != 0
-
-            target = target.unsqueeze(1)
-            loss_scale = loss_scale.unsqueeze(1)
-
-            err_single_img = ((imgmeans - target) ** 2) / (2 * torch.exp(logimgvars)) + 0.5 * logimgvars
-            err_single_img = (err_single_img * loss_scale)[mask]
-            
-            err_combined = ((mean - target) ** 2 / (2 * torch.exp(logvars)) + 0.5 * logvars) * loss_scale
-
-            wsi, wec = self.weights
-            return err_single_img.mean() * wsi + err_combined.mean() * wec
+     return 0.001 if e < 40 else 1/ (e * 0.05)
 
 def is_better_model(stats, best_stats):
     corr_improve = stats["Correlation"] - best_stats["Correlation"]
@@ -94,27 +65,28 @@ def is_better_model(stats, best_stats):
 if __name__ == "__main__":
     accelerate.utils.set_seed(0)
     train_dataset, val_dataset, test_dataset = utils_experiment.get_image_dataset()
+    train_dataset.min_seq_len = 3
+    train_dataset.max_seq_len = 4 # Reduces overfitting
 
     train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, collate_fn=datasets_3d.img_validation_collate_fn)
     test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False, collate_fn=datasets_3d.img_validation_collate_fn)
 
-    model_name = "image_model.pth"
+    model_name = "transformer_model.pth"
 
-    if True:
+    if False:
         model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)
 
-    model = models_3d.SingleMlp().to(device)
-    lossfn = SingleMlpMseLoss()
+    model = models_3d.AttentionBased().to(device)
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     scheduler = scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warmup_multiplicative_schedule)
 
     best_val = None
     best_model = None
-    for epoch in range(400):
+    for epoch in range(500):
         errs_train = []
         model.train()
         for images, label, imagemask, weight in train_loader:
@@ -122,7 +94,7 @@ if __name__ == "__main__":
 
             x = model(images, imagemask)
                 
-            loss = lossfn(x, label, weight)
+            loss = ((x.squeeze() - label) ** 2 * weight).mean()
             errs_train.append(loss.item())
 
             optimizer.zero_grad()
