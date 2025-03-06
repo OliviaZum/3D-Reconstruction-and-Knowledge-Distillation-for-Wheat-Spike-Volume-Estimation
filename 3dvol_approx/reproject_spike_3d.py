@@ -82,8 +82,8 @@ class ReprojectSpike3d:
         # Reproject to 3D
         height, width = depth_map.shape
         x_coords, y_coords = np.meshgrid(np.arange(width), np.arange(height))
-        x_coords = x_coords[mask] + corner_x  # Offset by the crop corner
-        y_coords = y_coords[mask] + corner_y  # Offset by the crop corner
+        x_coords = x_coords[mask] + corner_x
+        y_coords = y_coords[mask] + corner_y
         
         points_camera = np.vstack((x_coords, y_coords, np.ones_like(x_coords))) * depth_map[mask]
         points_3d_view = np.linalg.inv(K) @ points_camera

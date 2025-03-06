@@ -14,7 +14,7 @@ import torch
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should_print=True):
+def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should_print=True, ignore_outliers = False):
     model = model.eval()
     with torch.no_grad():
         vol_pred = []
@@ -35,7 +35,11 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
         vol_real = torch.concat(vol_real)
         weights = torch.concat(weights)
         logvars = torch.concat(logvars)
-
+        if ignore_outliers:
+             e = torch.abs(vol_pred - vol_real)
+             p9 = torch.quantile(e, 0.9)
+             mask = e < p9
+             vol_pred, vol_real, weights, logvars = [a[mask] for a in [vol_pred, vol_real, weights, logvars]]
 
         l = {}
         l["MAE"] = F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real)).item()
@@ -93,17 +97,24 @@ def is_better_model(stats, best_stats):
 
 if __name__ == "__main__":
     accelerate.utils.set_seed(0)
-    train_dataset, val_dataset, test_dataset = utils_experiment.get_image_dataset()
+    #model_name = "image_model.pth"
+    #model_name = "fiplike_artifical_image_model.pth"
+    model_name = "self-distill-regulated_transformer.pth"
+
+    if model_name == "image_model.pth" or model_name == "self-distill-regulated_transformer.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_image_dataset()
+    elif model_name == "fiplike_artifical_image_model.pth":
+         _, _, _, train_dataset, val_dataset, test_dataset = utils_experiment.get_artifical_fiplike_dataset()
+    else:
+         assert False
 
     train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, collate_fn=datasets_3d.img_validation_collate_fn)
     test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False, collate_fn=datasets_3d.img_validation_collate_fn)
 
-    model_name = "image_model.pth"
-
     if True:
         model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
-        evaluate(val_loader, model, show_plot=True)
+        evaluate(test_loader, model, show_plot=True, ignore_outliers=False)
         exit(0)
 
     model = models_3d.SingleMlp().to(device)

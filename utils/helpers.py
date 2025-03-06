@@ -56,12 +56,21 @@ def random_rotation_matrix(angle: float, fixed_rotation_axis = None) -> np.ndarr
 def construct_pose_scale(rotation_base: np.ndarray,
                       translate_base: np.ndarray,
                       scale_base: np.ndarray,
-                      rotation_add: np.ndarray,
-                      scale_add: float,
-                      translate_add) -> np.ndarray:
-    scale_mat = scale_add * scale_base
+                      rotation_add: np.ndarray | None,
+                      scale_add: float | None,
+                      translate_add: np.ndarray | None) -> np.ndarray:
+    if scale_add is None:
+        scale_mat = scale_base
+    else:
+        scale_mat = scale_add * scale_base
+    
+    if rotation_add is None:
+        rotation_add = np.eye(3)
     R = rotation_add @ scale_mat @ rotation_base
-    t = translate_base + translate_add
+    if translate_add is None:
+        t = translate_base
+    else:
+        t = translate_base + translate_add
     Rt = np.eye(4)
     Rt[0:3, 0:3] = R
     Rt[0:3, 3] = t

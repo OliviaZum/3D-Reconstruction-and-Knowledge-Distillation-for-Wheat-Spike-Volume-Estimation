@@ -52,4 +52,17 @@ def watch_ply_files():
         #points, normals, weights = reprojector.voxelize(points, normals, voxel_size=0.001, weight_sorted=False)
         utils_3d.visualize_point_clouds(points)
 
-watch_ply_files()
+def watch_artifical_fip_plyfiles():
+    train, _, _ = utils_experiment.get_artifical_fiplike_dataset()
+    base = Path(r"F:\Boxes-ds\artifical_fippose_ds")
+    reprojector = reproject_spike_3d.ReprojectSpike3d(base, train.plant_mapping["pose_file"].explode(True).unique())
+    for i in range(len(train)):
+        row = train.plant_mapping.iloc[[i]]
+        rows = row.explode(column=["depth_name", "pose_file", "pose_key", "distance", "corner", "images"])
+
+        points, normals, weights = reprojector.reproject_images_3d(rows, voxel_size=0.001)
+        print(len(points))
+        #points, normals, weights = reprojector.voxelize(points, normals, voxel_size=0.001, weight_sorted=False)
+        utils_3d.visualize_point_clouds(points)
+
+watch_artifical_fip_plyfiles()

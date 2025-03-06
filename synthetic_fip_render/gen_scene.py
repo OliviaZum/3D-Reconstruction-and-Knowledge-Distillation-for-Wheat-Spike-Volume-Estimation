@@ -13,8 +13,14 @@ import uuid
 from utils.helpers import get_fip_camintrinsics, get_fip_campose, random_rotation_matrix, construct_pose_scale, get_ply_files
 
 class FIPScene(pyrender.Scene):
-    def __init__(self, conf_path: str, meshes_base_dir: str, viewport_size: tuple, n_instance: int, n_duplicates: int,
-                    nodes=None, bg_color=(0, 0, 0), ambient_light=[1.0, 1.0, 1.0], name=None):
+    def __init__(self, conf_path: str, viewport_size: tuple, realistic = False, until_borders = True,
+                    nodes=None, bg_color=(0, 0, 0), name=None):
+        self.realistic = realistic
+        self.until_borders = until_borders
+        if realistic:
+            ambient_light=[0.1, 0.1, 0.1]
+        else:
+            ambient_light=[1.0, 1.0, 1.0]
         super().__init__(nodes, bg_color, ambient_light, name)
 
         with open(conf_path) as f:
@@ -25,18 +31,34 @@ class FIPScene(pyrender.Scene):
         self.viewport_normalization_factor = np.array(self.base_viewport_size) / np.array(viewport_size)
         self.renderer = pyrender.OffscreenRenderer(viewport_width=viewport_size[0], viewport_height=viewport_size[1])
         self.init_cameras()
-        self.generate_spikes(meshes_base_dir, n_instance, n_duplicates)
+
+        if self.realistic:
+            self.sun = None
+            self.random_light()
 
         self.scene_id = uuid.uuid4()
 
 
     def make_image(self, camera_name: str):
         self.main_camera_node = self.camnodes[camera_name]
-        return self.renderer.render(self, flags=pyrender.RenderFlags.FLAT)
+        if self.realistic:
+            return self.renderer.render(self)
+        else:
+            return self.renderer.render(self, flags=pyrender.RenderFlags.FLAT)
     
     def camnames(self):
         for n in self.camnodes.keys():
             yield n
+
+    def random_light(self):
+        if self.sun is not None:
+            self.remove_node(self.sun)
+        directional_light = pyrender.DirectionalLight(color=np.ones(3), intensity=np.random.uniform(3, 8))
+        r = np.eye(4)
+        rot = random_rotation_matrix(np.random.uniform(-0.7 * np.pi, 0.7 * np.pi), None)
+        r[0:3, 0:3] = rot
+        self.sun = self.add(directional_light, pose=r)
+        self.ambient_light = np.array(np.random.uniform(0.1, 0.3) * np.ones(3))
 
     def init_cameras(self):
         self.camnodes = {}
@@ -44,6 +66,33 @@ class FIPScene(pyrender.Scene):
             cam = get_fip_camintrinsics(self.conf, n, self.viewport_size)
             node = self.add(cam, pose=get_fip_campose(self.conf, n))
             self.camnodes[n] = node
+
+    def set_single_spike(self, ply_file):
+        mesh = trimesh.load(ply_file)
+        mesh.apply_translation(-mesh.center_mass)
+        cm = pyrender.Mesh.from_trimesh(mesh)
+        Rt = self.get_random_pose()
+        return self.add(cm, pose=Rt)
+
+    def get_random_pose(self):
+        # This generation rules are very much handcrafted. 
+        scale_base = np.eye(3) * 0.001 # Volume is given in mm^3, but here unit is meters, scale down by 10^3
+        rot_base = np.array([
+            [1, 0, 0],
+            [0, 0, -1],
+            [0, 1, 0]
+        ])
+        move_base = np.array([
+            0, 0, 2.9
+        ])
+        if self.until_borders:
+            random_move = np.array([0.7, 0.6, 0.1]) * np.random.uniform(-1, 1, 3)
+        else:
+            random_move = np.array([0.2, 0.2, 0.1]) * np.random.uniform(-1, 1, 3)
+        random_rot = random_rotation_matrix(np.random.uniform(-np.pi/2, np.pi/2, 1).item())
+        Rt = construct_pose_scale(rot_base, move_base, scale_base, random_rot, None, random_move)
+
+        return Rt
 
     def generate_spikes(self, ply_dir_base, n_instance, n_duplicates):
         ply_files = get_ply_files(ply_dir_base)
@@ -55,19 +104,7 @@ class FIPScene(pyrender.Scene):
             for i in range(n_instance):
                 select = ply_files[random.randint(0, len(ply_files) - 1)]
                 mesh = trimesh.load(select)
-                mesh.apply_translation(-mesh.center_mass)
-
-                # This generation rules are very much handcrafted. Technically data "should" originate from configuration file (especially pose of center along x, y)
-                # Practically this is a lot easier and works for now.
-                scale_base = np.eye(3) * 0.003
-                rot_base = np.array([
-                    [1, 0, 0],
-                    [0, 0, -1],
-                    [0, 1, 0]
-                ])
-                move_base = np.array([
-                    0.53, 0.96, -1.2 + 8
-                ])
+                mesh.apply_translation(-mesh.center_mass)                
                 
                 for j in range(n_duplicates):
                     color = None
@@ -77,12 +114,7 @@ class FIPScene(pyrender.Scene):
                     self.color_to_id[tuple(color)] = id
                     color = color.astype(np.float32) / 255
                     cm = pyrender.Mesh.from_trimesh(mesh, smooth=False, material=pyrender.MetallicRoughnessMaterial(baseColorFactor=color))
-                    random_move = np.array([3, 3, 0.3]) * np.random.uniform(-1, 1, 3)
-                    random_rot = random_rotation_matrix(np.random.normal(0, 0.3, 1).item())
-                    random_scale = np.random.uniform(0.7, 1.4, 1)
-                    #random_scale = np.eye(3)
-                    Rt = construct_pose_scale(rot_base, move_base, scale_base, random_rot, random_scale, random_move)
-
+                    Rt = self.get_random_pose()
                     self.add(cm, pose=Rt)
                     id += 1
                     pbar.update(1)
@@ -169,7 +201,7 @@ def load_scene_data_folder(dir: str):
             data = load_scene_data(os.path.join(dir, file))
             yield splitf[0], data
     
-
-a = FIPScene("assets/poses/2024_07_04_14_04_Lot3.json", "F:/wheat-scans-simplyfied-fast", (400, 300), 5, 30)
-a.draw_camera_meshes()
-pyrender.Viewer(a)
+if __name__ == "__main__":
+    a = FIPScene("assets/poses/2024_07_04_14_04_Lot3.json", "F:/wheat-scans-simplyfied-fast", (400, 300), 5, 30)
+    a.draw_camera_meshes()
+    pyrender.Viewer(a)

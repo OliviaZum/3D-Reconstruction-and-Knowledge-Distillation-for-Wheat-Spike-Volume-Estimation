@@ -14,6 +14,30 @@ def get_real_dataset3d(force_recompute = False):
 
     return train_dataset, val_dataset, test_dataset
 
+def get_artifical_fiplike_dataset(force_recompute = False):
+    split_folder = Path("split_without2024")
+    base_folder = Path(r"F:\Boxes-ds\artifical_fippose_ds")
+    cache_path = Path(r"3dvol_approx\local_stuff\dmap_cache")
+    train_dataset = datasets_3d.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_train.json")
+    train_dataset.create_or_load_cache(cache_path / "fiplike_artifical_dmap_train.pth", force_recompute)
+    val_dataset = datasets_3d.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_val.json")
+    val_dataset.create_or_load_cache(cache_path / "fiplike_artifical_dmap_val.pth", force_recompute)
+    test_dataset = datasets_3d.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_test.json")
+    test_dataset.create_or_load_cache(cache_path / "fiplike_artifical_dmap_test.pth", force_recompute)
+
+    pretrained_model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
+    train_dataset_img = datasets_3d.MultiImageTrainDataset(base_folder, base_folder / split_folder / "mapping_train.json",
+                                                           datasets_3d.get_transform(True), "volume", 12, 4, True)
+    train_dataset_img.create_or_load_cache(pretrained_model, cache_path / "fiplike_artificial_img_train.pth", 10, num_workers=4)
+    val_dataset_img = datasets_3d.MultiImageTrainDataset(base_folder, base_folder / split_folder / "mapping_val.json", 
+                                                         datasets_3d.get_transform(False), "volume", 12, 6, False, validation_mode=True)
+    val_dataset_img.create_or_load_cache(pretrained_model, cache_path / "fiplike_artificial_img_val.pth", 1, num_workers=0)
+    test_dataset_img = datasets_3d.MultiImageTrainDataset(base_folder, base_folder / split_folder / "mapping_test.json", 
+                                                         datasets_3d.get_transform(False), "volume", 12, 6, False, validation_mode=True)
+    test_dataset_img.create_or_load_cache(pretrained_model, cache_path / "fiplike_artificial_img_test.pth", 1, num_workers=0)
+    
+    return train_dataset, val_dataset, test_dataset, train_dataset_img, val_dataset_img, test_dataset_img
+
 def get_ply_dataset(force_recompute = False):
     split_folder = Path(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
     base_folder = Path(r"F:\FIP-data\wheat-scans")

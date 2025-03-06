@@ -66,11 +66,14 @@ if __name__ == "__main__":
     # Results vary quite a bit depending on seed
     accelerate.utils.set_seed(1, deterministic=True)
     
-    model_name = "ply2volume_model.pth" # real_volume
+    #model_name = "ply2volume_model.pth" # real_volume
+    model_name = "fiplike_ply_model.pth"
     if model_name == "ply2volume_model.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset()
     elif model_name == "real_volume_model-direct.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_real_dataset3d(force_recompute=False)
+    elif model_name == "fiplike_ply_model.pth":
+        train_dataset, val_dataset, test_dataset, _, _, _ = utils_experiment.get_artifical_fiplike_dataset(force_recompute=False)
     else:
         assert False
     train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)

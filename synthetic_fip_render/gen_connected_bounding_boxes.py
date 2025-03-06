@@ -6,7 +6,8 @@ n_iters = 1
 save_imgs = True
 base_dir = "F:/wheat-scans-simplyfied-fast/bboxes_ground_truth/simple"
 for i in range(n_iters):
-    a = gen_scene.FIPScene("assets/fip_poses_configuration.json", "F:/wheat-scans-simplyfied-fast/", (400, 300), 5, 50)
+    a = gen_scene.FIPScene("assets/fip_poses_configuration.json", (400, 300))
+    a.generate_spikes("F:/wheat-scans-simplyfied-fast/", 5, 50)
     bboxes = a.get_all_bounding_boxes()
     
     gen_scene.save_scene_data(a, bboxes, base_dir)
