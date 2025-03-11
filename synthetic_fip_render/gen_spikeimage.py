@@ -1,8 +1,5 @@
-import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
-
-import os
+from pathlib import Path
 from typing import Literal
 import trimesh
 import pyrender
@@ -11,10 +8,6 @@ from utils import helpers
 import cv2
 import pandas as pd
 import traceback
-import matplotlib.pyplot as plt
-from fip_detection import detect
-from ultralytics import YOLO
-import glob
 
 image_size = 300
 
@@ -65,11 +58,8 @@ class ArtificialImageGenerator(pyrender.Scene):
     def generate(self, base_dir_in: str, dir_out: str, n_images_per_plant: int, get_pose, num_plants: int = None, cut_spike: bool=False, ignore_weird_samples = True):
         os.makedirs(dir_out, exist_ok=True)
 
-        background_images = [f for n in range(1, 13) for f in glob.glob(fr'F:\FIP-data\images\**\cam_{n:02}.png', recursive=True)]
-        background = None
-        seg_model = YOLO(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\jupyter\runs\segment\train3\weights\best.pt")
         ply_files = helpers.get_ply_files(base_dir_in)
-        # ply_files = [r"F:\FIP-data\wheat-scans\volumes_2023\2_6_10.ply"] # r"F:\FIP-data\wheat-scans\volumes_2023\2_6_10.ply"
+        
         # First three have a total different scale and produce black images. Last one appears twice (different spike, same name)
         weird_stuff = set(["2_10_8", "10_9_5", "11_8_9", "6_9_1"])
         img_names = []
@@ -110,29 +100,11 @@ class ArtificialImageGenerator(pyrender.Scene):
                         img = img[y_min:y_max + 1, x_min:x_max + 1, :]
                     else:
                         img = helpers.extend_image_box((x_min, y_min, x_max, y_max), img, 20)
-                        w = 2.1 # Fixed to match sizes of FIP (respectively lead to "good" generalization on fip data)
+                        w = 2.1 # Fixed to match sizes of FIP (respectively lead to "good" generalization on fip data) (btw could also be done with different distance)
                         img = cv2.resize(img, None, fx=w, fy=w)
-                        if np.random.random() < 0.05 or background is None:
-                            background = cv2.imread(background_images[np.random.randint(0, len(background_images))])
-                        bx, by = np.random.randint(0, background.shape[0] - img.shape[0]), np.random.randint(0, background.shape[1] - img.shape[1])
-                        background_select = background[bx:bx+img.shape[0], by:by+img.shape[1]]
-
-                        mask = np.all(img < 30, axis=2)
-                        mask = ~cv2.erode(mask.astype(np.uint8), kernel=np.ones((10, 10), np.uint8), iterations=1).astype(np.bool_) & mask
-                        
-                        if False and np.random.random() < 0.3:
-                            w = background_select.copy()
-                            spikes_region = detect.segment_spikes(seg_model, background_select)
-                            background_select = w
-                            if spikes_region is not None:
-                                spikes_mask = np.all(spikes_region > 0, axis=2)
-                                mask[spikes_mask] = True
-
-                        #img[mask] = background_select[mask]
                         img = helpers.put_image_on_patch(image_size, img)
 
                 cv2.imwrite(os.path.join(dir_out, img_name), img)
-                
                     
             if num_plants is not None and p_num >= num_plants:
                 break
@@ -206,56 +178,56 @@ class PoseGenerator:
             trans_shift
         )
 
+if __name__ == "__main__":
+    np.random.seed(0)
+    a = ArtificialImageGenerator((300, 300))
+    global_pose = PoseGenerator()
 
-np.random.seed(0)
-a = ArtificialImageGenerator((300, 300))
-global_pose = PoseGenerator()
+    # Was used in experiments to augment real data with artifical data, but this failed
+    #a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\test", 12, lambda plant_changed: global_pose.get("best", "none", plant_changed=plant_changed), cut_spike=False, num_plants=60)
 
-a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\test", 12, lambda plant_changed: global_pose.get("best", "none", plant_changed=plant_changed), cut_spike=False, num_plants=60)
+    ply_dir = r"F:\FIP-data\wheat-scans"
+    base_out_dir = Path(r"F:\Boxes-ds\artifical_test")
 
-generate_artifical_sets = False
-if not generate_artifical_sets:
-    exit(0)
+    try:
+        a.generate(ply_dir, base_out_dir / "randompose_mildshift_12_cut", 12, lambda _: global_pose.get("best", "none"), cut_spike=True)
+    except:
+        traceback.print_exception()
 
-try:
-    a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical\randompose_mildshift_12_cut", 12, lambda _: global_pose.get("best", "none"), cut_spike=True)
-except:
-    traceback.print_exception()
+    try:
+        a.generate(ply_dir, base_out_dir / r"bestpose_constant_far_12", 12, lambda _: global_pose.get("best", "none", trans_base=np.array([0, 0, -5])))
+    except:
+        traceback.print_exception()
 
-try:
-    a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical\bestpose_constant_far_12", 12, lambda _: global_pose.get("best", "none", trans_base=np.array([0, 0, -5])))
-except:
-    traceback.print_exception()
+    try:
+        a.generate(ply_dir, base_out_dir / "randompose_strongshift_cut_12", 12, lambda _: global_pose.get("random", "strong"), cut_spike=True)
+    except:
+        traceback.print_exception()
 
-try:
-    a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical\randompose_strongshift_cut_12", 12, lambda _: global_pose.get("random", "strong"), cut_spike=True)
-except:
-    traceback.print_exception()
+    try:
+        a.generate(ply_dir, base_out_dir / "bestpose_noshift_6", 6, lambda _: global_pose.get("best", "none"))
+    except:
+        traceback.print_exception()
+    try:
+        a.generate(ply_dir, base_out_dir / "bestpose_noshift_12", 12, lambda _: global_pose.get("best", "none"))
+    except:
+        traceback.print_exception()
 
-try:
-    a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical\bestpose_noshift_6", 6, lambda _: global_pose.get("best", "none"))
-except:
-    traceback.print_exception()
-try:
-    a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical\bestpose_noshift_12", 12, lambda _: global_pose.get("best", "none"))
-except:
-    traceback.print_exception()
+    try:
+        a.generate(ply_dir, base_out_dir / "worstpose_noshift_12", 12, lambda _: global_pose.get("worst", "none"))
+    except:
+        traceback.print_exception()
 
-try:
-    a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical\worstpose_noshift_12", 12, lambda _: global_pose.get("worst", "none"))
-except:
-    traceback.print_exception()
+    try:
+        a.generate(ply_dir, base_out_dir / "randompose_noshift_12", 12, lambda _: global_pose.get("random", "none"))
+    except:
+        traceback.print_exception()
 
-try:
-    a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical\randompose_noshift_12", 12, lambda _: global_pose.get("random", "none"))
-except:
-    traceback.print_exception()
-
-try:
-    a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical\bestpose_strongshift_12", 12, lambda _: global_pose.get("best", "strong"))
-except:
-    traceback.print_exception()
-try:
-    a.generate(r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\artifical\bestpose_strongshift_cut_12", 12, lambda _: global_pose.get("best", "strong"), cut_spike=True)
-except:
-    traceback.print_exception()
+    try:
+        a.generate(ply_dir, base_out_dir / "bestpose_strongshift_12", 12, lambda _: global_pose.get("best", "strong"))
+    except:
+        traceback.print_exception()
+    try:
+        a.generate(ply_dir, base_out_dir / "bestpose_strongshift_cut_12", 12, lambda _: global_pose.get("best", "strong"), cut_spike=True)
+    except:
+        traceback.print_exception()

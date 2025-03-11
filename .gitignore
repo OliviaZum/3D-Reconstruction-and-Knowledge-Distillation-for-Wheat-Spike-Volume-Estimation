@@ -4,3 +4,4 @@ local_stuff/
 /lib
 *.cache
 jupyter
+volume_prediction_fip.egg-info/

@@ -1,6 +1,7 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
+"""
+Generates a dataset of (single) noisefree depth and image spikes
+with cameraposes as they are on the fip.
+"""
 
 from gen_scene import FIPScene
 import tqdm
@@ -26,7 +27,7 @@ def generate_dataset(conf_path, plant_mapping: pd.DataFrame, meshes_path: str, o
         row = row.iloc[0]
 
         node = scene.set_single_spike(ply_file)
-        for i, cam in enumerate(scene.camnames()):
+        for j, cam in enumerate(scene.camnames()):
             img, depth = scene.make_image(cam)
             dist = depth[depth != 0].mean()
 
@@ -46,8 +47,8 @@ def generate_dataset(conf_path, plant_mapping: pd.DataFrame, meshes_path: str, o
             depth_patch, patchbox = helpers.put_image_on_patch(300, depth_box, crop_params)
             cutbox = cutbox[0:2] + patchbox[0:2]
 
-            img_name = f"{row["plant_id"]}_{i}_b.jpg"
-            depth_name = f"{row["plant_id"]}_{i}_b_d.npy"
+            img_name = f"{row["plant_id"]}_{j}_b.jpg"
+            depth_name = f"{row["plant_id"]}_{j}_b_d.npy"
 
             cv2.imwrite(out_path / img_name, img_patch)
             np.save(out_path / depth_name, depth_patch)
@@ -64,9 +65,14 @@ def generate_dataset(conf_path, plant_mapping: pd.DataFrame, meshes_path: str, o
     df.to_csv(out_path / "vol_mapping.csv", index=False)
 
 if __name__ == "__main__":
-    plant_mapping = pd.read_json(r"F:\Boxes-ds\segmented_distance_depth\split_without2024\mapping_all_plants.json",
+    plants_to_generate = r"F:\Boxes-ds\segmented_distance_depth\split_without2024\mapping_all_plants.json"
+    calibration = r"F:\Boxes-ds\artifical_fippose_ds\2023_06_08_13_11_Lot1.json"
+    ply_dir = r"F:\FIP-data\wheat-scans"
+    out_dir = r"F:\Boxes-ds\artifical_fippose_ds_test"
+
+    plant_mapping = pd.read_json(plants_to_generate,
                                   orient='index', convert_axes=False, dtype={"plant_id" : str})
     plant_mapping = plant_mapping.rename_axis("plant_id")
     plant_mapping = plant_mapping.reset_index()
-    generate_dataset(r"F:\Boxes-ds\artifical_fippose_ds\2023_06_08_13_11_Lot1.json", plant_mapping,
-                     r"F:\FIP-data\wheat-scans", r"F:\Boxes-ds\\artifical_fippose_ds")
+    generate_dataset(calibration, plant_mapping,
+                     ply_dir, out_dir)

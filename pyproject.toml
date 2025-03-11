@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "volume_prediction_fip"
+version = "0.1"
+dependencies = ["numpy"]
+requires-python = ">=3.7"
+
+[tool.setuptools]
+packages = ["experiments_volume_models", "experiments_volume_models.shared", "fip_dataset", "image_pairing", "synthetic_fip_render", "utils"]

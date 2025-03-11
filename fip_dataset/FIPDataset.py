@@ -12,7 +12,7 @@ from utils import helpers
 import cv2
 import tqdm
 from ultralytics import YOLO
-from fip_detection import detect
+from fip_global import detect
 
 class FIPDataset:
     def __init__(self, csv_folder, img_folder, ply_folder, precompute_file = None, spikelabels_file = None, pose_folder = None) -> None:
@@ -144,7 +144,7 @@ class FIPDataset:
             assert self.precomputed is not None
         else:
             self.precomputed = {}
-        from fip_detection import detect
+        from fip_global import detect
         import torch
         import tqdm
         
