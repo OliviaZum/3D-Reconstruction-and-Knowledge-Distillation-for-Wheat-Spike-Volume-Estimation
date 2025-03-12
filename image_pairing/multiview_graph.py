@@ -45,7 +45,7 @@ def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, Lis
                     [xmin, ymax, 1],
                     [xmax, ymax, 1],
                     [xmax, ymin, 1]
-                    ])
+                    ], dtype=torch.float32)
                 pa = torch.stack([p[0, :], p[0, :], p[1, :]])
                 pb = torch.stack([p[1, :], p[3, :], p[2, :]])
                 v_zero_img[n].append(pa)
@@ -203,9 +203,12 @@ def estimate_distances(poses_conf, bounding_boxes: Dict[str, Dict[str, List[int]
 
     return bounding_boxes_to_distance
 
-def lp_cluster_torch(graph: np.ndarray, device = 'cuda' if torch.cuda.is_available() else 'cpu') -> torch.Tensor:
+def lp_cluster_torch(graph: np.ndarray, device = 'cuda' if torch.cuda.is_available() else 'cpu',
+                     n_repeats = 3, min_prob = 0.8) -> torch.Tensor:
     """
     Label propagation to cluster the graph created by build_epipolar_graph_opt.
+    Label propagation is run n_repeats times, building a "cluster" matrix containing the probabilities
+        that a node is paired with another node. min_prob indicates the minimum probability to pair
     """
     with torch.no_grad():
         
@@ -214,34 +217,49 @@ def lp_cluster_torch(graph: np.ndarray, device = 'cuda' if torch.cuda.is_availab
         # propagation slowly or not converging at all (and worse results). As a
         # tradeoff using just some degree of parallelism.
         graph = torch.tensor(graph, device=device)
-        labels = torch.eye(graph.shape[0], device=device)
-        no_converge = True
-        max_iter = 200
-        iters = 0
-        batches = graph.shape[0] // 20
-        if batches < 1:
-            num_parallel = 1
-        else:
-            num_parallel = batches
-        while no_converge and iters <= max_iter:
-            iters += 1
-            nodes = torch.randperm(graph.shape[0])
-            no_converge = False
-            for i in range(0, len(nodes), num_parallel):
-                n = nodes[i:min(i+num_parallel, len(nodes))]
-                v = graph[n]
-                freq = v @ labels
-                # Technically labels should be picked at random. 
-                # But complicated and slow, practically the algorithm does not seem to work
-                # worse with a fixed label.
-                max = torch.argmax(freq, dim=1)
-                if torch.any(labels[n, max] == 0):
-                    no_converge = True
-                    labels[n, :] = 0
-                    labels[n, max] = 1
+        all_labels = []
+        for _ in range(n_repeats):
+            labels = torch.eye(graph.shape[0], device=device)
+            no_converge = True
+            max_iter = 200
+            iters = 0
+            batches = graph.shape[0] // 20
+            if batches < 1:
+                num_parallel = 1
+            else:
+                num_parallel = batches
+            while no_converge and iters <= max_iter:
+                iters += 1
+                nodes = torch.randperm(graph.shape[0])
+                no_converge = False
+                for i in range(0, len(nodes), num_parallel):
+                    n = nodes[i:min(i+num_parallel, len(nodes))]
+                    v = graph[n]
+                    freq = v @ labels
+                    # Technically labels should be picked at random. 
+                    # But complicated and slow, practically the algorithm does not seem to work
+                    # worse with a fixed label.
+                    max = torch.argmax(freq, dim=1)
+                    if torch.any(labels[n, max] == 0):
+                        no_converge = True
+                        labels[n, :] = 0
+                        labels[n, max] = 1
 
-        if iters == max_iter:
-            warnings.warn("label propagation failed to converge")
+            labels = torch.argmax(labels, dim=1)
 
-        labels = torch.argmax(labels, dim=1)
+            if iters == max_iter:
+                warnings.warn("label propagation failed to converge")
+            else:
+                all_labels.append(labels.cpu())
+
+
+        ksum = torch.zeros((len(labels), len(labels)), dtype=torch.float32, device=device)
+        for i in range(len(all_labels)):
+            eq = all_labels[i].to(device) == all_labels[i].to(device).unsqueeze(1)
+            ksum += eq
+        ksum *= (1 / len(all_labels))
+
+        labelprob = ksum >= min_prob
+        labels = torch.argmax(labelprob.to(torch.float32), dim=1).cpu()
+
         return labels

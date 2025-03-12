@@ -3,6 +3,7 @@ Contains code to create an artifical FIP scene, given a camera calibration as ge
 fip_global.generate_scaled_calibration.
 """
 
+from typing import Literal
 import trimesh
 import pyrender
 import numpy as np
@@ -54,8 +55,8 @@ class FIPScene(pyrender.Scene):
     # and spikes are rendered with shadows. Otherwise FLAT shading is used.
     # until_borders means that spikes can appear anywhere on the images including not appear at all;
     # if False all spikes are visible on all images (but positions are constrained)
-    def __init__(self, conf_path: str, viewport_size: tuple, realistic = False, until_borders = True,
-                    nodes=None, bg_color=(0, 0, 0), name=None):
+    def __init__(self, conf_path: str, viewport_size: tuple, realistic = False, until_borders = True, 
+                 spike_pose: Literal["uniform", "normal"] = "uniform", nodes=None, bg_color=(0, 0, 0), name=None):
         self.realistic = realistic
         self.until_borders = until_borders
         if realistic:
@@ -78,6 +79,7 @@ class FIPScene(pyrender.Scene):
             self.random_light()
 
         self.scene_id = uuid.uuid4()
+        self.spike_pose = spike_pose
 
     # Get a color and a depth image from camera {name} (e.g. cam_01.png)
     def make_image(self, camera_name: str):
@@ -134,7 +136,11 @@ class FIPScene(pyrender.Scene):
             random_move = np.array([0.7, 0.6, 0.1]) * np.random.uniform(-1, 1, 3)
         else:
             random_move = np.array([0.2, 0.2, 0.1]) * np.random.uniform(-1, 1, 3)
-        random_rot = random_rotation_matrix(np.random.uniform(-np.pi/2, np.pi/2, 1).item())
+        if self.spike_pose == "uniform":
+            angle = np.random.uniform(-np.pi/2, np.pi/2, 1).item()
+        else:
+            angle = np.random.normal(0, 0.3, 1).item()
+        random_rot = random_rotation_matrix(angle)
         Rt = construct_pose_scale(rot_base, move_base, scale_base, random_rot, None, random_move)
 
         return Rt

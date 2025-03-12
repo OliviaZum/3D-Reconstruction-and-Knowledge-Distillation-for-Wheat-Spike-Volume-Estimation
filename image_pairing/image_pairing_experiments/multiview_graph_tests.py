@@ -2,6 +2,7 @@
 Implements the tests for different clustering methods, and the actual evaluation code for artifical code.
 """
 
+import random
 from typing import Dict, List, Literal
 import numpy as np
 import epipolar_geometry
@@ -19,6 +20,7 @@ import joblib
 import tqdm
 import os
 from image_pairing.multiview_graph import build_epipolar_graph_opt, lp_cluster_torch
+from collections import defaultdict
 
 calibration_file = "assets/poses/2023_06_08_13_11_Lot1.json"
 
@@ -203,8 +205,34 @@ def force_opt(g: np.ndarray):
         #plt.show()
         return clustering.labels_
 
-def load_and_build_graph(file: str, recompute = False, store_cache = True):
+def simulate_detection_errors_and_occlusion(data, min_k = 6, exclude_partially_visible = False):
+    id_counts = defaultdict(int)
+    for cam_data in data.values():
+        for obj_id in cam_data:
+            id_counts[obj_id] += 1
+
+    valid_ids = {obj_id for obj_id, count in id_counts.items() if count == 12}
+    new_data = {cam : {} for cam in data}
+
+    cam_list = [cam for cam in data]
+    for i, id in enumerate(valid_ids):
+        n_cams = (i % (12 - min_k + 1)) + min_k # To how many cameras to add
+        random.shuffle(cam_list)
+        for cam_add in cam_list[:n_cams]:
+            new_data[cam_add][id] = data[cam_add][id]
+
+    if not exclude_partially_visible:
+        for cam in data:
+            for id, v in data[cam].items():
+                if id not in valid_ids:
+                    new_data[cam][id] = v
+
+    return new_data
+
+def load_and_build_graph(file: str, data_preprocess, recompute = True, store_cache = False):
     data = load_scene_data(file)
+    data = data_preprocess(data)
+
     with open(calibration_file) as f:
         conf = json.load(f)
 
@@ -227,11 +255,15 @@ def load_and_build_graph(file: str, recompute = False, store_cache = True):
 def show_stats(tp_fn_fp_views: np.ndarray, num_views: np.ndarray, mean_deviation_views: np.ndarray):
     def to_rates(sums):
         return {"FN rate": sums[1] / sums[0], "FP rate": sums[2] / sums[0], "Error rate": (sums[2] + sums[1]) / sums[0]}
+        # rates: ratio of FN and FP to TP, either seperated or combined
+        return {"FN rate": sums[1] / sums[0], "FP rate": sums[2] / sums[0], "Error rate": (sums[2] + sums[1]) / sums[0],
+                "precision": sums[0] / (sums[0] + sums[2]),
+                "recall": sums[0] / (sums[0] + sums[1])}
     rates_6_10 = to_rates(tp_fn_fp_views[:, 5:9].sum(axis=1))
-    rates_10_12 = to_rates(tp_fn_fp_views[:, 9:].sum(axis=1))
+    rates_10_11 = to_rates(tp_fn_fp_views[:, 9:11].sum(axis=1))
     rates_12 = to_rates(tp_fn_fp_views[:, 11])
-    print(f"Rates 6-10 Views: {rates_6_10}")
-    print(f"Rates 10-12 Views: {rates_10_12}")
+    print(f"Rates 6-9 Views: {rates_6_10}")
+    print(f"Rates 10-12 Views: {rates_10_11}")
     print(f"Rates 12 Views: {rates_12}")
 
     x = np.arange(1, 13)
@@ -345,14 +377,14 @@ def run_cluster_test(graph: np.ndarray, idx_to_instance: Dict, ground_truth, tas
 
         return tp_fn_fp_views, accumulate_frequencies(num_view_per_obj.values()), mean_deviation_views
         
-def run_cluster_test_multiple(dir):
+def run_cluster_test_multiple(dir, data_preprocess):
     tp_fn_fp_views_agg = np.zeros((3, 12))
     num_view_agg = np.zeros(12)
     mean_deviation_views_agg = np.zeros(12)
     counter = 0
     for file in os.listdir(dir):
         if os.path.splitext(file)[1] == ".json":
-            (graph, idx_to_instance), data = load_and_build_graph(os.path.join(dir, file), True, False)
+            (graph, idx_to_instance), data = load_and_build_graph(os.path.join(dir, file), data_preprocess)
             tp_fn_fp_views, num_view, mean_deviation_views = run_cluster_test(graph.cpu().numpy(), idx_to_instance, data, 'lpatorch', False)
             tp_fn_fp_views_agg += tp_fn_fp_views
             num_view_agg += num_view
@@ -364,10 +396,8 @@ def run_cluster_test_multiple(dir):
     show_stats(tp_fn_fp_views_agg, num_view_agg, mean_deviation_views_agg)
 
 
-run_cluster_test_multiple("F:/wheat-scans-simplyfied-fast/bboxes_ground_truth/old/val")
-"""
-(graph, idx_to_instance), data = load_and_build_graph("F:/wheat-scans-simplyfied-fast/bboxes_ground_truth/val/cdc2f6a9-ea1f-4cfb-8b00-9c8d25b13cdb.json", False)
-graph = graph.cpu().numpy()
-for _ in range(1):
-    run_cluster_test(graph, idx_to_instance, data, 'lpatorch')
-"""
+# Ground truth can be generated with gen_connected_bounding_boxes in synthetic_fip
+test_dir = "F:/wheat-scans-simplyfied-fast/bboxes_ground_truth/uniform"
+def data_preprocess(data):
+    return simulate_detection_errors_and_occlusion(data, 6, exclude_partially_visible=True)
+run_cluster_test_multiple(test_dir, data_preprocess)

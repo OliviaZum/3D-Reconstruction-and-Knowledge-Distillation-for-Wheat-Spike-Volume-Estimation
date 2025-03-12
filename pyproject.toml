@@ -9,4 +9,4 @@ dependencies = ["numpy"]
 requires-python = ">=3.7"
 
 [tool.setuptools]
-packages = ["experiments_volume_models", "experiments_volume_models.shared", "fip_dataset", "image_pairing", "synthetic_fip_render", "utils"]
+packages = ["experiments_volume_models", "experiments_volume_models.shared", "fip_dataset", "image_pairing", "synthetic_fip_render", "utils", "fip_global"]
