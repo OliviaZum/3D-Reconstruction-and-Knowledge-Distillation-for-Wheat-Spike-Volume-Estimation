@@ -1,5 +1,5 @@
 import warnings
-import experiments.shared.reproject_spike_3d as reproject_spike_3d
+from experiments_volume_models.shared import reproject_spike_3d
 from torch.utils.data import Dataset
 from pathlib import Path
 import torch
@@ -342,7 +342,8 @@ class MultiImageTrainDataset(Dataset):
                  random_seq_len : bool = True,
                  random_generator : np.random.Generator = np.random.default_rng(10),
                  dtype : torch.dtype = torch.float32,
-                 validation_mode = False):
+                 validation_mode = False, 
+                 distance_normlization = True):
         """Image loader with lazy image loading.
         
         For image to be recognized, it must exist in the directory
@@ -387,12 +388,15 @@ class MultiImageTrainDataset(Dataset):
         self.generator = random_generator
         self.transform = v2.Compose(transform)
         self.validation_mode = validation_mode
+        self.distance_normalization = distance_normlization
 
         # fix torch seed for image rotations
         torch.manual_seed(self.generator.integers(0,1000000))
 
         plant_mapping = pd.read_json(plant_mapping_path, orient='index', convert_axes=False, dtype={"plant_id" : str})
         plant_mapping = plant_mapping.rename_axis("plant_id")
+        if "labeled" not in plant_mapping.columns:
+            plant_mapping["labeled"] = True
         self.plant_mapping = plant_mapping.reset_index()
         self.cache = None
         self.no_label_scale = 1.0
@@ -444,24 +448,25 @@ class MultiImageTrainDataset(Dataset):
             # read image and transform to floating point type
             torch_image = read_image(str(image_path))
 
-            distance = self.plant_mapping.loc[plant_idx, "distance"][image_idx]
-            orig_size = torch_image.shape[-2:]
-            factor = distance / 3.2
-            torch_image = FT.resize(torch_image, (int(torch_image.shape[-2] * factor), int(torch_image.shape[-1] * factor)), antialias=True)
-            if factor <= 1:
-                def l2(tin):
-                    t = tin // 2
-                    if 2 * t == tin:
-                        l, r = t, t
-                    else:
-                        l, r = t, t+1
-                    return l, r
-                dw, dh = orig_size[-2] - torch_image.shape[-2], orig_size[-1] - torch_image.shape[-1]
-                wl, wr = l2(dw)
-                hl, hr = l2(dh)
-                torch_image = FT.pad(torch_image, [wl, hl, wr, hr])
-            else:
-                torch_image = FT.center_crop(torch_image, orig_size)
+            if self.distance_normalization:
+                distance = self.plant_mapping.loc[plant_idx, "distance"][image_idx]
+                orig_size = torch_image.shape[-2:]
+                factor = distance / 3.2
+                torch_image = FT.resize(torch_image, (int(torch_image.shape[-2] * factor), int(torch_image.shape[-1] * factor)), antialias=True)
+                if factor <= 1:
+                    def l2(tin):
+                        t = tin // 2
+                        if 2 * t == tin:
+                            l, r = t, t
+                        else:
+                            l, r = t, t+1
+                        return l, r
+                    dw, dh = orig_size[-2] - torch_image.shape[-2], orig_size[-1] - torch_image.shape[-1]
+                    wl, wr = l2(dw)
+                    hl, hr = l2(dh)
+                    torch_image = FT.pad(torch_image, [wl, hl, wr, hr])
+                else:
+                    torch_image = FT.center_crop(torch_image, orig_size)
 
             torch_image = self.transform(torch_image)
             #plt.imshow(torch_image.permute(2, 1, 0).numpy())

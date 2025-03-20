@@ -1,18 +1,31 @@
-import experiments.shared.utils_experiment as utils_experiment
+import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.utils.data import DataLoader
 from torch import nn
 import numpy as np
 import copy
-import experiments.shared.datasets_3d as datasets_3d
-import experiments.shared.utils_3d as utils_3d
-import experiments.shared.models_3d as models_3d
-import experiments.shared.utils_experiment as utils_experiment
+import experiments_volume_models.shared.datasets as datasets
+import experiments_volume_models.shared.utils_3d as utils_3d
+import experiments_volume_models.shared.models as models
+import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
-import pandas as pd
 import torch
 import itertools
 import accelerate
+
+"""
+An ensemble of the RigidInvariant PointNet (trained with Scan supervision) and the regulated Transformer
+
+Results on test (both models are trained directly):
+Val MAE: 530.1937255859375
+Val Corr: 0.843381191991469
+Steepness: 0.770586850969483
+
+Results on test (regulated transformer is self distilled):
+Val MAE: 536.776611328125
+Val Corr: 0.848645226517776
+Steepness: 0.8593852486317232
+"""
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -34,7 +47,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         vol_real = torch.concat(vol_real)
         weights = torch.concat(weights)
 
-        mae = F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real))
+        mae = F.l1_loss(datasets.vol_unorm(vol_pred), datasets.vol_unorm(vol_real))
         print(f"Val MAE: {mae}")
         corr = np.corrcoef(vol_real, vol_pred)[0, 1]
         print(f"Val Corr: {corr}")
@@ -46,7 +59,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         print(f"Rate: {rate}")
         if show_plot:
             plt.plot((2000, 8500), (2000, 8500))
-            plt.scatter(datasets_3d.vol_unorm(vol_real), datasets_3d.vol_unorm(vol_pred))
+            plt.scatter(datasets.vol_unorm(vol_real), datasets.vol_unorm(vol_pred))
             plt.show()
         
         return rate
@@ -63,15 +76,15 @@ if __name__ == "__main__":
     model_name = "3dglobimgensemble.pth"
 
     if False:
-        model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
-        evaluate(val_loader, model, show_plot=True)
+        model = torch.load(f"experiments_volume_models/local_stuff/{model_name}", weights_only=False).to(device).eval()
+        evaluate(test_loader, model, show_plot=True)
         exit(0)
 
-    model = models_3d.Image3dEnsemble()
+    model = models.Image3dEnsemble()
 
-    pretrained_point = torch.load(f"3dvol_approx/local_stuff/real_volume_model.pth", weights_only=False)
-    pretrained_img = torch.load(f"3dvol_approx/local_stuff/image_model.pth", weights_only=False)
-    #pretrained_img = torch.load(f"3dvol_approx/local_stuff/self-distill-regulated_transformer.pth", weights_only=False)
+    pretrained_point = torch.load(f"experiments_volume_models/local_stuff/rigidinv_indirect2.pth", weights_only=False)
+    pretrained_img = torch.load(f"experiments_volume_models/local_stuff/regulatedtransformer-direct.pth", weights_only=False)
+    #pretrained_img = torch.load(f"experiments_volume_models/local_stuff/self-distill-regulated_transformer.pth", weights_only=False)
 
     model.img_net.load_state_dict(pretrained_img.state_dict(), strict=False)
     model.point_net.load_state_dict(pretrained_point.state_dict(), strict=False)
@@ -107,4 +120,4 @@ if __name__ == "__main__":
 
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 
-    torch.save(best_model, f"3dvol_approx/local_stuff/{model_name}")
+    torch.save(best_model, f"experiments_volume_models/local_stuff/{model_name}")

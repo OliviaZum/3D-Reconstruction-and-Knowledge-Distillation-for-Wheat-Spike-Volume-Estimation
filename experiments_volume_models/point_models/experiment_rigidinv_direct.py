@@ -1,33 +1,35 @@
+"""
+Directly training the RigidInvariantPointNet for volume prediction.
+By changing the modelname different datasets can be used (the real dataset,
+the ply dataset [i.e. points sampled from the 3d scans], or the fiplike artificial
+dataset)
+
+Performance on real:
+Val MAE: 580.3414916992188
+Val Corr: 0.8002600909545133
+Steepness: 0.6788825071122576
+
+Performance on ply files:
+Val MAE: 136.79244995117188
+Val Corr: 0.989288331764323
+Steepness: 1.0001779871566243
+"""
+
 import torch
 from torch.utils.data import DataLoader
 from torch import nn
 import numpy as np
 import copy
-import experiments.shared.datasets_3d as datasets_3d
-import experiments.shared.utils_3d as utils_3d
-import experiments.shared.models_3d as models_3d
-import experiments.shared.utils_experiment as utils_experiment
+import experiments_volume_models.shared.datasets as datasets
+import experiments_volume_models.shared.utils_3d as utils_3d
+import experiments_volume_models.shared.models as models
+import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
-import pandas as pd
 import accelerate
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-"""
-Results:
-ply - direct (~100 epochs):
-    - Corr: 0.98
-    - MAE: 188
-real - direct (~100 epochs)
-    - Corr: 0.81
-    - MAE: 546
-    - Steepness: 0.75
-real - direct, scaled (~100 epochs)
-    - Corr: 0.76
-    - MAE: 673
-    - Steepness: 0.82
-"""
 
 def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
     model = model.eval()
@@ -50,7 +52,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
 
         loss = ((vol_pred - vol_real) ** 2).mean().item()
         #loss = ((vol_pred - vol_real) ** 2).mean().item()
-        print(f"Val MAE: {F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real))}")
+        print(f"Val MAE: {F.l1_loss(datasets.vol_unorm(vol_pred), datasets.vol_unorm(vol_real))}")
         print(f"Val Corr: {np.corrcoef(vol_real, vol_pred)[0, 1]}")
         print(f"Val Loss: {loss}")
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
@@ -58,7 +60,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         print(f"Steepness: {linregcoeff[0]}")
         if show_plot:
             plt.plot((2000, 8500), (2000, 8500))
-            plt.scatter(datasets_3d.vol_unorm(vol_real), datasets_3d.vol_unorm(vol_pred))
+            plt.scatter(datasets.vol_unorm(vol_real), datasets.vol_unorm(vol_pred))
             plt.show()
         return loss
 
@@ -66,8 +68,10 @@ if __name__ == "__main__":
     # Results vary quite a bit depending on seed
     accelerate.utils.set_seed(1, deterministic=True)
     
-    #model_name = "ply2volume_model.pth" # real_volume
-    model_name = "fiplike_ply_model.pth"
+    #model_name = "real_volume_model-direct.pth"
+    model_name = "ply2volume_model.pth"
+    #model_name = "fiplike_ply_model.pth"
+
     if model_name == "ply2volume_model.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset()
     elif model_name == "real_volume_model-direct.pth":
@@ -81,17 +85,17 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
 
-    if False:
-        model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
+    if True:
+        model = torch.load(f"experiments_volume_models/local_stuff/{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)
 
-    model = models_3d.RigidInvariantPointNet(bins=10).to(device)
+    model = models.RigidInvariantPointNet(bins=10).to(device)
 
     """
-    Using a pretrained model
+    Using a pretrained model (does not work better than just direct training; deprecated)
 
-    pretrain_model = torch.load("3dvol_approx/local_stuff/pretrained_model.pth", weights_only=False)
+    pretrain_model = torch.load("experiments_volume_models/local_stuff/pretrained_model.pth", weights_only=False)
     new_state_dict = model.state_dict()
     for k, v in pretrain_model.state_dict().items():
         if "l1" in k:
@@ -137,4 +141,4 @@ if __name__ == "__main__":
 
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 
-    torch.save(best_model, f"3dvol_approx/local_stuff/{model_name}")
+    torch.save(best_model, f"experiments_volume_models/local_stuff/{model_name}")

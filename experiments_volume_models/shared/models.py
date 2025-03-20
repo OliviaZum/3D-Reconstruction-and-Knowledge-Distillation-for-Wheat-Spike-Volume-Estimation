@@ -324,7 +324,7 @@ def unflat(shape, mask, input):
     unflat_array[~mask] = input
     return unflat_array
 
-class SingleMlp(nn.Module):
+class RegulatedTransformer(nn.Module):
     def __init__(self, output: Literal["features", "volume"] = "volume", *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.subdim = 192
@@ -396,10 +396,30 @@ class SingleMlp(nn.Module):
         else:
             return tpred, tconf
     
+class RegulatedTransformerLoss(nn.Module):
+    def __init__(self, weights = (1, 0.5), *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.weights = weights
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor, loss_scale: torch.Tensor) -> torch.Tensor:
+        imgmeans, logimgvars, mean, logvars = input
+        mask = imgmeans != 0
+
+        target = target.unsqueeze(1)
+        loss_scale = loss_scale.unsqueeze(1)
+
+        err_single_img = ((imgmeans - target) ** 2) / (2 * torch.exp(logimgvars)) + 0.5 * logimgvars
+        err_single_img = (err_single_img * loss_scale)[mask]
+        
+        err_combined = ((mean - target) ** 2 / (2 * torch.exp(logvars)) + 0.5 * logvars) * loss_scale
+
+        wsi, wec = self.weights
+        return err_single_img.mean() * wsi + err_combined.mean() * wec
+
 class Image3dEnsemble(nn.Module):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.img_net = SingleMlp(output="features")
+        self.img_net = RegulatedTransformer(output="features")
         self.point_net = RigidInvariantPointNet(output="latent")
 
         self.prec_img = nn.Sequential(
@@ -502,4 +522,38 @@ class AttentionBased(nn.Module):
 
         x = self.last_lin(x)
         
+        return x
+    
+class LSTM_fixed_dimensions(nn.Module): 
+    def __init__(self,
+                activation : nn.Module = nn.CELU,
+                output_size : int = 1, 
+                normalize : nn.Module = nn.LayerNorm,
+                dropout_rate : float = 0.5): 
+        super(LSTM_fixed_dimensions, self).__init__()
+        input_size = 384
+        hidden_size = 512
+        num_layers = 3
+        bidirectional = False
+        num_directions = 2 if bidirectional else 1
+        
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True, bidirectional=bidirectional, dropout=dropout_rate)
+        
+        self.norm = normalize(hidden_size * num_directions)
+        self.dropout = nn.Dropout(dropout_rate)
+        self.activation = activation()
+        self.output_layer = nn.Linear(hidden_size * num_directions, output_size)
+
+        
+    def forward(self, x : torch.Tensor, mask : torch.Tensor = None):
+        assert x.dim() == 3, "Wrong input dimension, consider reshaping!" # batch x sequence x features
+        
+        if not mask is None:
+            x = torch.einsum('jkl,jk->jkl',x, ~mask)
+
+        lstm_out, _ = self.lstm(x)
+        lstm_out_last = lstm_out[:, -1, :]
+        x = self.dropout(self.activation(self.norm(lstm_out_last)))
+        x = self.output_layer(x)
+
         return x

@@ -1,5 +1,7 @@
 """
-Legacycode for detecting labels
+Legacycode for detecting labels. 
+
+(Does not work)
 """
 
 import sys

@@ -1,18 +1,31 @@
+"""
+Uses the ply2volume_model (can be trained with experiment_rigidinv_direct) to train
+a RigidInvariantPointNet for volume prediction while using the features predicted by the
+ply2volume_model on the corresponding spike ply file as additional loss.
+Outperforms direct volume prediction on real data slightly.
+
+Performance on test:
+Val MAE: 561.4075317382812
+Val Corr: 0.811311716497883
+Steepness: 0.701214334041615
+Val Loss (+latent diff): 0.8047782182693481
+"""
+
 import accelerate
 import torch
 from torch.utils.data import DataLoader
 from torch import nn
 import numpy as np
 import copy
-import experiments.shared.datasets_3d as datasets_3d
-import experiments.shared.utils_3d as utils_3d
-import experiments.shared.models_3d as models_3d
-import experiments.shared.utils_experiment as utils_experiment
+import experiments_volume_models.shared.datasets as datasets
+import experiments_volume_models.shared.utils_3d as utils_3d
+import experiments_volume_models.shared.models as models
+import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-arti_2_vol = torch.load("3dvol_approx/local_stuff/ply2volume_model.pth", weights_only=False).to(device).eval()
+arti_2_vol = torch.load("experiments_volume_models/local_stuff/ply2volume_model.pth", weights_only=False).to(device).eval()
 arti_2_vol.output = "features"
 
 def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
@@ -41,7 +54,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         lat_losses = torch.concat(lat_losses)
 
         loss = ((vol_pred - vol_real) ** 2).mean().item() + lat_losses.mean() * 5
-        print(f"Val MAE: {F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real))}")
+        print(f"Val MAE: {F.l1_loss(datasets.vol_unorm(vol_pred), datasets.vol_unorm(vol_real))}")
         print(f"Val Corr: {np.corrcoef(vol_real, vol_pred)[0, 1]}")
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
         linregcoeff, _, _, _ = np.linalg.lstsq(A, vol_pred, rcond=None)
@@ -49,7 +62,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         print(f"Val Loss (+latent diff): {loss}")
         if show_plot:
             plt.plot((2000, 8500), (2000, 8500))
-            plt.scatter(datasets_3d.vol_unorm(vol_real), datasets_3d.vol_unorm(vol_pred))
+            plt.scatter(datasets.vol_unorm(vol_real), datasets.vol_unorm(vol_pred))
             plt.show()
         return loss
 
@@ -60,12 +73,12 @@ if __name__ == "__main__":
     val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
-    model = models_3d.RigidInvariantPointNet(output="volumelatent").to(device)
+    model = models.RigidInvariantPointNet(output="volumelatent").to(device)
 
-    model_name = "real_volume_model.pth"
-    if False:
-        model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device)
-        evaluate(val_loader, model, True)
+    model_name = "rigidinv_indirect2.pth"
+    if True:
+        model = torch.load(f"experiments_volume_models/local_stuff/{model_name}", weights_only=False).to(device)
+        evaluate(test_loader, model, True)
         exit(0)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.002)
@@ -102,4 +115,4 @@ if __name__ == "__main__":
 
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 
-    torch.save(best_model, f"3dvol_approx/local_stuff/{model_name}")
+    torch.save(best_model, f"experiments_volume_models/local_stuff/{model_name}")

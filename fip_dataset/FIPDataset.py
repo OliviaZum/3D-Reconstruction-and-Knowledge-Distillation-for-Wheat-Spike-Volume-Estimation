@@ -1,20 +1,27 @@
-import sys
 import os
 from typing import Dict, List
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
-
 import json
 import numpy as np
 import re
 import pandas as pd
-import random
 from utils import helpers
 import cv2
 import tqdm
 from ultralytics import YOLO
-from fip_global import detect
+from fip_global import fip_detection
+import tqdm
 
 class FIPDataset:
+    """
+    A class for managing and precomputing the datasets used for training.
+    csv_folder: A folder containing the csv files which specify which plot + label belongs to which plant id
+    img_folder: A folder containing the images
+    ply_folder: A folder containing the 3d scans
+    precompute_file: Precomputed bounding boxes and clusters between them
+    spikelabels_file: A file containing bounding boxes for a plant which is in the dataset. This is in assets ("labeled_spikes")
+    pose_folder: A folder containing the camera calibrations. Calibration files should be called like "2023_06_08_13_11_Lot1" 
+        according to which day they are for
+    """
     def __init__(self, csv_folder, img_folder, ply_folder, precompute_file = None, spikelabels_file = None, pose_folder = None) -> None:
         if precompute_file:
             with open(precompute_file) as f:
@@ -138,17 +145,17 @@ class FIPDataset:
                     return v
 
     def precompute_boxes(self, precompute_file, update_connections_only = False):
-        # Precompute bounding boxes and connections between them
+        # Precompute bounding boxes and connections between them and export as json
         # If update_connections_only just change the connections between the boxes, don't repredict the boxes
+        import torch
+
         if update_connections_only:
             assert self.precomputed is not None
         else:
             self.precomputed = {}
-        from fip_global import detect
-        import torch
-        import tqdm
         
         result = {}
+        model = self.get_detect_model()
         for folder in tqdm.tqdm(self.spikescans["image_dir"].unique()):
             conf = self.get_pose_config(folder)
             if update_connections_only:
@@ -161,12 +168,13 @@ class FIPDataset:
                     id += 1
                 print(len(w))
             else:
-                boxes, _ = detect.find_objects_yolo("detection-yolo/weights/detect/medium-train+val/weights/best.pt", 
+                boxes, _ = fip_detection.find_objects_yolo(model, 
                                                 folder, batch_size=1)
-            connected_boxes = detect.connect_boxes(boxes, conf, min_view=0)
+            connected_boxes = fip_detection.connect_boxes(boxes, conf, min_view=0)
             if torch.cuda.memory_reserved() // (1024**2) > 3500:
                 torch.cuda.empty_cache()
             result[folder] = connected_boxes
+            break
         with open(precompute_file, "w") as f:
             json.dump(result, f)
         self.precomputed = result
@@ -220,7 +228,7 @@ class FIPDataset:
                 crop_params = helpers.get_crop_params(box_size, img)
                 patch, _ = helpers.put_image_on_patch(box_size, img, crop_params)
                 if seg_model:
-                    patch = detect.segment_spikes(seg_model, patch)
+                    patch = fip_detection.segment_spikes(seg_model, patch)
                     if patch is None:
                         continue
 
@@ -247,23 +255,35 @@ class FIPDataset:
         return table
     
     def get_segmodel(self):
-        return YOLO(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\jupyter\runs\segment\train3\weights\best.pt")
+        return YOLO(r"assets/model-weights/yolo-medium-segment.pt")
+    
+    def get_detect_model(self):
+        return YOLO(r"assets/model-weights/yolo-medium-detect-mAp50-0766.pt")
     
     def get_box_with_max_overlap(self, box: List[int], boxes: List[Dict]):
-            max_iou = 0
-            max_box = None
-            for w in boxes:
-                iou = self.iou(box, w["box"])
-                if iou > max_iou:
-                    max_iou = iou
-                    max_box = w
-            return max_box, max_iou
+        max_iou = 0
+        max_box = None
+        for w in boxes:
+            iou = self.iou(box, w["box"])
+            if iou > max_iou:
+                max_iou = iou
+                max_box = w
+        return max_box, max_iou
 
     def precompute_image_dataset(self, base_folder: str, padding = 20, automatic_inferred=True, box_size=300, segment=True, use_depthmap=True):
-        # Compute an image dataset of the individual spikes
-
-        #if os.path.exists(base_folder):
-            #input("The base folder exists. Press enter to overwrite...")
+        """
+        Compute an image dataset. (Requires that bounding boxes where precomputed)
+        base_folder: Where to export to
+        padding: The padding to add to each bounding box
+        automatic_inferred: Wheter to use the cluster predictions or the manual labels to define what is a spike 
+            (if automatic the image on which a spike was selected first determines the cluster)
+        box_size: How large output images are
+        segment: Remove background using segmentation
+        use_depthmap: Wheter to export depthmaps for each image. In tis case each folder with a FIP scan has to contain a folder depth
+            containing "depths.npz" which contains the 12 depthmaps for the FIP (as created by reconstruct_3d in fip_global)
+        """
+        if os.path.exists(base_folder):
+            input("The base folder exists. Press enter to overwrite...")
         os.makedirs(base_folder, exist_ok=True)
         csv_path = os.path.join(base_folder, "vol_mapping.csv")
         tables = []
@@ -325,6 +345,10 @@ class FIPDataset:
 
     def generate_unlabeled_spikes(self, base_folder: str, num_plants = None, num_plants_per_scan = None, min_image_per_plant = 10, 
                                   padding: int = 20, box_size: int = 300, segment: bool = True, use_depthmap: bool = True):
+        """
+        Export unlabeled images of spikes into a dataset
+        """
+
         if os.path.exists(base_folder):
             input("The base folder exists. Press enter to overwrite...")
         os.makedirs(base_folder, exist_ok=True)
@@ -445,6 +469,6 @@ if __name__ == "__main__":
 
     data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["pose_folder"])
     #data.spikescans.to_csv(r"F:\FIP-data\csv\fip_data_export.csv")
-    #data.precompute_image_dataset(r"F:\Boxes-ds\auto_split", 20, True, segment=True, use_depthmap=False)
-    data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled-5000-depth", 6000, 10)
+    #data.precompute_image_dataset(r"F:\Boxes-ds\auto_split", 20, automatic_inferred=True, segment=True, use_depthmap=False)
+    #data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled-5000-depth", 6000, 10)
     #data.precompute_boxes(r"F:\FIP-data\csv\precomputed_test.json", update_connections_only=True)

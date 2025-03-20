@@ -1,23 +1,33 @@
-from typing import Literal
-import experiments.shared.utils_experiment as utils_experiment
+"""
+Takes the best image (regulated Transformer) and the best point cloud model (rigidinv-indirect-2) both pretrained, trains the ensemble
+and distills its results into the image model (by predicting soft labels for the 
+unlabeled-5000-depth dataset and retraining image model). Also tried to retrain 
+the pointnet, but this does not improve performance.
+
+Increases correlation on image from ~0.786 to 0.83 and correlation
+of the ensemble from ~0.84 to ~0.85 (results are in the ensemble file)
+
+To reproduce first train image model using experiment_regulated_transformer and point cloud model
+using experiment_rigidinv_indirect2
+"""
+
+import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.utils.data import DataLoader
-from torch import nn
 import numpy as np
 import copy
-import experiments.shared.datasets_3d as datasets_3d
-import experiments.shared.utils_3d as utils_3d
-import experiments.shared.models_3d as models_3d
-import experiments.shared.utils_experiment as utils_experiment
+import experiments_volume_models.shared.datasets as datasets
+import experiments_volume_models.shared.utils_3d as utils_3d
+import experiments_volume_models.shared.models as models
+import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
-import pandas as pd
 import torch
 import itertools
 import accelerate
 from collections.abc import Iterable
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-arti_2_vol = torch.load("3dvol_approx/local_stuff/ply2volume_model.pth", weights_only=False).to(device).eval()
+arti_2_vol = torch.load("experiments_volume_models/local_stuff/ply2volume_model.pth", weights_only=False).to(device).eval()
 arti_2_vol.output = "features"
 
 class Mixedloader(Iterable):
@@ -52,7 +62,7 @@ class Mixedloader(Iterable):
 def stats(vol_pred, vol_real, weights = None, show_plot = False):
     if not weights:
         weights = torch.ones_like(vol_pred)
-    mae = F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real))
+    mae = F.l1_loss(datasets.vol_unorm(vol_pred), datasets.vol_unorm(vol_real))
     print(f"Val MAE: {mae}")
     corr = np.corrcoef(vol_real, vol_pred)[0, 1]
     print(f"Val Corr: {corr}")
@@ -65,7 +75,7 @@ def stats(vol_pred, vol_real, weights = None, show_plot = False):
     print(f"Rate: {rate}")
     if show_plot:
         plt.plot((2000, 8500), (2000, 8500))
-        plt.scatter(datasets_3d.vol_unorm(vol_real), datasets_3d.vol_unorm(vol_pred))
+        plt.scatter(datasets.vol_unorm(vol_real), datasets.vol_unorm(vol_pred))
         plt.show()
     
     return rate, loss
@@ -144,34 +154,14 @@ def inference_images(model, val_ds):
 
 def warmup_multiplicative_schedule(e):
      return 0.01 if e < 40 else min(1/ (e * 0.03), 0.1)
-        
-class SingleMlpMseLoss(nn.Module):
-        def __init__(self, weights = (1, 0.5), *args, **kwargs):
-              super().__init__(*args, **kwargs)
-              self.weights = weights
-
-        def forward(self, input: torch.Tensor, target: torch.Tensor, loss_scale: torch.Tensor) -> torch.Tensor:
-            imgmeans, logimgvars, mean, logvars = input
-            mask = imgmeans != 0
-
-            target = target.unsqueeze(1)
-            loss_scale = loss_scale.unsqueeze(1)
-
-            err_single_img = ((imgmeans - target) ** 2) / (2 * torch.exp(logimgvars)) + 0.5 * logimgvars
-            err_single_img = (err_single_img * loss_scale)[mask]
-            
-            err_combined = ((mean - target) ** 2 / (2 * torch.exp(logvars)) + 0.5 * logvars) * loss_scale
-
-            wsi, wec = self.weights
-            return err_single_img.mean() * wsi + err_combined.mean() * wec
 
 def retrain_image(unlabeled_images, labeled_train_ds, val_ds, nepoch=600):
-    model = models_3d.SingleMlp().to(device)
+    model = models.RegulatedTransformer().to(device)
     loader = Mixedloader(unlabeled_images, labeled_train_ds)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     scheduler = scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warmup_multiplicative_schedule)
-    lossfn = SingleMlpMseLoss()
+    lossfn = models.RegulatedTransformerLoss()
 
     best_rate = None
     best_model = None
@@ -211,7 +201,7 @@ def retrain_image(unlabeled_images, labeled_train_ds, val_ds, nepoch=600):
     return best_model, best_rate
 
 def retrain_pointnet(unlabeled_depthmaps, labeled_train_ds, val_ds, nepoch = 40):
-    model = models_3d.RigidInvariantPointNet(output="volumelatent").to(device)
+    model = models.RigidInvariantPointNet(output="volumelatent").to(device)
     loader = Mixedloader(unlabeled_depthmaps, labeled_train_ds)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.002)
@@ -260,7 +250,7 @@ def retrain_pointnet(unlabeled_depthmaps, labeled_train_ds, val_ds, nepoch = 40)
     return best_model, best_val
     
 def retrain_combined(pretrained_point, pretrained_img, train_ds, val_ds, nepoch=5):
-    model = models_3d.Image3dEnsemble()
+    model = models.Image3dEnsemble()
     model.img_net.load_state_dict(pretrained_img.state_dict(), strict=False)
     model.point_net.load_state_dict(pretrained_point.state_dict(), strict=False)
     model = model.to(device)
@@ -307,19 +297,16 @@ if __name__ == "__main__":
     point_train_loader = DataLoader(train_dataset.point_dataset, 8, shuffle=True)
     point_val_loader = DataLoader(val_dataset.point_dataset, 8, shuffle=False)
     image_train_loader = DataLoader(train_dataset.image_dataset, 256, shuffle=True)
-    image_val_loader = DataLoader(val_dataset.image_dataset, 256, shuffle=False, collate_fn=datasets_3d.img_validation_collate_fn)
+    image_val_loader = DataLoader(val_dataset.image_dataset, 256, shuffle=False, collate_fn=datasets.img_validation_collate_fn)
     combined_train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
     combined_val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
 
     model_name = "self-distill-regulated_transformer.pth"
 
-    if False:
-        model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
-        evaluate(val_loader, model, show_plot=True)
-        exit(0)
+    # To evaluate on test use experiment_regulated_transformer, resp. experiment_image_rigidinv_ensemble
 
-    pretrained_point = torch.load(f"3dvol_approx/local_stuff/real_volume_model.pth", weights_only=False).to(device)
-    pretrained_img = torch.load(f"3dvol_approx/local_stuff/image_model.pth", weights_only=False).to(device)
+    pretrained_point = torch.load(f"experiments_volume_models/local_stuff/rigidinv_indirect2.pth", weights_only=False).to(device)
+    pretrained_img = torch.load(f"experiments_volume_models/local_stuff/regulatedtransformer-direct.pth", weights_only=False).to(device)
 
     best_combined_val = None
     #best_pointnet_val, _, _  = inference_pointnet(pretrained_point, point_val_loader)
@@ -339,14 +326,14 @@ if __name__ == "__main__":
         print(f"Best combined val {best_combined_val}")
 
         unlabeled_images.random_sequence_len = False
-        cuids = datasets_3d.Image3dCombidataset(unlabeled_images, unlabeled_depthmaps)
+        cuids = datasets.Image3dCombidataset(unlabeled_images, unlabeled_depthmaps)
         combined_unlabeled_inference = DataLoader(cuids, 16, shuffle=False)
         vol_pred, _ = inference_combined(combined_model.to(device), combined_unlabeled_inference)
         unlabeled_images.random_sequence_len = True
 
 
         print("\n\nRetrain images\n\n")
-        unlabeled_images.plant_mapping["volume"] = datasets_3d.vol_unorm(vol_pred.cpu())
+        unlabeled_images.plant_mapping["volume"] = datasets.vol_unorm(vol_pred.cpu())
         image_unlabeled_loader = DataLoader(unlabeled_images, 256, shuffle=True)
         image_model, image_rate = retrain_image(image_unlabeled_loader, image_train_loader, image_val_loader, 300)
         unlabeled_images.plant_mapping["volume"] = torch.nan
@@ -367,7 +354,6 @@ if __name__ == "__main__":
             best_pointnet_val = depth_val
             best_pointnet_model = copy.deepcopy(depth_model.cpu())
         """
-       
     
 
-    torch.save(best_img_model, f"3dvol_approx/local_stuff/{model_name}")
+    torch.save(best_img_model, f"experiments_volume_models/local_stuff/{model_name}")

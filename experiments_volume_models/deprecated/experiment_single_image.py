@@ -1,3 +1,9 @@
+"""
+Deprecated. Contains experiment to use single image estimates and combine via probability function. 
+(With the hope of achieving a more explicit confidence; )
+Works quite badly in practice (Actually not horrible, but worse than models which use a learned approach for combination)
+"""
+
 import experiments.shared.utils_experiment as utils_experiment
 from torch.utils.data import DataLoader
 from torch import nn

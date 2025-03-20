@@ -1,6 +1,7 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
+"""
+The tool used to annotate the spikes with labels.
+Very much tailored to the specific use case, so probably not really reusable for anything else.
+"""
 
 import cv2
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -8,6 +9,8 @@ from PyQt5.QtWidgets import QMessageBox
 import json
 from fip_dataset import FIPDataset
 import pandas as pd
+import os
+import sys
 
 class SaveDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
@@ -392,7 +395,7 @@ class ImageAnnotator(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     config = {
-        "annotation_file": r"F:\FIP-data\csv\labeled_spikes.csv",
+        "annotation_file": r"assets\labeled_spikes.csv",
         "csv_folder": r"F:\FIP-data\csv",
         "img_folder": r"F:\FIP-data\images",
         "ply_folder": r"F:\FIP-data\wheat-scans",
@@ -442,20 +445,6 @@ if __name__ == "__main__":
                     used_ids.add(id)
 
         label_dict = {x: None for x in rows["label"]}
-        """
-        label_dict = {
-            "green": None,
-            "red": None,
-            "yellowgreen": None,
-            "black": None,
-            "silver": None,
-            "violet": None,
-            "yellow": None,
-            "brown": None,
-            "white": None,
-            "blue": None,
-        }
-        """
 
         annotator = ImageAnnotator(image_folder, image_dict, label_dict, current)
         first_row = rows.iloc[0]

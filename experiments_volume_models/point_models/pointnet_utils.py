@@ -1,4 +1,5 @@
-# from https://github.com/yanx27/Pointnet_Pointnet2_pytorch/blob/master/models/pointnet_utils.py
+# modified from https://github.com/yanx27/Pointnet_Pointnet2_pytorch/blob/master/models/pointnet_utils.py
+# and https://github.com/yanx27/Pointnet_Pointnet2_pytorch/blob/master/models/pointnet_cls.py
 
 import torch
 import torch.nn as nn
@@ -144,3 +145,38 @@ def feature_transform_reguliarzer(trans):
         I = I.cuda()
     loss = torch.mean(torch.norm(torch.bmm(trans, trans.transpose(2, 1)) - I, dim=(1, 2)))
     return loss
+
+
+class PointNetCls(nn.Module):
+    def __init__(self, k=40, normal_channel=True):
+        super(PointNetCls, self).__init__()
+        if normal_channel:
+            channel = 6
+        else:
+            channel = 3
+        self.feat = PointNetEncoder(global_feat=True, feature_transform=True, channel=channel)
+        self.fc1 = nn.Linear(1024, 512)
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, k)
+        self.dropout = nn.Dropout(p=0.4)
+        self.bn1 = nn.BatchNorm1d(512)
+        self.bn2 = nn.BatchNorm1d(256)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x, trans, trans_feat = self.feat(x)
+        x = F.relu(self.bn1(self.fc1(x)))
+        x = F.relu(self.bn2(self.dropout(self.fc2(x))))
+        x = self.fc3(x)
+        return x, trans_feat
+
+class PointNetClsLoss(torch.nn.Module):
+    def __init__(self, mat_diff_loss_scale=0.001):
+        super(PointNetClsLoss, self).__init__()
+        self.mat_diff_loss_scale = mat_diff_loss_scale
+
+    def forward(self, trans_feat):
+        mat_diff_loss = feature_transform_reguliarzer(trans_feat)
+
+        total_loss = mat_diff_loss * self.mat_diff_loss_scale
+        return total_loss

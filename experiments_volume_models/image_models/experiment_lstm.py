@@ -1,15 +1,27 @@
-import experiments.shared.utils_experiment as utils_experiment
+"""
+LSTM model train + test.
+
+Performance on real images:
+{'MAE': 626.0686645507812, 'Correlation': 0.7635278828936991, 'Loss': 0.17377904057502747, 'Steepness': 0.698398307613482}
+Without distance norm:
+{'MAE': 655.9093017578125, 'Correlation': 0.7400201465281444, 'Loss': 0.1998424232006073, 'Steepness': 0.6487750712787459}
+Without distance norm and seg:
+{'MAE': 712.525634765625, 'Correlation': 0.7006180943869368, 'Loss': 0.1955053061246872, 'Steepness': 0.6446966488839889}
+Without any augmentation (random rotation + loss scaling + random subsets + segmentation + distance norm):
+{'MAE': 694.697998046875, 'Correlation': 0.6626826578617516, 'Loss': 0.26444491744041443, 'Steepness': 0.46292833223320295}
+"""
+
+import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.utils.data import DataLoader
 from torch import nn
 import numpy as np
 import copy
-import experiments.shared.datasets_3d as datasets_3d
+import experiments_volume_models.shared.datasets as datasets
 import accelerate
-import experiments.shared.models_3d as models_3d
-import experiments.shared.utils_experiment as utils_experiment
+import experiments_volume_models.shared.models as models
+import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
-import pandas as pd
 import torch
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -34,7 +46,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
         weights = torch.concat(weights)
 
         l = {}
-        l["MAE"] = F.l1_loss(datasets_3d.vol_unorm(vol_pred), datasets_3d.vol_unorm(vol_real)).item()
+        l["MAE"] = F.l1_loss(datasets.vol_unorm(vol_pred), datasets.vol_unorm(vol_real)).item()
         l["Correlation"] = np.corrcoef(vol_real, vol_pred)[0, 1]
         l["Loss"] = ((vol_pred - vol_real) ** 2 * weights).mean().item()
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
@@ -46,7 +58,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
             plt.plot((2000, 8500), (2000, 8500))
             plt.plot((2000, 8500), (3000, 9500), c="red")
             plt.plot((2000, 8500), (1000, 7500), c="red")
-            plt.scatter(datasets_3d.vol_unorm(vol_real), datasets_3d.vol_unorm(vol_pred))
+            plt.scatter(datasets.vol_unorm(vol_real), datasets.vol_unorm(vol_pred))
             plt.show()
         
         return l
@@ -64,22 +76,38 @@ def is_better_model(stats, best_stats):
 
 if __name__ == "__main__":
     accelerate.utils.set_seed(0)
-    train_dataset, val_dataset, test_dataset = utils_experiment.get_image_dataset()
-    train_dataset.min_seq_len = 3
-    train_dataset.max_seq_len = 4 # Reduces overfitting
+
+    #model_name = "lstm-real.pth"
+    model_name = "lstm-real-no-dist.pth"
+    #model_name = "lstm-real-nodist-noseg.pth"
+    model_name = "lstm-no-aug.pth"
+
+    if model_name == "lstm-real.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset()
+    elif model_name == "lstm-real-no-dist.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance()
+    elif model_name == "lstm-real-nodist-noseg.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance_and_seg()
+    elif model_name == "lstm-no-aug.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance_and_seg(disable_augmentation = True)
+
+    if model_name == "lstm-no-aug.pth":
+        train_dataset.random_sequence_len = False
+    else:
+        train_dataset.min_seq_len = 4
+        train_dataset.max_seq_len = 12
 
     train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, collate_fn=datasets_3d.img_validation_collate_fn)
-    test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False, collate_fn=datasets_3d.img_validation_collate_fn)
+    val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, collate_fn=datasets.img_validation_collate_fn)
+    test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False, collate_fn=datasets.img_validation_collate_fn)
 
-    model_name = "transformer_model.pth"
 
-    if False:
-        model = torch.load(f"3dvol_approx/local_stuff/{model_name}", weights_only=False).to(device).eval()
+    if True:
+        model = torch.load(f"experiments_volume_models/local_stuff/{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)
 
-    model = models_3d.AttentionBased().to(device)
+    model = models.LSTM_fixed_dimensions().to(device)
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     scheduler = scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warmup_multiplicative_schedule)
@@ -93,8 +121,11 @@ if __name__ == "__main__":
             images, label, imagemask, weight = [t.to(device) for t in [images, label, imagemask, weight]]
 
             x = model(images, imagemask)
-                
-            loss = ((x.squeeze() - label) ** 2 * weight).mean()
+            
+            if model_name == "lstm-no-aug.pth":
+                loss = ((x.squeeze() - label) ** 2).mean()    
+            else:
+                loss = ((x.squeeze() - label) ** 2 * weight).mean()
             errs_train.append(loss.item())
 
             optimizer.zero_grad()
@@ -112,4 +143,4 @@ if __name__ == "__main__":
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 
     print(f"\n Best stats {best_val}")
-    torch.save(best_model, f"3dvol_approx/local_stuff/{model_name}")
+    torch.save(best_model, f"experiments_volume_models/local_stuff/{model_name}")

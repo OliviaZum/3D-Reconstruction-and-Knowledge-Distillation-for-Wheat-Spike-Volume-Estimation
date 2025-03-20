@@ -254,7 +254,6 @@ def load_and_build_graph(file: str, data_preprocess, recompute = True, store_cac
 
 def show_stats(tp_fn_fp_views: np.ndarray, num_views: np.ndarray, mean_deviation_views: np.ndarray):
     def to_rates(sums):
-        return {"FN rate": sums[1] / sums[0], "FP rate": sums[2] / sums[0], "Error rate": (sums[2] + sums[1]) / sums[0]}
         # rates: ratio of FN and FP to TP, either seperated or combined
         return {"FN rate": sums[1] / sums[0], "FP rate": sums[2] / sums[0], "Error rate": (sums[2] + sums[1]) / sums[0],
                 "precision": sums[0] / (sums[0] + sums[2]),

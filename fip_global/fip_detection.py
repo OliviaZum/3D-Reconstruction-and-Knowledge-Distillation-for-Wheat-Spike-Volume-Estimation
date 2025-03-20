@@ -10,8 +10,7 @@ import numpy as np
 import cv2
 
 # Find all spikes on all images
-def find_objects_yolo(yolo_weights_path: str, scan_folder: str, min_conf = 0.25, batch_size = 5) -> Tuple[Dict[str, List[Tuple[int, List]]], List]:
-    model = YOLO(yolo_weights_path, task='detect')
+def find_objects_yolo(model: YOLO, scan_folder: str, min_conf = 0.25, batch_size = 5) -> Tuple[Dict[str, List[Tuple[int, List]]], List]:
     imgs = [os.path.join(scan_folder, f"cam_{i:02}.png") for i in range(1, 13)]
     for img in imgs:
         if not os.path.exists(img):
