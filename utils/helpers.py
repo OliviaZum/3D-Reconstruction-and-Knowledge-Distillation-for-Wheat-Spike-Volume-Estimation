@@ -30,6 +30,9 @@ def get_ply_files(ply_dir_base):
     return ply_files
 
 # Returns parameters on how to crop a box if it does not fit on a patch (use for put_image_on_patch)
+# The idea here is that if we have multiple similar observations which all do not fit properly there should
+# at least be some randomness in placing such that different parts of the spikes are visible. Spikes rarely do not 
+# fit, and if they do not it is usually not of by much.
 def get_crop_params(box_size, img):
     h, w = img.shape[:2]
     top = np.random.randint(0, max(h - box_size, 1))

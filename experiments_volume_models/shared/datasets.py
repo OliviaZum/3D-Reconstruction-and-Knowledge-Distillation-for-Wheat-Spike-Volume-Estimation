@@ -283,21 +283,35 @@ def extract_image_features(pretrained_model, features, mask):
         mask = ~(features.any(dim=-1))
         return features, mask
 
-def resize_pad_transform(x):
-        w, h = x.shape[-1], x.shape[-2]
-        if w > h:
-            n_w = 224
-            n_h = int(224 * h / w)
-        else:
-            n_h = 224
-            n_w = int(224 * w / h)
+# Internal use
+def _dnt_l2(tin):
+    t = tin // 2
+    if 2 * t == tin:
+        l, r = t, t
+    else:
+        l, r = t, t+1
+    return l, r
 
-        x = FT.resize(x, (n_h, n_w), antialias=True)
-        x = FT.pad(x, (0, 0, 224 - n_w, 224 - n_h))
-        return x
+# Performs distance normalization on an image
+def distance_norm_transform(torch_image, distance):
+    orig_size = torch_image.shape[-2:]
+    factor = distance / 3.2
+    torch_image = FT.resize(torch_image, (int(torch_image.shape[-2] * factor), int(torch_image.shape[-1] * factor)), antialias=True)
+    if factor <= 1:
+        dw, dh = orig_size[-2] - torch_image.shape[-2], orig_size[-1] - torch_image.shape[-1]
+        wl, wr = _dnt_l2(dw)
+        hl, hr = _dnt_l2(dh)
+        torch_image = FT.pad(torch_image, [wl, hl, wr, hr])
+    else:
+        torch_image = FT.center_crop(torch_image, orig_size)
+    return torch_image
 
+# Get image level transforms
+# Operates under the assumption that images have been padded to some uniform size already. If this is not true
+# performance will be bad!!
+# Also the distance_norm_transform is not done as part of this, since additonal info (the distance) is required
 def get_transform(train: bool) -> List:
-     start = [v2.Lambda(resize_pad_transform)]
+     start = [v2.Resize(224, antialias=True)] 
      augmentation = [
           v2.RandomRotation(180, v2.InterpolationMode.BILINEAR),
      ] 
@@ -450,27 +464,9 @@ class MultiImageTrainDataset(Dataset):
 
             if self.distance_normalization:
                 distance = self.plant_mapping.loc[plant_idx, "distance"][image_idx]
-                orig_size = torch_image.shape[-2:]
-                factor = distance / 3.2
-                torch_image = FT.resize(torch_image, (int(torch_image.shape[-2] * factor), int(torch_image.shape[-1] * factor)), antialias=True)
-                if factor <= 1:
-                    def l2(tin):
-                        t = tin // 2
-                        if 2 * t == tin:
-                            l, r = t, t
-                        else:
-                            l, r = t, t+1
-                        return l, r
-                    dw, dh = orig_size[-2] - torch_image.shape[-2], orig_size[-1] - torch_image.shape[-1]
-                    wl, wr = l2(dw)
-                    hl, hr = l2(dh)
-                    torch_image = FT.pad(torch_image, [wl, hl, wr, hr])
-                else:
-                    torch_image = FT.center_crop(torch_image, orig_size)
+                torch_image = distance_norm_transform(torch_image, distance)
 
             torch_image = self.transform(torch_image)
-            #plt.imshow(torch_image.permute(2, 1, 0).numpy())
-            #plt.show()
 
             return torch_image
         

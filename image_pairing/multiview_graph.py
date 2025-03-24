@@ -203,6 +203,7 @@ def estimate_distances(poses_conf, bounding_boxes: Dict[str, Dict[str, List[int]
 
     return bounding_boxes_to_distance
 
+
 def lp_cluster_torch(graph: np.ndarray, device = 'cuda' if torch.cuda.is_available() else 'cpu',
                      n_repeats = 3, min_prob = 0.8) -> torch.Tensor:
     """
@@ -219,7 +220,7 @@ def lp_cluster_torch(graph: np.ndarray, device = 'cuda' if torch.cuda.is_availab
         graph = torch.tensor(graph, device=device)
         all_labels = []
         for _ in range(n_repeats):
-            labels = torch.eye(graph.shape[0], device=device)
+            labels = torch.arange(graph.shape[0], device=device)
             no_converge = True
             max_iter = 200
             iters = 0
@@ -235,23 +236,22 @@ def lp_cluster_torch(graph: np.ndarray, device = 'cuda' if torch.cuda.is_availab
                 for i in range(0, len(nodes), num_parallel):
                     n = nodes[i:min(i+num_parallel, len(nodes))]
                     v = graph[n]
-                    freq = v @ labels
+
+                    freq = torch.zeros_like(v)
+                    freq = freq.scatter_add_(1, labels.expand(len(n), -1), v)
+
                     # Technically labels should be picked at random. 
                     # But complicated and slow, practically the algorithm does not seem to work
-                    # worse with a fixed label.
+                    # worse with a fixed selection.
                     max = torch.argmax(freq, dim=1)
-                    if torch.any(labels[n, max] == 0):
+                    if torch.any(labels[n] != max):
                         no_converge = True
-                        labels[n, :] = 0
-                        labels[n, max] = 1
-
-            labels = torch.argmax(labels, dim=1)
+                        labels[n] = max
 
             if iters == max_iter:
                 warnings.warn("label propagation failed to converge")
             else:
                 all_labels.append(labels.cpu())
-
 
         ksum = torch.zeros((len(labels), len(labels)), dtype=torch.float32, device=device)
         for i in range(len(all_labels)):

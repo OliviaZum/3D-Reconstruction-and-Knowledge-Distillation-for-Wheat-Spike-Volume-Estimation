@@ -1,16 +1,16 @@
 import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
-
 from typing import Dict, List, Tuple
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 from image_pairing import multiview_graph
 import numpy as np
 import cv2
+import torch
+import torch.nn.functional as F
 
 # Find all spikes on all images
-def find_objects_yolo(model: YOLO, scan_folder: str, min_conf = 0.25, batch_size = 5) -> Tuple[Dict[str, List[Tuple[int, List]]], List]:
+def find_objects_yolo(model: YOLO, scan_folder: str, min_conf = 0.25) -> Tuple[Dict[str, List[Tuple[int, List]]], List[Results]]:
+    batch_size = 1
     imgs = [os.path.join(scan_folder, f"cam_{i:02}.png") for i in range(1, 13)]
     for img in imgs:
         if not os.path.exists(img):
@@ -18,12 +18,13 @@ def find_objects_yolo(model: YOLO, scan_folder: str, min_conf = 0.25, batch_size
     results: list[Results] = []
     for i in range(0, len(imgs), batch_size):
         tmp = model(imgs[i:min(i+batch_size, len(imgs))], imgsz=3008, max_det=800, iou=0.5, conf=min_conf, verbose=False)
+        for j in range(len(tmp)):
+            tmp[j] = tmp[j].cpu()
         results.extend(tmp)
 
-    # This conversion is somewhat innefficient. One could go without it later on
     converted = {}
     for result in results:
-        boxes = result.boxes.xyxy.cpu().numpy().astype(int) # astype untested currently
+        boxes = result.boxes.xyxy.cpu().numpy().astype(int) 
         
         current = {}
         for i in range(boxes.shape[0]):
@@ -32,10 +33,8 @@ def find_objects_yolo(model: YOLO, scan_folder: str, min_conf = 0.25, batch_size
 
     return converted, results
 
-# Segment a spike (cut out, returns the largest spike on the image with background blacked out)
-def segment_spikes(seg_model, img):
-    r = seg_model(img, imgsz=288, verbose=False, conf=0.2)
-    r: Results = r[0].cpu()
+def clear_background_segmented(r: Results):
+    r = r.cpu()
     if r.boxes.shape[0] > 0:
         boxes = r.boxes.xywh
         area = boxes[:, 2] * boxes[:, 3]
@@ -45,6 +44,12 @@ def segment_spikes(seg_model, img):
         return r.orig_img
     else:
         return None
+
+# Segment a single spike (cut out, returns the largest spike on the image with background blacked out)
+def segment_spike(seg_model, img, imgsz = 288):
+    r = seg_model(img, imgsz=imgsz, verbose=False, conf=0.2)
+    return clear_background_segmented(r[0])
+    
 
 # Find which boxes correspond to the same object (spike)
 def connect_boxes(boxes: Dict[str, Dict[str, List[int]]], poses_conf, min_view = 6):

@@ -228,7 +228,7 @@ class FIPDataset:
                 crop_params = helpers.get_crop_params(box_size, img)
                 patch, _ = helpers.put_image_on_patch(box_size, img, crop_params)
                 if seg_model:
-                    patch = fip_detection.segment_spikes(seg_model, patch)
+                    patch = fip_detection.segment_spike(seg_model, patch)
                     if patch is None:
                         continue
 
