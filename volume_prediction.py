@@ -10,11 +10,11 @@ import time
 import torch
 import torch.nn.functional as F
 from torchvision.transforms import v2
-import matplotlib.pyplot as plt
 from experiments_volume_models.shared.datasets import distance_norm_transform, get_transform, vol_unorm
 from experiments_volume_models.shared.models import unflat
 import pandas as pd
-import gc
+import accelerate
+import cv2
 
 class Stopwatch:
     def __init__(self):
@@ -31,15 +31,6 @@ class Stopwatch:
 
     def reset(self):
         self.start()
-
-def export_plant_images(folder: Path, patches, cluster_ids):
-    import cv2
-
-    c_to_p = cluster_to_patches(patches, cluster_ids)
-
-    for id, patches in c_to_p.items():
-        for i, patch in enumerate(patches):
-            cv2.imwrite(folder / f"{id}_{i}.jpg", patch)
     
 class BatchedAccessor:
     def __init__(self, batch_size, total_len):
@@ -57,53 +48,53 @@ class BatchedAccessor:
 # Due to batch processing of the segmentation your images end up having size 288 instead of 300 (Probs irrelevant, later anyway scaled down)
 # Maybe do a better way of selecting the segmented spike?
 
-def infer_volume(calibration_file: Path | str,
-                 image_folder: Path | str,
-                 output_folder: Path,
+def infer_volume(image_folder: Path | str,
+                 calibration: Dict,
                  min_view: int,
                  detection_model: YOLO,
                  segmentation_model: YOLO,
-                 dinov2_model,
-                 volume_model):
+                 dinov2_model: torch.nn.Module,
+                 volume_model: torch.nn.Module,
+                 verbose = True,
+                 set_seed=True) -> Tuple[pd.DataFrame, Dict[int, Dict[str, Tuple]]]:
+    
+    if set_seed:
+        accelerate.utils.set_seed(0, deterministic=True)
     
     with torch.no_grad():
-        batch_size_seg = 70
-        batch_size_dino = 500
-        batch_size_volpred = 256
+        # Essentially settings for computation. Probably never worthwile changing, unless you want to optimize runtime/memory usage
+        # on a particular system.
+        batch_size_seg = 70 # Batch size for segmentation
+        batch_size_dino = 500 # Batch size for dino feature extraction
+        batch_size_volpred = 256 # Batch size for volume prediction
+        min_img_after_seg = 6 # The minimum number of images a cluster should have after segmentation (if below the cluster is removed)
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        # Move models between cpu and gpu to decrease gpu mem usage. If there is lots of memory, one could make this
+        # slightly faster by disabling.
+        move_models_to_cpu = True 
+
+        # Keep fixed
         patch_box_size = 300
         imgsz_seg = 288
-        min_img_after_seg = 6
-        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-
-        """
-        if output_folder.exists():
-            print("The ouput folder already exists. Aborting.")
-            exit(1)
-        output_folder.mkdir()
-        """
-        # DEBUG
-        output_folder.mkdir(exist_ok=True)
-
-
-
-        with open(calibration_file) as f:
-            calibration = json.load(f)
-
         s = Stopwatch()
 
         # Detection of spikes
-
-        print("Detecting spikes") 
+        if verbose:
+            print("Detecting spikes") 
         boxes, results = fip_detection.find_objects_yolo(detection_model, image_folder)
         img_map = {f"cam_{i:02}.png": results[i-1].orig_img for i in range(1, 13)}
 
-        detection_model.cpu()
-        torch.cuda.empty_cache() 
+        if move_models_to_cpu:
+            detection_model.cpu()
+            torch.cuda.empty_cache()
 
-        print(f"Spike pairing (Detection took: {s.elapsed()})") 
+        if verbose:
+            print(f"Spike pairing (Detection took: {s.elapsed()})")
         # Spike pairing
         connected_boxes = fip_detection.connect_boxes(boxes, calibration, min_view)
-        torch.cuda.empty_cache()
+
+        if move_models_to_cpu:
+            torch.cuda.empty_cache()
 
         # Padding detections and removing small clusters
         patches = []
@@ -119,8 +110,9 @@ def infer_volume(calibration_file: Path | str,
                 connected_filtered.append(box)
                 spike_counter.add(box["cluster"])
 
-        print(f"Found {len(spike_counter)} spikes with >= {min_view} observations.")
-        print(f"Preprocessing (Spike pairing took: {s.elapsed()})")
+        if verbose:
+            print(f"Found {len(spike_counter)} spikes with >= {min_view} observations.")
+            print(f"Preprocessing (Spike pairing took: {s.elapsed()})")
 
         # Preprocessing
         seg_accessor = BatchedAccessor(batch_size_seg, len(patches))
@@ -156,36 +148,37 @@ def infer_volume(calibration_file: Path | str,
                     torch_image = img_transform(torch_image)
                     patches_preprocessed.append(torch_image)
 
-        segmentation_model.cpu()
-        torch.cuda.empty_cache()
+        if move_models_to_cpu:
+            segmentation_model.cpu()
+            torch.cuda.empty_cache()
 
         # Put into clusters
         cluster_to_patch = {}
         seg_fail_total = 0
         seg_succ_total = 0
-        for patch, meta in zip(patches_preprocessed, connected_filtered):
+        for patch, meta, patch_no_preprocess in zip(patches_preprocessed, connected_filtered, patches):
             id = meta["cluster"]
             if patch is None:
                 seg_fail_total += 1
                 continue
             cluster_to_patch.setdefault(id, {})
-            cluster_to_patch[id][meta["image"]] = (patch, meta)
+            cluster_to_patch[id][meta["image"]] = (patch, meta, patch_no_preprocess)
             seg_succ_total += 1
 
         ctopsize = len(cluster_to_patch)
         cluster_to_patch = {key: value for key, value in cluster_to_patch.items() if len(value) >= min_img_after_seg}
         num_removed_plants_seg = ctopsize - len(cluster_to_patch)
 
-        print(f"""Segmentation failed for {seg_fail_total} and worked for {seg_succ_total} patches. {num_removed_plants_seg} spikes where removed 
-                for having less than {min_img_after_seg} observations after segmentation. Remaining plants: {len(cluster_to_patch)}""")
-
-        print(f"Inference (Preprocessing took {s.elapsed()})")
+        if verbose:
+            print(f"""Segmentation failed for {seg_fail_total} and worked for {seg_succ_total} patches. {num_removed_plants_seg} spikes where removed 
+                    for having less than {min_img_after_seg} observations after segmentation. Remaining plants: {len(cluster_to_patch)}""")
+            print(f"Inference (Preprocessing took {s.elapsed()})")
 
         # Build dino input list and mask tensor
         mask = torch.ones((len(cluster_to_patch), 12), dtype=torch.bool)
         dino_patch_list = []
         for cidx, v in enumerate(cluster_to_patch.values()):
-            patches, _ = zip(*v.values())
+            patches, _, _ = zip(*v.values())
             for pidx, patch in enumerate(patches):
                 dino_patch_list.append(patch)
                 mask[cidx, pidx] = False
@@ -204,8 +197,9 @@ def infer_volume(calibration_file: Path | str,
         paired_features = unflat((*mask.shape, 384), mask, dinofeatures)
 
         del batch
-        dinov2_model.cpu()
-        torch.cuda.empty_cache()
+        if move_models_to_cpu:
+            dinov2_model.cpu()
+            torch.cuda.empty_cache()
 
         # Predict volume
         vol_accessor = BatchedAccessor(batch_size_volpred, paired_features.shape[0])
@@ -220,50 +214,70 @@ def infer_volume(calibration_file: Path | str,
             v = v.cpu().squeeze()
             volumes.append(v)
         volumes = torch.concat(volumes)
-        volumes = vol_unorm(volumes)
+        volumes = vol_unorm(volumes).to(torch.int32)
 
         del batch
         del mask_batch
-        volume_model.cpu()
-        torch.cuda.empty_cache()
-        print(f"Done. (Inference took {s.elapsed()})")
+        if move_models_to_cpu:
+            volume_model.cpu()
+            torch.cuda.empty_cache()
+        if verbose:
+            print(f"Done. (Inference took {s.elapsed()})")
 
-        print(volumes)
-        pass
+        results = []
+        for cidx, v in enumerate(cluster_to_patch.values()):
+            _, metas, _ = zip(*v.values())
+            r = {"volume": volumes[cidx].item(), "num_observations": len(metas)}
+            for meta in metas:
+                r[meta["image"]] = meta["box"]
+            results.append(r)
 
-    
-    """
+        results = pd.DataFrame(results)
+        return results, cluster_to_patch
 
-    img_folder = output_folder / "image_export"
-    img_folder.mkdir()
-    export_plant_images(img_folder, patches, cluster_ids)
-
-    exit(0)
-    """
-
-
-
-if __name__ == "__main__":
+def get_default_models():
     yolo_det = YOLO("assets/model-weights/yolo-medium-detect-mAp50-0766.pt")
     yolo_seg = YOLO("assets/model-weights/yolo-medium-segment.pt")
     dino = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
     vol_model = torch.load("assets/model-weights/self-distill-regulated_transformer.pth", weights_only=False)
+    return yolo_det, yolo_seg, dino, vol_model
 
-    infer_volume("assets/poses/2023_07_10_12_56_Lot1.json",
-                 r"F:\FIP-data\images\2023\WW034\debayered\2023_07_10_12_56_Lot1\FPWW0340091_FIP2_20230710_120851",
-                 Path("local_stuff/tmp_output"), 10,
-                 yolo_det, yolo_seg, dino, vol_model)
-    exit(0)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="""
+        Estimates volumes of wheat spikes for a FIP set of images. 
+        You need properly calibrated and scaled cameras (the calibration file).
+        Calibration can be reused for any number of FIP scans, as long as the FIP does not change.
+        If output_directory is specified the patches after preprocessing will be exported to a folder. This is useful
+        for debugging - if e.g. all the spike pairs seem wrong, the calibration is probably of.
+    """)
 
-
-    parser = argparse.ArgumentParser(description="Process images with multiple models.")
-
-    parser.add_argument("-c", "--calibration_file", type=Path, required=True, help="Path to calibration file")
-    parser.add_argument("-i", "--image_folder", type=Path, required=True, help="Path to the folder containing images")
-    parser.add_argument("-o", "--output_folder", type=Path, required=True, help="Path to the output folder")
-    parser.add_argument("-mv", "--min_view", type=int, required=True, help="Minimum number of views")
-    parser.add_argument("-dm", "--detection_model", type=Path, required=True, help="Path to detection model")
-    parser.add_argument("-sm", "--segmentation_model", type=Path, required=True, help="Path to segmentation model")
-    parser.add_argument("-vm", "--volume_model", type=Path, required=True, help="Path to volume model")
+    parser.add_argument("-c", "--calibration_file", type=Path, required=True, help="Path to calibration file (Create via generate_scaled_calibration in fip global)")
+    parser.add_argument("-i", "--image_folder", type=Path, required=True, help="Path to the folder containing the images")
+    parser.add_argument("-o", "--output_file", type=Path, required=True, help="Path to store the output file to")
+    parser.add_argument("-od", "--output_directory", type=Path, required=False, help="A folder to which all preprocessed spikes are exported")
+    parser.add_argument("-mv", "--min_view", type=int, required=False, default=12, help="Minimum number of observations for a spike to estimate volume")
+    parser.add_argument("-v", "--verbose", action="store_true", required=False, help="Disable printing")
 
     args = parser.parse_args()
+
+    with open(args.calibration_file) as f:
+        calibration = json.load(f)
+
+    if args.output_directory is not None and not args.output_directory.is_dir():
+        print(f"{args.output_directory} is not a directory. Aborting.")
+        exit(1)
+    if not args.output_file.parent.is_dir():
+        print(f"The folder for {args.output_file} seems to not exists. Aborting.")
+        exit(1)
+
+    yolo_det, yolo_seg, dino, vol_model = get_default_models()
+    r, cluster_to_patch = infer_volume(args.image_folder, calibration, 
+            args.min_view, yolo_det, yolo_seg, dino, vol_model, verbose=args.verbose)
+    
+    r.to_csv(args.output_file)
+
+    if args.output_directory is not None:
+        for i, (vol, cluster) in enumerate(zip(r["volume"].to_list(), cluster_to_patch.values())):
+            _, _, patches = zip(*cluster.values())
+            for j, patch in enumerate(patches):
+                cv2.imwrite(args.output_directory / f"{i}_{j}_{vol}.jpg", patch)
