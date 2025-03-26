@@ -174,7 +174,6 @@ class FIPDataset:
             if torch.cuda.memory_reserved() // (1024**2) > 3500:
                 torch.cuda.empty_cache()
             result[folder] = connected_boxes
-            break
         with open(precompute_file, "w") as f:
             json.dump(result, f)
         self.precomputed = result
@@ -463,12 +462,12 @@ if __name__ == "__main__":
             "csv_folder": r"F:\FIP-data\csv",
             "img_folder": r"F:\FIP-data\images",
             "ply_folder": r"F:\FIP-data\wheat-scans",
-            "precompute_file": r"F:\FIP-data\csv\precomputed.json",
+            "precompute_file": r"F:\FIP-data\csv\precomputed_new_setup.json",
             "pose_folder": r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\assets\poses"
         }
 
     data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["pose_folder"])
     #data.spikescans.to_csv(r"F:\FIP-data\csv\fip_data_export.csv")
-    #data.precompute_image_dataset(r"F:\Boxes-ds\auto_split", 20, automatic_inferred=True, segment=True, use_depthmap=False)
+    data.precompute_image_dataset(r"F:\Boxes-ds\auto_split_new_pair", 20, automatic_inferred=True, segment=True, use_depthmap=False)
     #data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled-5000-depth", 6000, 10)
-    #data.precompute_boxes(r"F:\FIP-data\csv\precomputed_test.json", update_connections_only=True)
+    #data.precompute_boxes(r"F:\FIP-data\csv\precomputed_new_setup.json", update_connections_only=True)

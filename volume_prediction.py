@@ -1,3 +1,8 @@
+"""
+The actual end to end pipeline for computing volumes on a FIP scan.
+See help text for how to use.
+"""
+
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from ultralytics import YOLO
@@ -48,6 +53,19 @@ class BatchedAccessor:
 # Due to batch processing of the segmentation your images end up having size 288 instead of 300 (Probs irrelevant, later anyway scaled down)
 # Maybe do a better way of selecting the segmented spike?
 
+"""
+Computes the volume over spikes for a FIP scan. For parameters see help text in main.
+
+Returns: A pd dataframe containing info about each spike (the volume, the bounding boxes of detections on each camera,
+how many detections (with successfull segmentation), and the cluster_id). 
+
+The second returned value (which probably useless in most cases) is a dict mapping from clusterid to a dict mapping
+from camera name to a tuple: First element is the preprocessed patch (i.e. before passing to DINO),
+second element is meta info about the detection (a dict containing e.g. distance, bounding box, camera name and so on), last element is the 
+patch without preprocessing. (I.e. padding, but no other things like segmentation, distance normalization or color normalization).
+You are guarranted that when iterating over the dict the elements appear in the same order than when iterating over the dataframe.
+Also you can always get the patches corresponding to a result spike by accessing the dict at cluster_id.
+"""
 def infer_volume(image_folder: Path | str,
                  calibration: Dict,
                  min_view: int,
@@ -81,6 +99,7 @@ def infer_volume(image_folder: Path | str,
         # Detection of spikes
         if verbose:
             print("Detecting spikes") 
+        detection_model = detection_model.to(device)
         boxes, results = fip_detection.find_objects_yolo(detection_model, image_folder)
         img_map = {f"cam_{i:02}.png": results[i-1].orig_img for i in range(1, 13)}
 
@@ -117,6 +136,7 @@ def infer_volume(image_folder: Path | str,
         # Preprocessing
         seg_accessor = BatchedAccessor(batch_size_seg, len(patches))
         img_transform = v2.Compose(get_transform(False))
+        segmentation_model = segmentation_model.to(device)
         patches_preprocessed = []
         for i in seg_accessor.get_range():
             img_list = seg_accessor.get(i, patches)
@@ -225,9 +245,9 @@ def infer_volume(image_folder: Path | str,
             print(f"Done. (Inference took {s.elapsed()})")
 
         results = []
-        for cidx, v in enumerate(cluster_to_patch.values()):
+        for cidx, (cluster_id, v) in enumerate(cluster_to_patch.items()):
             _, metas, _ = zip(*v.values())
-            r = {"volume": volumes[cidx].item(), "num_observations": len(metas)}
+            r = {"index": cidx, "volume": volumes[cidx].item(), "num_observations": len(metas), "cluster_id": cluster_id}
             for meta in metas:
                 r[meta["image"]] = meta["box"]
             results.append(r)
