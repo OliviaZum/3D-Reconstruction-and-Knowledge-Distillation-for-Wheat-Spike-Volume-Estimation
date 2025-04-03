@@ -267,6 +267,8 @@ class ImageAnnotator(QtWidgets.QMainWindow):
         self.scene.addPixmap(QtGui.QPixmap.fromImage(q_img))
         self.view.setScene(self.scene)
 
+        return img_copy
+
     def draw_bbox(self, img, bbox, color, text):
         """Draw a bounding box on the image."""
         x1, y1, x2, y2 = bbox
@@ -331,6 +333,10 @@ class ImageAnnotator(QtWidgets.QMainWindow):
         elif event.key() == QtCore.Qt.Key.Key_P:
             self.show_labeled_only = not self.show_labeled_only
             self.display_image()
+        elif event.key() == QtCore.Qt.Key.Key_1:
+            img_copy = self.display_image()
+            #cv2.imwrite(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\local_stuff\training-results-detection\sample_preds_fip\export.png", img_copy)
+            print("Written")
 
     def swap_ids(self, bbox_id, label, image_name):
         id_pre = self.label_to_bbox_id.get(label)
@@ -399,7 +405,7 @@ if __name__ == "__main__":
         "csv_folder": r"F:\FIP-data\csv",
         "img_folder": r"F:\FIP-data\images",
         "ply_folder": r"F:\FIP-data\wheat-scans",
-        "precompute_file": r"F:\FIP-data\csv\precomputed.json",
+        "precompute_file": r"F:\FIP-data\csv\precomputed_new_setup.json",
         "show": lambda folder, data: True
     }
 
@@ -421,6 +427,9 @@ if __name__ == "__main__":
         if not config["show"](image_folder, current):
             continue
 
+        if image_folder not in data.precomputed:
+            print("Somehow this key does not exist in the precompute file")
+            continue
         # Annotation tool was written on an old format of storing boxes. For simplicity the new format is backconverted here
         # (instead of rewritting large parts)
         image_dict = {}
