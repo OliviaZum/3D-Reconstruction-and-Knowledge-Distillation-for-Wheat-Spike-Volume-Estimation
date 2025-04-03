@@ -3,6 +3,7 @@ Generates a dataset of (single) noisefree depth and image spikes
 with cameraposes as they are on the fip.
 """
 
+from typing import Literal
 from gen_scene import FIPScene
 import tqdm
 import numpy as np
@@ -11,9 +12,9 @@ from pathlib import Path
 import cv2
 import pandas as pd
 
-def generate_dataset(conf_path, plant_mapping: pd.DataFrame, meshes_path: str, out_path: str):
+def generate_dataset(conf_path, plant_mapping: pd.DataFrame, meshes_path: str, out_path: str, spike_pose: Literal["uniform", "normal"] = "uniform"):
     np.random.seed(1)
-    scene = FIPScene(conf_path, (4096, 3000), realistic=True, until_borders=False)
+    scene = FIPScene(conf_path, (4096, 3000), realistic=True, until_borders=False, spike_pose=spike_pose)
     out_path = Path(out_path)
     conf_path = Path(conf_path).name
 
@@ -66,13 +67,13 @@ def generate_dataset(conf_path, plant_mapping: pd.DataFrame, meshes_path: str, o
 
 if __name__ == "__main__":
     plants_to_generate = r"F:\Boxes-ds\segmented_distance_depth\split_without2024\mapping_all_plants.json"
-    calibration = r"F:\Boxes-ds\artifical_fippose_ds\2023_06_08_13_11_Lot1.json"
+    calibration = r"F:\Boxes-ds\artifical\artificial_fippose_toprot\2023_06_08_13_11_Lot1.json"
     ply_dir = r"F:\FIP-data\wheat-scans"
-    out_dir = r"F:\Boxes-ds\artifical_fippose_ds_test"
+    out_dir = r"F:\Boxes-ds\artifical\artificial_fippose_toprot"
 
     plant_mapping = pd.read_json(plants_to_generate,
                                   orient='index', convert_axes=False, dtype={"plant_id" : str})
     plant_mapping = plant_mapping.rename_axis("plant_id")
     plant_mapping = plant_mapping.reset_index()
     generate_dataset(calibration, plant_mapping,
-                     ply_dir, out_dir)
+                     ply_dir, out_dir, "normal")

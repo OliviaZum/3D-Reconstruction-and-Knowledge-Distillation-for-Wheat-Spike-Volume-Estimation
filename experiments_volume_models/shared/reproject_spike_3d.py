@@ -6,10 +6,11 @@ import ast
 from scipy.signal import convolve2d
 
 class ReprojectSpike3d:
-    def __init__(self, folder_path, pose_files):
+    def __init__(self, folder_path, pose_files, filter_minview = False):
         # Load the projection matrix
         self.folder_path = Path(folder_path)
         self.poses = {}
+        self.filter_minview = filter_minview
         for pose_file in pose_files:
             path = self.folder_path / pose_file
             with open(path, 'r') as f:
@@ -127,6 +128,8 @@ class ReprojectSpike3d:
         return data
 
     def reproject_images_3d(self, rows: pd.DataFrame, voxel_size = 0.001):
+        if self.filter_minview:
+            return self.reproject_images_3d_with_minview(rows, voxel_size, min_view=2)
         points = []
         normals = []
         for _, row in rows.iterrows():
@@ -139,12 +142,10 @@ class ReprojectSpike3d:
         points, normals, weights = self.voxelize(points, normals, voxel_size, weight_sorted=True)
         
         return points, normals, weights
-
-    """
-    Kept since cool. Filters points based on image correspondence, weights based on all points falling
-    within a voxel. Works worse than simply weighting voxels based on #points inside (a tiny bit)
-
-    def reproject_images_3d(self, rows: pd.DataFrame, voxel_size = 0.001, min_view = 3):
+    
+    # Kept since cool. Filters points based on image correspondence, weights based on all points falling
+    # within a voxel. Works worse than simply weighting voxels based on #points inside (a tiny bit)
+    def reproject_images_3d_with_minview(self, rows: pd.DataFrame, voxel_size = 0.001, min_view = 3):
         points = []
         normals = []
         sweights = []
@@ -166,4 +167,3 @@ class ReprojectSpike3d:
         points, normals, weights = self.voxelize(points, normals, voxel_size, weight_sorted=True, point_weights=weights)
         
         return points, normals, weights
-    """

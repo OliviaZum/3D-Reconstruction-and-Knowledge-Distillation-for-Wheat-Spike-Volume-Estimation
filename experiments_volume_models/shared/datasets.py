@@ -193,12 +193,12 @@ class PlyDataset(Dataset):
         return idx, samples, torch.tensor(vol_norm(self.plant_mapping.loc[idx, "volume"]), dtype=torch.float32), mask, torch.tensor(1)
     
 class DepthMapDataset(Dataset):
-    def __init__(self, base_folder: Path | str, plant_mapping_path: Path | str, point_cloud_size: int = 1000):
+    def __init__(self, base_folder: Path | str, plant_mapping_path: Path | str, point_cloud_size: int = 1000, filter_minview = False):
         self.point_cloud_size = point_cloud_size
         plant_mapping = pd.read_json(plant_mapping_path, orient='index', convert_axes=False, dtype={"plant_id" : str})
         plant_mapping = plant_mapping.rename_axis("plant_id")
         self.plant_mapping = plant_mapping.reset_index()
-        self.reprojector = reproject_spike_3d.ReprojectSpike3d(base_folder, self.plant_mapping["pose_file"].explode(True).unique())
+        self.reprojector = reproject_spike_3d.ReprojectSpike3d(base_folder, self.plant_mapping["pose_file"].explode(True).unique(), filter_minview)
         self.cache = None
         if plant_mapping["labeled"].any():
             self.loss_scaling = EqualBinSampler(self.plant_mapping["volume"])

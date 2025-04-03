@@ -9,6 +9,7 @@ from pathlib import Path
 import torch
 
 def _get_image_dataset(split_folder: Path, base_folder: Path, cache_folder_image: Path, ndupli_train = 10, enable_distance = True):
+    split_folder, base_folder, cache_folder_image = [Path(s) for s in [split_folder, base_folder, cache_folder_image]]
     pretrained_model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
     cache_folder_image.mkdir(exist_ok=True)
     train_dataset_image = datasets.MultiImageTrainDataset(base_folder, split_folder / "mapping_train.json", 
@@ -23,18 +24,20 @@ def _get_image_dataset(split_folder: Path, base_folder: Path, cache_folder_image
 
     return train_dataset_image, val_dataset_image, test_dataset_image
 
-def _get_depthmap_dataset(split_folder, base_folder, cache_folder, force_recompute = False):
+def _get_depthmap_dataset(split_folder, base_folder, cache_folder, force_recompute = False, filter_minview = False):
+    split_folder, base_folder, cache_folder = [Path(s) for s in [split_folder, base_folder, cache_folder]]
     cache_folder.mkdir(exist_ok=True)
-    train_dataset = datasets.DepthMapDataset(base_folder, split_folder / "mapping_train.json")
+    train_dataset = datasets.DepthMapDataset(base_folder, split_folder / "mapping_train.json", filter_minview=filter_minview)
     train_dataset.create_or_load_cache(cache_folder / "dmap_cache_train.pth", force_recompute=force_recompute)
-    val_dataset = datasets.DepthMapDataset(base_folder, split_folder / "mapping_val.json")
+    val_dataset = datasets.DepthMapDataset(base_folder, split_folder / "mapping_val.json", filter_minview=filter_minview)
     val_dataset.create_or_load_cache(cache_folder / "dmap_cache_val.pth", force_recompute=force_recompute)
-    test_dataset = datasets.DepthMapDataset(base_folder,split_folder / "mapping_test.json")
+    test_dataset = datasets.DepthMapDataset(base_folder,split_folder / "mapping_test.json", filter_minview=filter_minview)
     test_dataset.create_or_load_cache(cache_folder / "dmap_cache_test.pth", force_recompute=force_recompute)
 
     return train_dataset, val_dataset, test_dataset
 
 def _get_ply_dataset(split_folder, base_folder, cache_folder, force_recompute = False):
+    split_folder, base_folder, cache_folder = [Path(s) for s in [split_folder, base_folder, cache_folder]]
     cache_folder.mkdir(exist_ok=True)
     train_dataset = datasets.PlyDataset(base_folder, split_folder / "mapping_train.json")
     train_dataset.create_or_load_cache(cache_folder / "ply_train.pth", force_recompute=force_recompute)
@@ -53,31 +56,6 @@ def get_real_dataset3d(force_recompute = False):
     cache = Path(r"experiments_volume_models\local_stuff\dmap_cache")
 
     return _get_depthmap_dataset(split_folder, base_folder, cache, force_recompute)
-
-# Get both an image and a depth dataset of artificial data with poses as on the FIP
-def get_artifical_fiplike_dataset(force_recompute = False):
-    split_folder = Path("split_without2024")
-    base_folder = Path(r"F:\Boxes-ds\artifical_fippose_ds")
-    cache_path = Path(r"experiments_volume_models\local_stuff\dmap_cache")
-    train_dataset = datasets.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_train.json")
-    train_dataset.create_or_load_cache(cache_path / "fiplike_artifical_dmap_train.pth", force_recompute)
-    val_dataset = datasets.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_val.json")
-    val_dataset.create_or_load_cache(cache_path / "fiplike_artifical_dmap_val.pth", force_recompute)
-    test_dataset = datasets.DepthMapDataset(base_folder, base_folder / split_folder / "mapping_test.json")
-    test_dataset.create_or_load_cache(cache_path / "fiplike_artifical_dmap_test.pth", force_recompute)
-
-    pretrained_model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
-    train_dataset_img = datasets.MultiImageTrainDataset(base_folder, base_folder / split_folder / "mapping_train.json",
-                                                           datasets.get_transform(True), "volume", 12, 4, True)
-    train_dataset_img.create_or_load_cache(pretrained_model, cache_path / "fiplike_artificial_img_train.pth", 10, num_workers=4)
-    val_dataset_img = datasets.MultiImageTrainDataset(base_folder, base_folder / split_folder / "mapping_val.json", 
-                                                         datasets.get_transform(False), "volume", 12, 6, False, validation_mode=True)
-    val_dataset_img.create_or_load_cache(pretrained_model, cache_path / "fiplike_artificial_img_val.pth", 1, num_workers=0)
-    test_dataset_img = datasets.MultiImageTrainDataset(base_folder, base_folder / split_folder / "mapping_test.json", 
-                                                         datasets.get_transform(False), "volume", 12, 6, False, validation_mode=True)
-    test_dataset_img.create_or_load_cache(pretrained_model, cache_path / "fiplike_artificial_img_test.pth", 1, num_workers=0)
-    
-    return train_dataset, val_dataset, test_dataset, train_dataset_img, val_dataset_img, test_dataset_img
 
 # Get artificial point clouds dataset
 def get_ply_dataset(force_recompute = False):
@@ -142,6 +120,40 @@ def get_default_image_dataset_wo_distance_and_seg(disable_augmentation = False):
         ndupli = 10
 
     return _get_image_dataset(split_folder, base_folder, cache_folder, enable_distance=False, ndupli_train=ndupli)
+
+def get_artifical_image_dataset_sideviews():
+    split = r"F:\Boxes-ds\artifical\bestpose_noshift_12\split_without2024_noextend"
+    base = r"F:\Boxes-ds\artifical\bestpose_noshift_12"
+    cache = r"experiments_volume_models\local_stuff\artificial_sideviews"
+    return _get_image_dataset(split, base, cache, enable_distance=False)
+
+def get_artificial_image_dataset_randompose():
+    split = r"F:\Boxes-ds\artifical\randompose_noshift_12\split_without2024_noextend"
+    base = r"F:\Boxes-ds\artifical\randompose_noshift_12"
+    cache = r"experiments_volume_models\local_stuff\artificial_randomviews"
+    return _get_image_dataset(split, base, cache, enable_distance=False)
+
+def get_artificial_dataset_fiplike_uniform(type: Literal["depth", "image"], force_recompute = False):
+    split = r"F:\Boxes-ds\artifical\artifical_fippose_randomrot\split_without2024_noextend"
+    base = r"F:\Boxes-ds\artifical\artifical_fippose_randomrot"
+    
+    if type == "image":
+        cache = r"experiments_volume_models\local_stuff\artificial_fiplike_uniform_image"
+        return _get_image_dataset(split, base, cache, enable_distance=False)
+    else:
+        cache = r"experiments_volume_models\local_stuff\artificial_fiplike_uniform_depth"
+        return _get_depthmap_dataset(split, base, cache, force_recompute, True)
+
+def get_artificial_dataset_fiplike_normal(type: Literal["depth", "image"], force_recompute = False):
+    split = r"F:\Boxes-ds\artifical\artificial_fippose_toprot\split_without2024_noextend"
+    base = r"F:\Boxes-ds\artifical\artificial_fippose_toprot"
+
+    if type == "image":
+        cache = r"experiments_volume_models\local_stuff\artificial_fiplike_normal_image"
+        return _get_image_dataset(split, base, cache, enable_distance=False)
+    else:
+        cache = r"experiments_volume_models\local_stuff\artificial_fiplike_normal_depth"
+        return _get_depthmap_dataset(split, base, cache, force_recompute, True)
 
 # Get a dataset that returns images and real 3d data. if include ply, additionally ply files are returned
 def get_combined_image_point_dataset(include_ply = False):
