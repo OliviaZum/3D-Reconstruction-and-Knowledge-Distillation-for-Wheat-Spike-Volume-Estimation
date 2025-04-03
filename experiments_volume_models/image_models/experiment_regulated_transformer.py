@@ -8,6 +8,11 @@ Automatic pairing ensemble distilled (test, ignore-outliers): {'MAE': 516.292785
 Direct train: {'MAE': 614.16357421875, 'Correlation': 0.7874227766422761, 'Loss': 0.15318933129310608, 'Steepness': 0.7631462760571315}
 Direct train wo distance: {'MAE': 641.6639404296875, 'Correlation': 0.7548744936452643, 'Loss': 0.19171516597270966, 'Steepness': 0.6596010247852248}
 Direct train wo distance and seg: {'MAE': 772.6060180664062, 'Correlation': 0.688045394870238, 'Loss': 0.20374730229377747, 'Steepness': 0.7044337368844835}
+
+Artificial bestpose: {'MAE': 229.02496337890625, 'Correlation': 0.9740162925000551, 'Loss': 0.018728487193584442, 'Steepness': 0.9941033835018213}
+Artificial randompose: {'MAE': 247.00242614746094, 'Correlation': 0.970975135459737, 'Loss': 0.026273004710674286, 'Steepness': 1.0532637860866683}
+Artificial fiplike normal: {'MAE': 477.668212890625, 'Correlation': 0.8881649636876028, 'Loss': 0.08979550004005432, 'Steepness': 0.9243962589100745
+Artificial fiplike uniform: {'MAE': 495.8588562011719, 'Correlation': 0.8653908952381895, 'Loss': 0.08875340968370438, 'Steepness': 0.908395792635748}
 """
 
 import experiments_volume_models.shared.utils_experiment as utils_experiment
@@ -22,16 +27,18 @@ import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
 import torch
+import pandas as pd
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should_print=True, ignore_outliers = False):
+def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should_print=True, ignore_outliers = False, export_path = None):
     model = model.eval()
     with torch.no_grad():
         vol_pred = []
         vol_real = []
         logvars = []
         weights = []
+        plants = []
         for images, plant, imagemask, label, weight in dataloader:
             images = images.to(device)
             imagemask = imagemask.to(device)
@@ -42,6 +49,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
             vol_real.append(label)
             weights.append(weight)
             logvars.append(logvar.cpu())
+            plants.extend(plant)
         vol_pred = torch.concat(vol_pred)
         vol_real = torch.concat(vol_real)
         weights = torch.concat(weights)
@@ -51,6 +59,16 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
              p9 = torch.quantile(e, 0.95)
              mask = e < p9
              vol_pred, vol_real, weights, logvars = [a[mask] for a in [vol_pred, vol_real, weights, logvars]]
+        if export_path is not None:
+            s = []
+            for plant, vp, vr in zip(plants, vol_pred, vol_real):
+                s.append({
+                    "plant_id": plant["plant_id"],
+                    "volume_pred": vp,
+                    "volume_gt": vr
+                })
+            s = pd.DataFrame(s)
+            s.to_csv(export_path)
 
         l = {}
         l["MAE"] = F.l1_loss(datasets.vol_unorm(vol_pred), datasets.vol_unorm(vol_real)).item()
@@ -90,13 +108,19 @@ def is_better_model(stats, best_stats):
 
     return rate > 0
 
+
 if __name__ == "__main__":
     accelerate.utils.set_seed(0)
+
     #model_name = "regulatedtransformer-direct.pth"
     #model_name = "fiplike_artifical_image_model.pth"
-    model_name = "self-distill-regulated_transformer.pth"
+    #model_name = "self-distill-regulated_transformer.pth"
     #model_name = "nodistance-regulated_transformer.pth"
     #model_name = "nodistancenoseg-regulated_transformer.pth"
+    #model_name = "artificial_bestpose_regulated_transformer.pth"
+    #model_name = "artificial_randompose_regulated_transformer.pth"
+    #model_name = "artificial_fipnormal_regulated_transformer.pth"
+    model_name = "artificial_fipuniform_regulated_transformer.pth"
     use_auto_pair = True
 
     if model_name == "regulatedtransformer-direct.pth" or model_name == "self-distill-regulated_transformer.pth":
@@ -110,6 +134,14 @@ if __name__ == "__main__":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance()
     elif model_name == "nodistancenoseg-regulated_transformer.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance_and_seg()
+    elif model_name == "artificial_bestpose_regulated_transformer.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_artifical_image_dataset_sideviews()
+    elif model_name == "artificial_randompose_regulated_transformer.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_artificial_image_dataset_randompose()
+    elif model_name == "artificial_fipnormal_regulated_transformer.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_artificial_dataset_fiplike_normal("image")
+    elif model_name == "artificial_fipuniform_regulated_transformer.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_artificial_dataset_fiplike_uniform("image")
     else:
          assert False
 
