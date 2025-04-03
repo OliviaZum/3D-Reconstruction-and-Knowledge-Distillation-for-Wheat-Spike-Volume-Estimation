@@ -144,10 +144,11 @@ class PlyDataset(Dataset):
         The index of the requested file and a tensor of shape (point_cloud_size, 6) where the first 3 entries are point
             position, next 3 are normals.
     """
-    def __init__(self, ply_folder: Path, plant_mapping_path: str | Path, point_cloud_size: int = 1000):
+    def __init__(self, ply_folder: Path, plant_mapping_path: str | Path, point_cloud_size: int = 1000, voxelize = False):
         self.plant_mapping = pd.read_json(plant_mapping_path, orient='index', convert_axes=False, dtype={"plant_id" : str})
         self.plant_mapping = self.plant_mapping.rename_axis("plant_id")
         self.plant_mapping = self.plant_mapping.reset_index()
+        self.voxelize = voxelize
 
         ply_files = {p.stem: p for p in ply_folder.rglob("*.ply")}
         self.plant_mapping["ply_file"] = self.plant_mapping["plant_id"].map(ply_files)
@@ -163,9 +164,17 @@ class PlyDataset(Dataset):
             tensors = []
             for file in tqdm.tqdm(self.plant_mapping["ply_file"].apply(Path).tolist(), "Creating cache"):
                 pcl = self.load_and_process(file, True)
+                pcl = np.concatenate((pcl, np.ones((pcl.shape[0], 1))), axis=1)
+                if self.voxelize:
+                    pcl = reproject_spike_3d.ReprojectSpike3d.voxelize_packed(pcl, voxel_size=2.0, weight_sorted=True)
+                    pcl.shape[0]
+                    if pcl.shape[0] > self.point_cloud_size:
+                        pcl = pcl[:self.point_cloud_size]
+                    elif pcl.shape[0] < self.point_cloud_size:
+                        padding = np.zeros((self.point_cloud_size - pcl.shape[0], pcl.shape[1]))
+                        pcl = np.vstack((pcl, padding))
                 tensors.append(torch.Tensor(pcl).unsqueeze(0))
             tensors = torch.concat(tensors, dim=0)
-            tensors = torch.concat((tensors, torch.ones((tensors.shape[0], tensors.shape[1], 1))), dim=2)
             torch.save(tensors, path)
         else:
             tensors = torch.load(path, weights_only=True)
@@ -174,7 +183,8 @@ class PlyDataset(Dataset):
     def load_and_process(self, file, get_normals=False):
         ply_data = trimesh.load(file)
         ply_data.vertices -= ply_data.vertices.mean(axis=0, keepdims=True)
-        pcl, face_index = trimesh.sample.sample_surface(ply_data, self.point_cloud_size)
+        sample_size = 30000 if self.voxelize else self.point_cloud_size
+        pcl, face_index = trimesh.sample.sample_surface(ply_data, sample_size)
         if get_normals:
             normals = ply_data.face_normals[face_index]
             pcl = np.concatenate((pcl, normals), 1)
@@ -189,7 +199,10 @@ class PlyDataset(Dataset):
         else:
             raise NotImplemented
         
-        mask = torch.ones(len(samples), dtype=torch.bool)
+        if self.voxelize:
+            mask = samples[:, 6] != 0
+        else:
+            mask = torch.ones(len(samples), dtype=torch.bool)
         return idx, samples, torch.tensor(vol_norm(self.plant_mapping.loc[idx, "volume"]), dtype=torch.float32), mask, torch.tensor(1)
     
 class DepthMapDataset(Dataset):

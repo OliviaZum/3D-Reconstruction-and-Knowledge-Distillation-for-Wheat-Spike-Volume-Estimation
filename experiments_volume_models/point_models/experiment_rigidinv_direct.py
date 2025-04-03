@@ -13,6 +13,21 @@ Performance on ply files:
 Val MAE: 136.79244995117188
 Val Corr: 0.989288331764323
 Steepness: 1.0001779871566243
+
+Performance on ply files (voxelized):
+Val MAE: 108.59272766113281
+Val Corr: 0.9923584956654167
+Steepness: 1.00016117094416
+
+Fiplike uniform:
+Val MAE: 333.9336242675781
+Val Corr: 0.9393371638387208
+Steepness: 0.9940054408544241
+
+Fiplike normal:
+Val MAE: 284.6448059082031
+Val Corr: 0.9530460571009036
+Steepness: 0.9279888669048981
 """
 
 import torch
@@ -69,15 +84,21 @@ if __name__ == "__main__":
     accelerate.utils.set_seed(1, deterministic=True)
     
     #model_name = "real_volume_model-direct.pth"
-    model_name = "ply2volume_model.pth"
-    #model_name = "fiplike_ply_model.pth"
+    #model_name = "ply2volume_model.pth"
+    #model_name = "ply2volume_voxelized_model.pth"
+    #model_name = "fiplike_uniform_ply_model.pth"
+    model_name = "fiplike_normal_ply_model.pth"
 
     if model_name == "ply2volume_model.pth":
-        train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset()
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset(force_recompute=False, voxelize=False)
+    elif model_name == "ply2volume_voxelized_model.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset(force_recompute=False, voxelize=True)
     elif model_name == "real_volume_model-direct.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_real_dataset3d(force_recompute=False)
-    elif model_name == "fiplike_ply_model.pth":
-        train_dataset, val_dataset, test_dataset, _, _, _ = utils_experiment.get_artifical_fiplike_dataset(force_recompute=False)
+    elif model_name == "fiplike_uniform_ply_model.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_artificial_dataset_fiplike_uniform("depth", force_recompute=False)
+    elif model_name == "fiplike_normal_ply_model.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_artificial_dataset_fiplike_normal("depth", force_recompute=False)
     else:
         assert False
     train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)

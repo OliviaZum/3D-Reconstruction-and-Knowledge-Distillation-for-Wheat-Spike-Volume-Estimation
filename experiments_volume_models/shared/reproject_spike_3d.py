@@ -99,7 +99,8 @@ class ReprojectSpike3d:
         else:
             return points_3d_world
 
-    def voxelize(self, points, normals, voxel_size: float = 0.002, point_weights = None, weight_sorted = False):
+    @staticmethod
+    def voxelize(points, normals, voxel_size: float = 0.002, point_weights = None, weight_sorted = False):
         w = points * (1 / voxel_size)
         w = np.floor(w).astype(np.int64)
         voxels, first_index, inverse  = np.unique(w, axis=0, return_index=True, return_inverse=True)
@@ -118,12 +119,13 @@ class ReprojectSpike3d:
 
         return vp, normals, unique_counts
     
-    def voxelize_packed(self, data, voxel_size: float = 0.002, weight_sorted=False):
+    @staticmethod
+    def voxelize_packed(data, voxel_size: float = 0.002, weight_sorted=False):
         if data.shape[-1] == 7:
             weight = data[:, 6]
         else:
             weight = None
-        v, n, u = self.voxelize(data[:, 0:3], data[:, 3:6], voxel_size, weight, weight_sorted)
+        v, n, u = ReprojectSpike3d.voxelize(data[:, 0:3], data[:, 3:6], voxel_size, weight, weight_sorted)
         data = np.concatenate((v, n, np.expand_dims(u, 1)), axis=1)
         return data
 

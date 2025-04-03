@@ -9,6 +9,10 @@ Without distance norm and seg:
 {'MAE': 712.525634765625, 'Correlation': 0.7006180943869368, 'Loss': 0.1955053061246872, 'Steepness': 0.6446966488839889}
 Without any augmentation (random rotation + loss scaling + random subsets + segmentation + distance norm):
 {'MAE': 694.697998046875, 'Correlation': 0.6626826578617516, 'Loss': 0.26444491744041443, 'Steepness': 0.46292833223320295}
+FIPlike uniform:
+{'MAE': 512.8324584960938, 'Correlation': 0.8450659536387374, 'Loss': 0.0995023250579834, 'Steepness': 0.7999260871126517}
+Fiplike normal:
+{'MAE': 475.22418212890625, 'Correlation': 0.8841884334742898, 'Loss': 0.09209106862545013, 'Steepness': 0.8338331713685881}
 """
 
 import experiments_volume_models.shared.utils_experiment as utils_experiment
@@ -78,9 +82,11 @@ if __name__ == "__main__":
     accelerate.utils.set_seed(0)
 
     #model_name = "lstm-real.pth"
-    model_name = "lstm-real-no-dist.pth"
+    #model_name = "lstm-real-no-dist.pth"
     #model_name = "lstm-real-nodist-noseg.pth"
-    model_name = "lstm-no-aug.pth"
+    #model_name = "lstm-no-aug.pth"
+    #model_name = "lstm-fiplike-uniform.pth"
+    model_name = "lstm-fiplike-normal.pth"
 
     if model_name == "lstm-real.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset()
@@ -90,6 +96,10 @@ if __name__ == "__main__":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance_and_seg()
     elif model_name == "lstm-no-aug.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance_and_seg(disable_augmentation = True)
+    elif model_name == "lstm-fiplike-uniform.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_artificial_dataset_fiplike_uniform("image")
+    elif model_name == "lstm-fiplike-normal.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_artificial_dataset_fiplike_normal("image")
 
     if model_name == "lstm-no-aug.pth":
         train_dataset.random_sequence_len = False

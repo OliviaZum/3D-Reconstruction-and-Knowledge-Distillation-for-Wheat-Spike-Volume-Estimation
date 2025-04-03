@@ -36,14 +36,14 @@ def _get_depthmap_dataset(split_folder, base_folder, cache_folder, force_recompu
 
     return train_dataset, val_dataset, test_dataset
 
-def _get_ply_dataset(split_folder, base_folder, cache_folder, force_recompute = False):
+def _get_ply_dataset(split_folder, base_folder, cache_folder, force_recompute = False, voxelize = False):
     split_folder, base_folder, cache_folder = [Path(s) for s in [split_folder, base_folder, cache_folder]]
     cache_folder.mkdir(exist_ok=True)
-    train_dataset = datasets.PlyDataset(base_folder, split_folder / "mapping_train.json")
+    train_dataset = datasets.PlyDataset(base_folder, split_folder / "mapping_train.json", voxelize=voxelize)
     train_dataset.create_or_load_cache(cache_folder / "ply_train.pth", force_recompute=force_recompute)
-    val_dataset = datasets.PlyDataset(base_folder, split_folder / "mapping_val.json")
+    val_dataset = datasets.PlyDataset(base_folder, split_folder / "mapping_val.json", voxelize=voxelize)
     val_dataset.create_or_load_cache(cache_folder / "ply_val.pth", force_recompute=force_recompute)
-    test_dataset = datasets.PlyDataset(base_folder, split_folder / "mapping_test.json")
+    test_dataset = datasets.PlyDataset(base_folder, split_folder / "mapping_test.json", voxelize=voxelize)
     test_dataset.create_or_load_cache(cache_folder / "ply_test.pth", force_recompute=force_recompute)
 
     return train_dataset, val_dataset, test_dataset
@@ -58,12 +58,15 @@ def get_real_dataset3d(force_recompute = False):
     return _get_depthmap_dataset(split_folder, base_folder, cache, force_recompute)
 
 # Get artificial point clouds dataset
-def get_ply_dataset(force_recompute = False):
+def get_ply_dataset(force_recompute = False, voxelize = False):
     split_folder = Path(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
     base_folder = Path(r"F:\FIP-data\wheat-scans")
-    cache_path = Path(r"experiments_volume_models\local_stuff\ply_cache")
+    if voxelize:
+        cache_path = Path(r"experiments_volume_models\local_stuff\ply_cache_voxelized")
+    else:
+        cache_path = Path(r"experiments_volume_models\local_stuff\ply_cache")
 
-    return _get_ply_dataset(split_folder, base_folder, cache_path, force_recompute)
+    return _get_ply_dataset(split_folder, base_folder, cache_path, force_recompute, voxelize)
     
 # Returns real and corresponding artifical pointcloud at the same time
 def get_combined_point_real_arti_dataset():
