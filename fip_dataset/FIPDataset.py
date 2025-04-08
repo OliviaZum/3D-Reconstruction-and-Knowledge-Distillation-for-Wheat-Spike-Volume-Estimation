@@ -19,6 +19,7 @@ class FIPDataset:
     ply_folder: A folder containing the 3d scans
     precompute_file: Precomputed bounding boxes and clusters between them
     spikelabels_file: A file containing bounding boxes for a plant which is in the dataset. This is in assets ("labeled_spikes")
+        If this is not None, and a scan has no labeled bounding boxes at all it will be removed from spikescans.
     pose_folder: A folder containing the camera calibrations. Calibration files should be called like "2023_06_08_13_11_Lot1" 
         according to which day they are for
     """
@@ -168,8 +169,7 @@ class FIPDataset:
                     id += 1
                 print(len(w))
             else:
-                boxes, _ = fip_detection.find_objects_yolo(model, 
-                                                folder, batch_size=1)
+                boxes, _ = fip_detection.find_objects_yolo(model, folder)
             connected_boxes = fip_detection.connect_boxes(boxes, conf, min_view=0)
             if torch.cuda.memory_reserved() // (1024**2) > 3500:
                 torch.cuda.empty_cache()
@@ -177,27 +177,6 @@ class FIPDataset:
         with open(precompute_file, "w") as f:
             json.dump(result, f)
         self.precomputed = result
-
-    @staticmethod
-    def iou(box1, box2):
-        # box1 and box2 should be in (x1, y1, x2, y2) format
-        x1, y1, x2, y2 = box1
-        x1_b, y1_b, x2_b, y2_b = box2
-
-        inter_x1 = max(x1, x1_b)
-        inter_y1 = max(y1, y1_b)
-        inter_x2 = min(x2, x2_b)
-        inter_y2 = min(y2, y2_b)
-        if inter_x1 >= inter_x2 or inter_y1 >= inter_y2:
-            return 0.0
-
-        inter_area = (inter_x2 - inter_x1) * (inter_y2 - inter_y1)
-
-        box1_area = (x2 - x1) * (y2 - y1)
-        box2_area = (x2_b - x1_b) * (y2_b - y1_b)
-        union_area = box1_area + box2_area - inter_area
-
-        return inter_area / union_area
     
     def export_plant_images(self, input_folder: str, output_folder: str, export: Dict, padding: int = 20,
                             box_size: int = 300, seg_model = None, use_depthmap = True):
@@ -263,7 +242,7 @@ class FIPDataset:
         max_iou = 0
         max_box = None
         for w in boxes:
-            iou = self.iou(box, w["box"])
+            iou = helpers.iou(box, w["box"])
             if iou > max_iou:
                 max_iou = iou
                 max_box = w

@@ -2,7 +2,13 @@
 Contains the functions used for converting datasets to YOLO,
 label the GWHD spikes using SAM and train the models. There is no validation 
 code, but validation should run automatically at the end of training, and 
-one can always manually validate a model on some split using .val method.
+one can always manually validate a model on some split using .val method,
+E.g. 
+seg_model.val(data=r"F:\SPIKE_segm\YOLO_conv\dataset.yaml", split="train", imgsz=1024, batch=3)
+to evaluate seg_model on the train split of SPIKE.
+For inference, this is an example:
+#r: List[Results] = det_model(r"F:\gwhd_2021\gwhd_yolo\test\images\7f16a775a5d8cdb7e16fb1cacb3248552558634bb6dba7c58626f7558388d2be.png",
+#              imgsz=640, max_det=800, iou=0.5, conf=0.25)
 """
 
 import os
@@ -179,14 +185,3 @@ def train_object_detection_GWHD(dataset=Path(r"F:\gwhd_2021\gwhd_yolo\dataset.ya
 if __name__ == "__main__":
     os.environ['WANDB_DISABLED'] = 'true'
 
-    #train_instance_segmentation_SPIKE()
-    #seg_model = YOLO(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\runs\segment\train2\weights\best.pt")
-    #seg_model = YOLO(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\assets\model-weights\yolo-medium-segment.pt")
-    #seg_model.val(data=r"F:\SPIKE_segm\tmp_test\dataset.yaml", split="test")
-
-    #det_model = YOLO(r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\assets\model-weights\yolo-medium-detect-mAp50-0766.pt")
-    #r: List[Results] = det_model(r"F:\gwhd_2021\gwhd_yolo\test\images\7f16a775a5d8cdb7e16fb1cacb3248552558634bb6dba7c58626f7558388d2be.png",
-    #              imgsz=640, max_det=800, iou=0.5, conf=0.25)
-    #r[0].plot(False, labels=False, masks=False, save=True,
-    #          line_width=3, color_mode="instance",
-    #          filename=r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\local_stuff\fip_example-and-det-examples\out.png")

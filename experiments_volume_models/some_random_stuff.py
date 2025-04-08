@@ -1,7 +1,7 @@
-import experiments.shared.utils_experiment as utils_experiment
-import experiments.shared.utils_3d as utils_3d
+import experiments_volume_models.shared.utils_experiment as utils_experiment
+import experiments_volume_models.shared.utils_3d as utils_3d
 import numpy as np
-import experiments.shared.reproject_spike_3d as reproject_spike_3d
+import experiments_volume_models.shared.reproject_spike_3d as reproject_spike_3d
 from pathlib import Path
 import matplotlib.pyplot as plt
 import cv2
@@ -47,7 +47,7 @@ def watch_ply_files():
             plt.show()
         """
 
-        points, normals, weights = reprojector.reproject_images_3d(rows, voxel_size=0.002, min_view=3)
+        points, normals, weights = reprojector.reproject_images_3d_with_minview(rows, voxel_size=0.001, min_view=3)
         print(len(points))
         #points, normals, weights = reprojector.voxelize(points, normals, voxel_size=0.001, weight_sorted=False)
         utils_3d.visualize_point_clouds(points)
@@ -65,4 +65,9 @@ def watch_artifical_fip_plyfiles():
         #points, normals, weights = reprojector.voxelize(points, normals, voxel_size=0.001, weight_sorted=False)
         utils_3d.visualize_point_clouds(points)
 
-watch_artifical_fip_plyfiles()
+def watch_actual_plyfiles():
+    train, _, _ = utils_experiment.get_ply_dataset()
+    for _, data, _, _, _ in train:
+        utils_3d.visualize_point_clouds(data[:, 0:3])
+
+watch_ply_files()
