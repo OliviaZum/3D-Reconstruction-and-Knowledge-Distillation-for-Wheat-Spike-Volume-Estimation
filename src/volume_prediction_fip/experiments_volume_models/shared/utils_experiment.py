@@ -4,9 +4,9 @@ If running experiments, file paths have to be adapted to point to the actual dat
 """
 
 from typing import Literal
-from experiments_volume_models.shared import datasets
 from pathlib import Path
 import torch
+from volume_prediction_fip.experiments_volume_models.shared import datasets
 
 def _get_image_dataset(split_folder: Path, base_folder: Path, cache_folder_image: Path, ndupli_train = 10, enable_distance = True):
     split_folder, base_folder, cache_folder_image = [Path(s) for s in [split_folder, base_folder, cache_folder_image]]
@@ -62,9 +62,9 @@ def get_ply_dataset(force_recompute = False, voxelize = False):
     split_folder = Path(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
     base_folder = Path(r"F:\FIP-data\wheat-scans")
     if voxelize:
-        cache_path = Path(r"experiments_volume_models\local_stuff\ply_cache_voxelized")
+        cache_path = Path(r"local_stuff_experiments\ply_cache_voxelized")
     else:
-        cache_path = Path(r"experiments_volume_models\local_stuff\ply_cache")
+        cache_path = Path(r"local_stuff_experiments\ply_cache")
 
     return _get_ply_dataset(split_folder, base_folder, cache_path, force_recompute, voxelize)
     

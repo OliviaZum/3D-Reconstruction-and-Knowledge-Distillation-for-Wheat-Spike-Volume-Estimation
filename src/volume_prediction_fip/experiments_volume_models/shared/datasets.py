@@ -1,6 +1,4 @@
 import warnings
-from experiments_volume_models.shared import reproject_spike_3d
-from torch.utils.data import Dataset
 from pathlib import Path
 import torch
 import trimesh
@@ -11,8 +9,6 @@ import hashlib
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import torch
-import warnings
 
 from torch.utils.data import Dataset, DataLoader, Sampler
 from torchvision.io import read_image
@@ -20,6 +16,7 @@ from torchvision.transforms import v2, functional as FT
 from torch import nn
 from pathlib import Path
 from typing import List, Literal, Tuple
+from volume_prediction_fip.experiments_volume_models.shared import reproject_spike_3d
 
 def random_rigid(data, translate = True):
     axis = np.random.normal(size=3)

@@ -35,13 +35,10 @@ from torch.utils.data import DataLoader
 from torch import nn
 import numpy as np
 import copy
-import experiments_volume_models.shared.datasets as datasets
-import experiments_volume_models.shared.utils_3d as utils_3d
-import experiments_volume_models.shared.models as models
-import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
 import accelerate
+from volume_prediction_fip.experiments_volume_models.shared import utils_experiment, models, datasets, utils_3d
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -84,10 +81,10 @@ if __name__ == "__main__":
     accelerate.utils.set_seed(1, deterministic=True)
     
     #model_name = "real_volume_model-direct.pth"
-    #model_name = "ply2volume_model.pth"
+    model_name = "ply2volume_model.pth"
     #model_name = "ply2volume_voxelized_model.pth"
     #model_name = "fiplike_uniform_ply_model.pth"
-    model_name = "fiplike_normal_ply_model.pth"
+    #model_name = "fiplike_normal_ply_model.pth"
 
     if model_name == "ply2volume_model.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset(force_recompute=False, voxelize=False)
@@ -106,7 +103,7 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
 
-    if True:
+    if False:
         model = torch.load(f"experiments_volume_models/local_stuff/{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)
