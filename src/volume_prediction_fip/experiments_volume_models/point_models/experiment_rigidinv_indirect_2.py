@@ -17,15 +17,14 @@ from torch.utils.data import DataLoader
 from torch import nn
 import numpy as np
 import copy
-import experiments_volume_models.shared.datasets as datasets
-import experiments_volume_models.shared.utils_3d as utils_3d
-import experiments_volume_models.shared.models as models
-import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
 
+from volume_prediction_fip.experiments_volume_models.shared import utils_experiment, models, datasets, utils_3d
+from volume_prediction_fip.utils import helpers
+
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-arti_2_vol = torch.load("experiments_volume_models/local_stuff/ply2volume_model.pth", weights_only=False).to(device).eval()
+arti_2_vol = torch.load(helpers.get_exp_path() / "ply2volume_model.pth", weights_only=False).to(device).eval()
 arti_2_vol.output = "features"
 
 def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
@@ -43,7 +42,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
             ply_latent = arti_2_vol(data_ply, plymask)
             volume, latent = model(data_depthmap, mask)
         
-            lat_loss = ((ply_latent - latent) ** 2)
+            lat_loss = ((ply_latent - latent) ** 2).mean(dim=1)
             lat_losses.append(lat_loss.cpu())
 
             vol_pred.append(volume.cpu().squeeze())
@@ -53,13 +52,17 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         vol_real = torch.concat(vol_real)
         lat_losses = torch.concat(lat_losses)
 
-        loss = ((vol_pred - vol_real) ** 2).mean().item() + lat_losses.mean() * 5
+        volloss = ((vol_pred - vol_real) ** 2).mean().item()
+        latloss = lat_losses.mean().item()
+        loss = volloss + latloss * 5
         print(f"Val MAE: {F.l1_loss(datasets.vol_unorm(vol_pred), datasets.vol_unorm(vol_real))}")
         print(f"Val Corr: {np.corrcoef(vol_real, vol_pred)[0, 1]}")
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
         linregcoeff, _, _, _ = np.linalg.lstsq(A, vol_pred, rcond=None)
         print(f"Steepness: {linregcoeff[0]}")
         print(f"Val Loss (+latent diff): {loss}")
+        print(f"Val Loss volume: {volloss}")
+        print(f"Val Loss latent: {latloss}")
         if show_plot:
             plt.plot((2000, 8500), (2000, 8500))
             plt.scatter(datasets.vol_unorm(vol_real), datasets.vol_unorm(vol_pred))
@@ -77,7 +80,7 @@ if __name__ == "__main__":
 
     model_name = "rigidinv_indirect2.pth"
     if True:
-        model = torch.load(f"experiments_volume_models/local_stuff/{model_name}", weights_only=False).to(device)
+        model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device)
         evaluate(test_loader, model, True)
         exit(0)
 
@@ -86,7 +89,7 @@ if __name__ == "__main__":
 
     best_val = None
     best_model = None
-    for epoch in range(40):
+    for epoch in range(50):
         errs_train = []
         model.train()
         for _, data_ply, data_depthmap, plymask, mask, vol_batch, _ in train_loader:
@@ -115,4 +118,4 @@ if __name__ == "__main__":
 
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 
-    torch.save(best_model, f"experiments_volume_models/local_stuff/{model_name}")
+    torch.save(best_model, helpers.get_exp_path() / f"{model_name}")

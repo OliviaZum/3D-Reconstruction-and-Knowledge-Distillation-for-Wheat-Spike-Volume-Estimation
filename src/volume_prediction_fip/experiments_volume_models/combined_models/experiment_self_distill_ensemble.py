@@ -11,23 +11,20 @@ To reproduce first train image model using experiment_regulated_transformer and 
 using experiment_rigidinv_indirect2
 """
 
-import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.utils.data import DataLoader
 import numpy as np
 import copy
-import experiments_volume_models.shared.datasets as datasets
-import experiments_volume_models.shared.utils_3d as utils_3d
-import experiments_volume_models.shared.models as models
-import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
 import torch
 import itertools
 import accelerate
 from collections.abc import Iterable
+from volume_prediction_fip.experiments_volume_models.shared import utils_experiment, models, datasets, utils_3d
+from volume_prediction_fip.utils import helpers
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-arti_2_vol = torch.load("experiments_volume_models/local_stuff/ply2volume_model.pth", weights_only=False).to(device).eval()
+arti_2_vol = torch.load(helpers.get_exp_path() / "ply2volume_model.pth", weights_only=False).to(device).eval()
 arti_2_vol.output = "features"
 
 class Mixedloader(Iterable):
@@ -305,8 +302,8 @@ if __name__ == "__main__":
 
     # To evaluate on test use experiment_regulated_transformer, resp. experiment_image_rigidinv_ensemble
 
-    pretrained_point = torch.load(f"experiments_volume_models/local_stuff/rigidinv_indirect2.pth", weights_only=False).to(device)
-    pretrained_img = torch.load(f"experiments_volume_models/local_stuff/regulatedtransformer-direct.pth", weights_only=False).to(device)
+    pretrained_point = torch.load(helpers.get_exp_path() / f"rigidinv_indirect2.pth", weights_only=False).to(device)
+    pretrained_img = torch.load(helpers.get_exp_path() / f"regulatedtransformer-direct.pth", weights_only=False).to(device)
 
     best_combined_val = None
     #best_pointnet_val, _, _  = inference_pointnet(pretrained_point, point_val_loader)
@@ -356,4 +353,4 @@ if __name__ == "__main__":
         """
     
 
-    torch.save(best_img_model, f"experiments_volume_models/local_stuff/{model_name}")
+    torch.save(best_img_model, helpers.get_exp_path() / f"{model_name}")

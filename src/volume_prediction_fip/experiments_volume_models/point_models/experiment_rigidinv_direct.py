@@ -10,9 +10,9 @@ Val Corr: 0.8002600909545133
 Steepness: 0.6788825071122576
 
 Performance on ply files:
-Val MAE: 136.79244995117188
-Val Corr: 0.989288331764323
-Steepness: 1.0001779871566243
+Val MAE: 141.0824432373047
+Val Corr: 0.9881163633508186
+Steepness: 0.9930740456518544
 
 Performance on ply files (voxelized):
 Val MAE: 108.59272766113281
@@ -39,6 +39,7 @@ from torch.nn import functional as F
 import matplotlib.pyplot as plt
 import accelerate
 from volume_prediction_fip.experiments_volume_models.shared import utils_experiment, models, datasets, utils_3d
+from volume_prediction_fip.utils import helpers
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -103,8 +104,8 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
 
-    if False:
-        model = torch.load(f"experiments_volume_models/local_stuff/{model_name}", weights_only=False).to(device).eval()
+    if True:
+        model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)
 
@@ -113,7 +114,7 @@ if __name__ == "__main__":
     """
     Using a pretrained model (does not work better than just direct training; deprecated)
 
-    pretrain_model = torch.load("experiments_volume_models/local_stuff/pretrained_model.pth", weights_only=False)
+    pretrain_model = torch.load(helpers.get_exp_path() / "pretrained_model.pth", weights_only=False)
     new_state_dict = model.state_dict()
     for k, v in pretrain_model.state_dict().items():
         if "l1" in k:
@@ -159,4 +160,4 @@ if __name__ == "__main__":
 
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 
-    torch.save(best_model, f"experiments_volume_models/local_stuff/{model_name}")
+    torch.save(best_model, helpers.get_exp_path() / f"{model_name}")

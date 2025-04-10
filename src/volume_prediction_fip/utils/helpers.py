@@ -1,5 +1,7 @@
 import os
 import numpy as np
+from pathlib import Path
+from ultralytics import YOLO
 
 # Returns a random rotation matrix. Axis of rotation is choosen randomly if not fixed, the angle has to be defined.
 def random_rotation_matrix(angle: float, fixed_rotation_axis = None) -> np.ndarray:
@@ -114,3 +116,24 @@ def iou(box1, box2):
     union_area = box1_area + box2_area - inter_area
 
     return inter_area / union_area
+
+def get_package_folder():
+    return Path(__file__).parent.parent.parent.parent
+
+def get_assets_path():
+    return get_package_folder() / "assets"
+
+def get_exp_path():
+    return get_package_folder() / "local_stuff_experiments"
+
+def get_segmentation_model():
+    return YOLO(get_assets_path() / "model-weights" / "yolo-medium-segment.pt")
+
+def get_detection_model():
+    return YOLO(get_assets_path() / "model-weights" / "yolo-medium-detect-mAp50-0766.pt")
+
+def get_pose_file_path():
+    return get_assets_path() / "poses"
+
+def get_volume_model_path():
+    return get_assets_path() / "model-weights" / "self-distill-regulated_transformer.pth"

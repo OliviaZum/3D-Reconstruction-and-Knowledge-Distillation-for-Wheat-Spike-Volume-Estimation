@@ -5,18 +5,16 @@ Has very close results to regulatedTransformer, but it is a bit worse:
 {'MAE': 648.7704467773438, 'Correlation': 0.7727548824607278, 'Steepness': 0.7711065434068884}
 """
 
-import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.utils.data import DataLoader
 from torch import nn
 import numpy as np
 import copy
-import experiments_volume_models.shared.datasets as datasets
 import accelerate
-import experiments_volume_models.shared.models as models
-import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
 import torch
+from volume_prediction_fip.experiments_volume_models.shared import utils_experiment, models, datasets
+from volume_prediction_fip.utils import helpers
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -81,7 +79,7 @@ if __name__ == "__main__":
     model_name = "transformer.pth"
 
     if True:
-        model = torch.load(f"experiments_volume_models/local_stuff/{model_name}", weights_only=False).to(device).eval()
+        model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)
 
@@ -118,4 +116,4 @@ if __name__ == "__main__":
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 
     print(f"\n Best stats {best_val}")
-    torch.save(best_model, f"experiments_volume_models/local_stuff/{model_name}")
+    torch.save(best_model, helpers.get_exp_path() / f"{model_name}")

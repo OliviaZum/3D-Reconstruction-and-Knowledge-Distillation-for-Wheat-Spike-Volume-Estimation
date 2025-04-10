@@ -7,6 +7,7 @@ from typing import Literal
 from pathlib import Path
 import torch
 from volume_prediction_fip.experiments_volume_models.shared import datasets
+from volume_prediction_fip.utils import helpers
 
 def _get_image_dataset(split_folder: Path, base_folder: Path, cache_folder_image: Path, ndupli_train = 10, enable_distance = True):
     split_folder, base_folder, cache_folder_image = [Path(s) for s in [split_folder, base_folder, cache_folder_image]]
@@ -53,7 +54,7 @@ def get_real_dataset3d(force_recompute = False):
     split_folder = Path("split_without2024")
     base_folder = Path(r"F:\Boxes-ds\segmented_distance_depth")
     split_folder = base_folder / split_folder
-    cache = Path(r"experiments_volume_models\local_stuff\dmap_cache")
+    cache = Path(helpers.get_exp_path() / "dmap_real_default")
 
     return _get_depthmap_dataset(split_folder, base_folder, cache, force_recompute)
 
@@ -62,16 +63,16 @@ def get_ply_dataset(force_recompute = False, voxelize = False):
     split_folder = Path(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
     base_folder = Path(r"F:\FIP-data\wheat-scans")
     if voxelize:
-        cache_path = Path(r"local_stuff_experiments\ply_cache_voxelized")
+        cache_path = Path(helpers.get_exp_path() / r"ply_cache_voxelized")
     else:
-        cache_path = Path(r"local_stuff_experiments\ply_cache")
+        cache_path = Path(helpers.get_exp_path() / r"ply_cache")
 
     return _get_ply_dataset(split_folder, base_folder, cache_path, force_recompute, voxelize)
     
 # Returns real and corresponding artifical pointcloud at the same time
 def get_combined_point_real_arti_dataset():
     r_train_ds, r_val_ds, r_test_ds = get_real_dataset3d()
-    a_train_ds, a_val_ds, a_test_ds = get_ply_dataset()
+    a_train_ds, a_val_ds, a_test_ds = get_ply_dataset(voxelize=True)
     train_dataset = datasets.Combined3dDataset(r_train_ds, a_train_ds)
     val_dataset = datasets.Combined3dDataset(r_val_ds, a_val_ds)
     test_dataset = datasets.Combined3dDataset(r_test_ds, a_test_ds)
@@ -81,7 +82,7 @@ def get_combined_point_real_arti_dataset():
 def get_unlabeled_dataset(force_recompute = False):
     split_folder = Path(r"F:\Boxes-ds\unlabeled-5000-depth\split")
     base_folder = Path(r"F:\Boxes-ds\unlabeled-5000-depth")
-    cache_folder = Path(r"experiments_volume_models\local_stuff\dmap_cache")
+    cache_folder = Path(helpers.get_exp_path() / "cache_unlabeled")
 
     train_dataset_dm = datasets.DepthMapDataset(base_folder, split_folder / "mapping_train.json")
     train_dataset_dm.create_or_load_cache(cache_folder / "dmap_cache_unlabeled_train.pth", force_recompute=force_recompute)
@@ -101,14 +102,14 @@ def get_unlabeled_dataset(force_recompute = False):
 def get_default_image_dataset():
     split_folder = Path(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
     base_folder = Path(r"F:\Boxes-ds\segmented_distance_depth")
-    cache_folder_image = Path(r"F:\Boxes-ds\_cache_dataset_embeddings")
+    cache_folder_image = Path(helpers.get_exp_path() / "default_image_cache")
 
     return _get_image_dataset(split_folder, base_folder, cache_folder_image)
 
 def get_default_image_dataset_wo_distance():
     split_folder = Path(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
     base_folder = Path(r"F:\Boxes-ds\segmented_distance_depth")
-    cache_folder = Path(r"experiments_volume_models\local_stuff\nodistancenorm_cache")
+    cache_folder = Path(helpers.get_exp_path() / "nodistancenorm_cache")
 
     return _get_image_dataset(split_folder, base_folder, cache_folder, enable_distance=False)
 
@@ -116,10 +117,10 @@ def get_default_image_dataset_wo_distance_and_seg(disable_augmentation = False):
     split_folder = Path(r"F:\Boxes-ds\spike_dataset_manual_20_pad\split_without2024")
     base_folder = Path(r"F:\Boxes-ds\spike_dataset_manual_20_pad")
     if disable_augmentation:
-        cache_folder = Path(r"experiments_volume_models\local_stuff\nodistancenosegnoaug_cache")
+        cache_folder = Path(helpers.get_exp_path() / "nodistancenosegnoaug_cache")
         ndupli = 1
     else:
-        cache_folder = Path(r"experiments_volume_models\local_stuff\nodistancenoseg_cache")
+        cache_folder = Path(helpers.get_exp_path() / "nodistancenoseg_cache")
         ndupli = 10
 
     return _get_image_dataset(split_folder, base_folder, cache_folder, enable_distance=False, ndupli_train=ndupli)
@@ -127,13 +128,13 @@ def get_default_image_dataset_wo_distance_and_seg(disable_augmentation = False):
 def get_artifical_image_dataset_sideviews():
     split = r"F:\Boxes-ds\artifical\bestpose_noshift_12\split_without2024_noextend"
     base = r"F:\Boxes-ds\artifical\bestpose_noshift_12"
-    cache = r"experiments_volume_models\local_stuff\artificial_sideviews"
+    cache = helpers.get_exp_path() / "artificial_sideviews"
     return _get_image_dataset(split, base, cache, enable_distance=False)
 
 def get_artificial_image_dataset_randompose():
     split = r"F:\Boxes-ds\artifical\randompose_noshift_12\split_without2024_noextend"
     base = r"F:\Boxes-ds\artifical\randompose_noshift_12"
-    cache = r"experiments_volume_models\local_stuff\artificial_randomviews"
+    cache = helpers.get_exp_path() / "artificial_randomviews"
     return _get_image_dataset(split, base, cache, enable_distance=False)
 
 def get_artificial_dataset_fiplike_uniform(type: Literal["depth", "image"], force_recompute = False):
@@ -141,10 +142,10 @@ def get_artificial_dataset_fiplike_uniform(type: Literal["depth", "image"], forc
     base = r"F:\Boxes-ds\artifical\artifical_fippose_randomrot"
     
     if type == "image":
-        cache = r"experiments_volume_models\local_stuff\artificial_fiplike_uniform_image"
+        cache = helpers.get_exp_path() / "artificial_fiplike_uniform_image"
         return _get_image_dataset(split, base, cache, enable_distance=False)
     else:
-        cache = r"experiments_volume_models\local_stuff\artificial_fiplike_uniform_depth"
+        cache = helpers.get_exp_path() / "artificial_fiplike_uniform_depth"
         return _get_depthmap_dataset(split, base, cache, force_recompute, True)
 
 def get_artificial_dataset_fiplike_normal(type: Literal["depth", "image"], force_recompute = False):
@@ -152,10 +153,10 @@ def get_artificial_dataset_fiplike_normal(type: Literal["depth", "image"], force
     base = r"F:\Boxes-ds\artifical\artificial_fippose_toprot"
 
     if type == "image":
-        cache = r"experiments_volume_models\local_stuff\artificial_fiplike_normal_image"
+        cache = helpers.get_exp_path() / "artificial_fiplike_normal_image"
         return _get_image_dataset(split, base, cache, enable_distance=False)
     else:
-        cache = r"experiments_volume_models\local_stuff\artificial_fiplike_normal_depth"
+        cache = helpers.get_exp_path() / "artificial_fiplike_normal_depth"
         return _get_depthmap_dataset(split, base, cache, force_recompute, True)
 
 # Get a dataset that returns images and real 3d data. if include ply, additionally ply files are returned
@@ -175,6 +176,6 @@ def get_combined_image_point_dataset(include_ply = False):
 def get_auto_split_dataset():
     base = Path(r"F:\Boxes-ds\auto_split")
     split = Path(r"F:\Boxes-ds\auto_split\split_without2024")
-    cache_folder = Path(r"experiments_volume_models\local_stuff\auto_split_img_cache")
+    cache_folder = Path(helpers.get_exp_path() / "auto_split_img_cache")
 
     return _get_image_dataset(split, base, cache_folder, 1)

@@ -21,21 +21,19 @@ Artificial fiplike normal: {'MAE': 477.668212890625, 'Correlation': 0.8881649636
 Artificial fiplike uniform: {'MAE': 495.8588562011719, 'Correlation': 0.8653908952381895, 'Loss': 0.08875340968370438, 'Steepness': 0.908395792635748}
 """
 
-import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.utils.data import DataLoader
 from torch import nn
 import numpy as np
 import copy
 import accelerate
-from experiments_volume_models.shared import datasets
-from experiments_volume_models.shared import models
-import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
 import torch
 import pandas as pd
 import warnings
 from torch.utils.data import Subset
+from volume_prediction_fip.experiments_volume_models.shared import utils_experiment, models, datasets
+from volume_prediction_fip.utils import helpers
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -184,16 +182,16 @@ def is_better_model(stats, best_stats):
 if __name__ == "__main__":
     accelerate.utils.set_seed(0)
 
-    #model_name = "regulatedtransformer-direct.pth"
+    model_name = "regulatedtransformer-direct.pth"
     #model_name = "fiplike_artifical_image_model.pth"
-    model_name = "self-distill-regulated_transformer.pth"
+    #model_name = "self-distill-regulated_transformer.pth"
     #model_name = "nodistance-regulated_transformer.pth"
     #model_name = "nodistancenoseg-regulated_transformer.pth"
     #model_name = "artificial_bestpose_regulated_transformer.pth"
     #model_name = "artificial_randompose_regulated_transformer.pth"
     #model_name = "artificial_fipnormal_regulated_transformer.pth"
     #model_name = "artificial_fipuniform_regulated_transformer.pth"
-    use_auto_pair = True
+    use_auto_pair = False
 
     if model_name == "regulatedtransformer-direct.pth" or model_name == "self-distill-regulated_transformer.pth":
         if use_auto_pair:
@@ -222,7 +220,7 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False, collate_fn=datasets.img_validation_collate_fn)
 
     if False: # Evaluation using subsets of images
-        model = torch.load(f"experiments_volume_models/local_stuff/{model_name}", weights_only=False).to(device).eval()
+        model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         ls = []
         ind = []
         for i, (_, row) in enumerate(test_dataset.plant_mapping.iterrows()):
@@ -246,7 +244,7 @@ if __name__ == "__main__":
         exit(0)
 
     if True:
-        model = torch.load(f"experiments_volume_models/local_stuff/{model_name}", weights_only=False).to(device).eval()
+        model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True, ignore_outliers=False, detail_eval=True)
         exit(0)
 
@@ -284,4 +282,4 @@ if __name__ == "__main__":
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 
     print(f"\n Best stats {best_val}")
-    torch.save(best_model, f"experiments_volume_models/local_stuff/{model_name}")
+    torch.save(best_model, helpers.get_exp_path() / f"{model_name}")

@@ -1,17 +1,15 @@
-import pointnet_utils
-import pointnet_utils2
 import torch
 from torch.utils.data import DataLoader
 from torch import nn
 import numpy as np
 import copy
-import experiments_volume_models.shared.datasets as datasets
-import experiments_volume_models.shared.utils_3d as utils_3d
-import experiments_volume_models.shared.models as models
-import experiments_volume_models.shared.utils_experiment as utils_experiment
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
 import accelerate
+
+from volume_prediction_fip.experiments_volume_models.shared import utils_experiment, datasets
+from volume_prediction_fip.experiments_volume_models.point_models import pointnet_utils, pointnet_utils2
+from volume_prediction_fip.utils import helpers
 
 """
 PointNet on test:
@@ -116,7 +114,7 @@ if __name__ == "__main__":
 
 
     if False:
-        model = torch.load(f"experiments_volume_models/local_stuff/{model_name}", weights_only=False).to(device).eval()
+        model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, model_name, show_plot=True)
         exit(0)
 
@@ -164,4 +162,4 @@ if __name__ == "__main__":
 
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
 
-    torch.save(best_model, f"experiments_volume_models/local_stuff/{model_name}")
+    torch.save(best_model, helpers.get_exp_path() / f"{model_name}")
