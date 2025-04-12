@@ -4,10 +4,10 @@ from typing import Literal
 import trimesh
 import pyrender
 import numpy as np
-from utils import helpers
 import cv2
 import pandas as pd
 import traceback
+from volume_prediction_fip.utils import helpers
 
 image_size = 300
 

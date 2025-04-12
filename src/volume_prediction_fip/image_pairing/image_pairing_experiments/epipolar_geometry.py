@@ -1,5 +1,10 @@
+"""
+More or less deprecated. Can be used to check if an epipolar line intersects a line
+or bounding box, but in practice way to slow. It's essentially an easier to read sequential version
+of the code in multiview_graph, hence kept for reference.
+"""
+
 import numpy as np
-import json
 import warnings
 
 

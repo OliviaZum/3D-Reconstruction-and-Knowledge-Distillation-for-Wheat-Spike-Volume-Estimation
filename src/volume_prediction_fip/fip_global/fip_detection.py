@@ -2,11 +2,9 @@ import os
 from typing import Dict, List, Tuple
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
-from image_pairing import multiview_graph
 import numpy as np
 import cv2
-import torch
-import torch.nn.functional as F
+from volume_prediction_fip.image_pairing import multiview_graph
 
 # Find all spikes on all images
 def find_objects_yolo(model: YOLO, scan_folder: str, min_conf = 0.25) -> Tuple[Dict[str, List[Tuple[int, List]]], List[Results]]:

@@ -7,19 +7,20 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
-from fip_global import fip_detection
-from utils.helpers import put_image_on_patch, extend_image_box, get_crop_params
 import json
 import argparse
 import time
 import torch
 import torch.nn.functional as F
 from torchvision.transforms import v2
-from experiments_volume_models.shared.datasets import distance_norm_transform, get_transform, vol_unorm
-from experiments_volume_models.shared.models import unflat
 import pandas as pd
 import accelerate
 import cv2
+
+from volume_prediction_fip.fip_global import fip_detection
+from volume_prediction_fip.utils import helpers
+from volume_prediction_fip.experiments_volume_models.shared.datasets import distance_norm_transform, get_transform, vol_unorm
+from volume_prediction_fip.experiments_volume_models.shared.models import unflat
 
 class Stopwatch:
     def __init__(self):
@@ -47,11 +48,6 @@ class BatchedAccessor:
 
     def get(self, i, data):
         return data[i:min(i + self.batch_size, self.total_len)]
-    
-
-# Consider: 
-# Due to batch processing of the segmentation your images end up having size 288 instead of 300 (Probs irrelevant, later anyway scaled down)
-# Maybe do a better way of selecting the segmented spike?
 
 """
 Computes the volume over spikes for a FIP scan. For parameters see help text in main.
@@ -121,9 +117,9 @@ def infer_volume(image_folder: Path | str,
         spike_counter = set()
         for box in connected_boxes:
             if box["cluster"] is not None:
-                img = extend_image_box(box["box"], img_map[box["image"]], 20)
-                cp = get_crop_params(patch_box_size, img)
-                patch, _ = put_image_on_patch(patch_box_size, img, cp)
+                img = helpers.extend_image_box(box["box"], img_map[box["image"]], 20)
+                cp = helpers.get_crop_params(patch_box_size, img)
+                patch, _ = helpers.put_image_on_patch(patch_box_size, img, cp)
                 
                 patches.append(patch)
                 connected_filtered.append(box)
@@ -256,13 +252,13 @@ def infer_volume(image_folder: Path | str,
         return results, cluster_to_patch
 
 def get_default_models():
-    yolo_det = YOLO("assets/model-weights/yolo-medium-detect-mAp50-0766.pt")
-    yolo_seg = YOLO("assets/model-weights/yolo-medium-segment.pt")
+    yolo_det = helpers.get_detection_model()
+    yolo_seg = helpers.get_segmentation_model()
     dino = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
-    vol_model = torch.load("assets/model-weights/self-distill-regulated_transformer.pth", weights_only=False)
+    vol_model = torch.load(helpers.get_volume_model_path(), weights_only=False)
     return yolo_det, yolo_seg, dino, vol_model
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="""
         Estimates volumes of wheat spikes for a FIP set of images. 
         You need properly calibrated and scaled cameras (the calibration file).
@@ -276,9 +272,10 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output_file", type=Path, required=True, help="Path to store the output file to")
     parser.add_argument("-od", "--output_directory", type=Path, required=False, help="A folder to which all preprocessed spikes are exported")
     parser.add_argument("-mv", "--min_view", type=int, required=False, default=12, help="Minimum number of observations for a spike to estimate volume")
-    parser.add_argument("-v", "--verbose", action="store_true", required=False, help="Disable printing")
+    parser.add_argument("-dv", "--disable_verbose", action="store_true", required=False, help="Disable printing")
 
     args = parser.parse_args()
+    verbose = not args.disable_verbose
 
     with open(args.calibration_file) as f:
         calibration = json.load(f)
@@ -289,15 +286,20 @@ if __name__ == "__main__":
     if not args.output_file.parent.is_dir():
         print(f"The folder for {args.output_file} seems to not exists. Aborting.")
         exit(1)
+    if args.output_file.is_file():
+        input(f"The output file exists. Press enter to continue overwrite, or Ctrl+C to abort")
 
     yolo_det, yolo_seg, dino, vol_model = get_default_models()
     r, cluster_to_patch = infer_volume(args.image_folder, calibration, 
-            args.min_view, yolo_det, yolo_seg, dino, vol_model, verbose=args.verbose)
+            args.min_view, yolo_det, yolo_seg, dino, vol_model, verbose=verbose)
     
-    r.to_csv(args.output_file)
+    r.to_csv(args.output_file, index=False)
 
     if args.output_directory is not None:
         for i, (vol, cluster) in enumerate(zip(r["volume"].to_list(), cluster_to_patch.values())):
             _, _, patches = zip(*cluster.values())
             for j, patch in enumerate(patches):
                 cv2.imwrite(args.output_directory / f"{i}_{j}_{vol}.jpg", patch)
+
+if __name__ == "__main__":
+    main()

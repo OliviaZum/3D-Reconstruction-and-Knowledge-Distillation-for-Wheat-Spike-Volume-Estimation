@@ -81,8 +81,8 @@ if __name__ == "__main__":
     # Results vary quite a bit depending on seed
     accelerate.utils.set_seed(1, deterministic=True)
     
-    #model_name = "real_volume_model-direct.pth"
-    model_name = "ply2volume_model.pth"
+    model_name = "real_volume_model-direct.pth"
+    #model_name = "ply2volume_model.pth"
     #model_name = "ply2volume_voxelized_model.pth"
     #model_name = "fiplike_uniform_ply_model.pth"
     #model_name = "fiplike_normal_ply_model.pth"

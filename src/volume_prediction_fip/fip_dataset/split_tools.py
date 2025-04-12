@@ -9,8 +9,8 @@ See main for usage.
 from pathlib import Path
 from typing import List
 import pandas as pd
-import split_dataset
 import numpy as np
+from volume_prediction_fip.fip_dataset import split_dataset
 
 class VolumeMapping:
     def __init__(self, mapping_path: Path | str):

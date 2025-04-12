@@ -1,14 +1,15 @@
 """
 Train & test for the regulated Transformer model (best model on images)
 
-Ensemble distilled: {'MAE': 549.0514526367188, 'Correlation': 0.829801406399814, 'Loss': 0.11964598298072815, 'Steepness': 0.8014374017067863}
-Automatic pairing ensemble distilled: {'MAE': 581.4852905273438, 'Correlation': 0.8111358388770804, 'Loss': 0.13580958545207977, 'Steepness': 0.8031406228252418}
+Ensemble distilled: {'MAE': 589.3368530273438, 'Correlation': 0.8251570501247848, 'Steepness': 0.8735967867009864, 'Loss': 0.12570838630199432}
+Automatic pairing ensemble distilled: {'MAE': 623.96533203125, 'Correlation': 0.803359489635608, 'Steepness': 0.8695522221001687, 'Loss': 0.14378240704536438}
 precise:
-    {'MAE': 581.5120849609375, 'Correlation': 0.8114069831419408, 'Steepness': 0.8022409287407414, 'Loss': 0.1353493183851242}
-    Season stats: {0: {'MAE': 537.715087890625, 'Correlation': 0.7320115912665581, 'Steepness': 0.7901643452332092}, 1: {'MAE': 652.8803100585938, 'Correlation': 
-    0.7211355434140636, 'Steepness': 0.6149629809094681}, 2: {'MAE': 563.9857177734375, 'Correlation': 0.7346747006994417, 'Steepness': 0.6504225703589479}}      
-    Median mean small 204.0193328857422 (k1 < 5500)
-    Median mean large 486.9066162109375 (k1 >= 5500)
+    Season stats: {0: {'MAE': 581.8746948242188, 'Correlation': 0.7194981259374609, 'Steepness': 0.8159482130491466},
+      1: {'MAE': 663.4834594726562, 'Correlation': 0.7225280516647276, 'Steepness': 0.6450321278652655},
+    2: {'MAE': 633.3892822265625, 'Correlation': 0.7182158378345234, 'Steepness': 0.7621034496923911}}
+Median mean small 167.3112030029297
+Median mean large 384.1881408691406
+
 Automatic pairing ensemble distilled (val): {'MAE': 514.7050170898438, 'Correlation': 0.8576632378374552, 'Loss': 0.133570596575737, 'Steepness': 0.9327370908449583}
 Automatic pairing ensemble distilled (test, ignore-outliers): {'MAE': 516.2927856445312, 'Correlation': 0.8585407708659728, 'Loss': 0.10024034976959229, 'Steepness': 0.834608569472429}
 Direct train: {'MAE': 614.16357421875, 'Correlation': 0.7874227766422761, 'Loss': 0.15318933129310608, 'Steepness': 0.7631462760571315}
@@ -182,24 +183,21 @@ def is_better_model(stats, best_stats):
 if __name__ == "__main__":
     accelerate.utils.set_seed(0)
 
-    model_name = "regulatedtransformer-direct.pth"
-    #model_name = "fiplike_artifical_image_model.pth"
-    #model_name = "self-distill-regulated_transformer.pth"
+    #model_name = "regulatedtransformer-direct.pth"
+    model_name = "self-distill-regulated_transformer.pth"
     #model_name = "nodistance-regulated_transformer.pth"
     #model_name = "nodistancenoseg-regulated_transformer.pth"
     #model_name = "artificial_bestpose_regulated_transformer.pth"
     #model_name = "artificial_randompose_regulated_transformer.pth"
     #model_name = "artificial_fipnormal_regulated_transformer.pth"
     #model_name = "artificial_fipuniform_regulated_transformer.pth"
-    use_auto_pair = False
+    use_auto_pair = True
 
     if model_name == "regulatedtransformer-direct.pth" or model_name == "self-distill-regulated_transformer.pth":
         if use_auto_pair:
             train_dataset, val_dataset, test_dataset = utils_experiment.get_auto_split_dataset()
         else:
             train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset()
-    elif model_name == "fiplike_artifical_image_model.pth":
-         _, _, _, train_dataset, val_dataset, test_dataset = utils_experiment.get_artifical_fiplike_dataset()
     elif model_name == "nodistance-regulated_transformer.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance()
     elif model_name == "nodistancenoseg-regulated_transformer.pth":
@@ -256,7 +254,7 @@ if __name__ == "__main__":
 
     best_val = None
     best_model = None
-    for epoch in range(400):
+    for epoch in range(500):
         errs_train = []
         model.train()
         for images, label, imagemask, weight in train_loader:
@@ -274,7 +272,7 @@ if __name__ == "__main__":
         
         err_val = evaluate(val_loader, model)
 
-        if best_val is None or is_better_model(err_val, best_val):
+        if best_val is None or (is_better_model(err_val, best_val) and epoch > 400):
             best_val = err_val
             best_model = copy.deepcopy(model).cpu()
             best_epoch = epoch

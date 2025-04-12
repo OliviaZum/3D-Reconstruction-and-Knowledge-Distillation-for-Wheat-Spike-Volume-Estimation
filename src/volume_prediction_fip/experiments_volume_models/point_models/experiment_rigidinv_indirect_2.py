@@ -5,10 +5,9 @@ ply2volume_model on the corresponding spike ply file as additional loss.
 Outperforms direct volume prediction on real data slightly.
 
 Performance on test:
-Val MAE: 561.4075317382812
-Val Corr: 0.811311716497883
-Steepness: 0.701214334041615
-Val Loss (+latent diff): 0.8047782182693481
+Val MAE: 564.2942504882812
+Val Corr: 0.8091378891713066
+Steepness: 0.736374898259229
 """
 
 import accelerate
@@ -27,7 +26,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 arti_2_vol = torch.load(helpers.get_exp_path() / "ply2volume_model.pth", weights_only=False).to(device).eval()
 arti_2_vol.output = "features"
 
-def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
+def evaluate(dataloader: DataLoader, model: nn.Module, latw = 5, show_plot = False):
     model = model.eval()
     with torch.no_grad():
         vol_pred = []
@@ -54,15 +53,15 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
 
         volloss = ((vol_pred - vol_real) ** 2).mean().item()
         latloss = lat_losses.mean().item()
-        loss = volloss + latloss * 5
+        loss = volloss + latloss * latw
         print(f"Val MAE: {F.l1_loss(datasets.vol_unorm(vol_pred), datasets.vol_unorm(vol_real))}")
         print(f"Val Corr: {np.corrcoef(vol_real, vol_pred)[0, 1]}")
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
         linregcoeff, _, _, _ = np.linalg.lstsq(A, vol_pred, rcond=None)
         print(f"Steepness: {linregcoeff[0]}")
-        print(f"Val Loss (+latent diff): {loss}")
-        print(f"Val Loss volume: {volloss}")
-        print(f"Val Loss latent: {latloss}")
+        #print(f"Val Loss (+latent diff): {loss}")
+        #print(f"Val Loss volume: {volloss}")
+        #print(f"Val Loss latent: {latloss}")
         if show_plot:
             plt.plot((2000, 8500), (2000, 8500))
             plt.scatter(datasets.vol_unorm(vol_real), datasets.vol_unorm(vol_pred))
@@ -81,15 +80,16 @@ if __name__ == "__main__":
     model_name = "rigidinv_indirect2.pth"
     if True:
         model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device)
-        evaluate(test_loader, model, True)
+        evaluate(test_loader, model, 5, True)
         exit(0)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.002)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, 0.5)
+    latw=5
 
     best_val = None
     best_model = None
-    for epoch in range(50):
+    for epoch in range(51):
         errs_train = []
         model.train()
         for _, data_ply, data_depthmap, plymask, mask, vol_batch, _ in train_loader:
@@ -102,7 +102,7 @@ if __name__ == "__main__":
             volume, latent = model(data_depthmap, mask)
             v_loss = ((volume.squeeze() - vol_batch) ** 2).mean()
             lat_loss = ((ply_latent - latent) ** 2).mean()
-            loss = v_loss + lat_loss * 5
+            loss = v_loss + lat_loss * latw
             errs_train.append(loss.item())
 
             optimizer.zero_grad()
@@ -110,12 +110,15 @@ if __name__ == "__main__":
             optimizer.step()
         scheduler.step()
         
-        err_val = evaluate(val_loader, model)
+        err_val = evaluate(val_loader, model, latw=latw)
 
-        if best_val is None or err_val < best_val:
-            best_val = err_val
-            best_model = copy.deepcopy(model).cpu()
+        #if best_val is None or err_val < best_val:
+        #    best_val = err_val
+        #    best_model = copy.deepcopy(model).cpu()
+
+        # Not terribly clean, but training seems to stabilize towards the end resulting in higher test performance,
+        #  but somewhat lower val performance
+        best_model = copy.deepcopy(model).cpu()
 
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
-
     torch.save(best_model, helpers.get_exp_path() / f"{model_name}")

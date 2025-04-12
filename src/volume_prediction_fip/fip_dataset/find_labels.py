@@ -1,15 +1,12 @@
 """
 Legacycode for detecting labels. 
 
-(Does not work)
+(Does not work well)
 """
-
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
 
 import json
 import cv2
+import os
 import numpy as np
 from skimage.util import view_as_windows
 from matplotlib import pyplot as plt

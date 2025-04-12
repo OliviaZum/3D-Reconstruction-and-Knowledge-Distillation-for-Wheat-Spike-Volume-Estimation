@@ -15,14 +15,14 @@ from volume_prediction_fip.utils import helpers
 An ensemble of the RigidInvariant PointNet (trained with Scan supervision) and the regulated Transformer
 
 Results on test (both models are trained directly):
-Val MAE: 530.1937255859375
-Val Corr: 0.843381191991469
-Steepness: 0.770586850969483
+Val MAE: 521.1376342773438
+Val Corr: 0.8488245778778427
+Steepness: 0.789510382404692
 
 Results on test (regulated transformer is self distilled):
-Val MAE: 536.776611328125
-Val Corr: 0.848645226517776
-Steepness: 0.8593852486317232
+Val MAE: 531.038330078125
+Val Corr: 0.8497957443458352
+Steepness: 0.8254965274223702
 """
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     model_name = "3dglobimgensemble.pth"
 
-    if False:
+    if True:
         model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         
         err_val = evaluate(val_loader, model)
 
-        if best_val is None or err_val < best_val:
+        if best_val is None or (err_val < best_val and epoch > 15):
             best_val = err_val
             best_model = copy.deepcopy(model).cpu()
 

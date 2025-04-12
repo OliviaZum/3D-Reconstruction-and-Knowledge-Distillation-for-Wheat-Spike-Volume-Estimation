@@ -5,8 +5,36 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "volume_prediction_fip"
 version = "1.0.0"
-dependencies = ["numpy"]
-requires-python = ">=3.9"
+description = "Predict volume of wheat spikes from FIP images"
+readme = "README.txt"
+requires-python = "~=3.12.6"
+dependencies = [
+    "numpy~=1.26.3",
+    "torch~=2.4.1",
+    "torchvision~=0.19.1",
+    "matplotlib~=3.9.2",
+    "accelerate~=1.3.0",
+    "pandas~=2.2.3",
+    "tqdm~=4.66.5",
+    "opencv-python~=4.10.0.84",
+    "ultralytics~=8.3.39",
+    "pyrender~=0.1.45"
+]
+
+[project.scripts]
+fip-volume = "volume_prediction_fip.volume_prediction:main"
+fip-calibrate = "volume_prediction_fip.fip_global.generate_scaled_calibration:main"
+fip-reconstruct3d = "volume_prediction_fip.fip_global.reconstruct_3d:main"
+
+[project.optional-dependencies]
+sidethings = [
+    "scikit-learn~=1.5.2",
+    "scipy~=1.14.1",
+    "trimesh~=4.4.9",
+    "PyQt5~=5.15.11",
+    "pyvis~=0.3.2",
+    "networkx~=3.3",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

@@ -1008,8 +1008,7 @@ def reconstruct_3d(openmvg_path: Path,
         np.savez_compressed(out_dir / f"depths", **depths)
         shutil.move(mvs_path / "mvs_dense.ply", out_dir)
 
-
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="3D Reconstruction with OpenMVG and OpenMVS")
     parser.add_argument("openmvg_path", type=Path, help="Path to the OpenMVG binary folder")
     parser.add_argument("openmvs_path", type=Path, help="Path to the OpenMVS binary folder")
@@ -1029,4 +1028,7 @@ if __name__ == "__main__":
         mvs_size=args.mvs_size
     )
 
+
+if __name__ == "__main__":
+    main()
     # python.exe .\reconstruct_3d.py C:\Users\Admin\Desktop\openmvg_openmvs\openMVG\build\Windows-AMD64-Release\Release C:\Users\Admin\Desktop\openmvg_openmvs\openMVS_sample-0.7a\openMVS_sample-0.7a F:\FIP-data\images\2023\WW034\debayered\2023_06_08_13_11_Lot1\FPWW0340091_FIP2_20230608_122303 F:\FIP-data\images\2023\WW034\debayered\2023_06_08_13_11_Lot1\FPWW0340091_FIP2_20230608_122303\tmp C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\assets\poses_unscaled\2023_06_08_13_11_Lot1.json

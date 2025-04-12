@@ -1,7 +1,6 @@
 import torch
 import trimesh
 import pyrender
-import pymeshlab
 import numpy as np
 
 def visualize_point_clouds(points_red, points_green = None):
@@ -76,6 +75,7 @@ def save_ply(data, output_path="point_cloud.ply"):
     point_cloud_trimesh.export(output_path)
 
 def measure_volume(data, save_path = None, save_name = None):
+    import pymeshlab
     positions = data[:, :3]
     normals = data[:, 3:]
     ms = pymeshlab.MeshSet()

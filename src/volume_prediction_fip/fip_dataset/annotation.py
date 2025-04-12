@@ -7,7 +7,7 @@ import cv2
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QMessageBox
 import json
-from fip_dataset import FIPDataset
+from volume_prediction_fip.fip_dataset import fip_dataset_manager
 import pandas as pd
 import os
 import sys
@@ -401,7 +401,7 @@ class ImageAnnotator(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     config = {
-        "annotation_file": r"assets\labeled_spikes.csv",
+        "annotation_file": r"F:\FIP-data\csv\labeled_spikes.csv",
         "csv_folder": r"F:\FIP-data\csv",
         "img_folder": r"F:\FIP-data\images",
         "ply_folder": r"F:\FIP-data\wheat-scans",
@@ -409,7 +409,7 @@ if __name__ == "__main__":
         "show": lambda folder, data: True
     }
 
-    data = FIPDataset.FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"])
+    data = fip_dataset_manager.FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"])
 
     if os.path.exists(config["annotation_file"]):
         annotations = pd.read_csv(config["annotation_file"])

@@ -1,12 +1,12 @@
 """
-Implements the tests for different clustering methods, and the actual evaluation code for artifical code.
+Implements the tests for different clustering methods, and the actual evaluation code for artifical images.
+Evaluation should run without problems for multiview_graph, for the older things (clustering methods) backcompatability
+is not ensured, but should be possible to make them runnable again when investing some time into this.
 """
 
 import random
 from typing import Dict, List, Literal
 import numpy as np
-import epipolar_geometry
-from synthetic_fip_render.gen_scene import load_scene_data
 import json
 from pyvis.network import Network
 import networkx as nx
@@ -19,10 +19,13 @@ import matplotlib.pyplot as plt
 import joblib
 import tqdm
 import os
-from image_pairing.multiview_graph import build_epipolar_graph_opt, lp_cluster_torch
 from collections import defaultdict
+from volume_prediction_fip.image_pairing.image_pairing_experiments import epipolar_geometry
+from volume_prediction_fip.synthetic_fip_render.gen_scene import load_scene_data
+from volume_prediction_fip.image_pairing.multiview_graph import build_epipolar_graph_opt, lp_cluster_torch
+from volume_prediction_fip.utils import helpers
 
-calibration_file = "assets/poses/2023_06_08_13_11_Lot1.json"
+calibration_file = str(helpers.get_assets_path() / "poses/2023_06_08_13_11_Lot1.json")
 
 # Expects a json of camera_name: {instance_id1: bounding_box, ...}, ...
 # (This does the same as build_epipolar_graph_opt, more or less, but is WAAY slower)

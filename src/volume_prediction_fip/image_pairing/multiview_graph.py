@@ -2,7 +2,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import torch
 import warnings
-from utils import calibration_helpers
+from volume_prediction_fip.utils import calibration_helpers
 
 def build_epipolar_graph_opt(poses_conf, bounding_boxes: Dict[str, Dict[str, List[int]]], num_samples=20,
                              device = 'cuda' if torch.cuda.is_available() else 'cpu', normalize_graph = True) -> Tuple[torch.Tensor, Dict[int, Tuple[str, str]]]:

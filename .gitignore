@@ -6,3 +6,4 @@ local_stuff/
 jupyter
 volume_prediction_fip.egg-info/
 local_stuff_experiments/
+.venv

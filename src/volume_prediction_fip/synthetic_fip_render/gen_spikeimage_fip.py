@@ -4,13 +4,14 @@ with cameraposes as they are on the fip.
 """
 
 from typing import Literal
-from gen_scene import FIPScene
 import tqdm
 import numpy as np
-from utils import helpers
 from pathlib import Path
 import cv2
 import pandas as pd
+
+from volume_prediction_fip.synthetic_fip_render.gen_scene import FIPScene
+from volume_prediction_fip.utils import helpers
 
 def generate_dataset(conf_path, plant_mapping: pd.DataFrame, meshes_path: str, out_path: str, spike_pose: Literal["uniform", "normal"] = "uniform"):
     np.random.seed(1)

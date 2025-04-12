@@ -68,7 +68,8 @@ def stats(vol_pred, vol_real, weights = None, show_plot = False):
     A = np.vstack([vol_real, np.ones(len(vol_real))]).T
     linregcoeff, _, _, _ = np.linalg.lstsq(A, vol_pred, rcond=None)
     print(f"Steepness: {linregcoeff[0]}")
-    rate = -(- mae + corr * (50 / 0.03) - abs(1 - linregcoeff[0]) * (50 / 0.1))
+    #rate = -(- mae + corr * (50 / 0.03) - abs(1 - linregcoeff[0]) * (50 / 0.1))
+    rate = -(corr * (50 / 0.03) - abs(1 - linregcoeff[0]) * (50 / 0.1))
     print(f"Rate: {rate}")
     if show_plot:
         plt.plot((2000, 8500), (2000, 8500))
@@ -150,9 +151,9 @@ def inference_images(model, val_ds):
         return vol_pred, vol_real, weights
 
 def warmup_multiplicative_schedule(e):
-     return 0.01 if e < 40 else min(1/ (e * 0.03), 0.1)
+     return 0.01 if e < 10 else min(1/ (e * 0.03), 0.1)
 
-def retrain_image(unlabeled_images, labeled_train_ds, val_ds, nepoch=600):
+def retrain_image(unlabeled_images, labeled_train_ds, val_ds, nepoch=300):
     model = models.RegulatedTransformer().to(device)
     loader = Mixedloader(unlabeled_images, labeled_train_ds)
 
@@ -187,7 +188,7 @@ def retrain_image(unlabeled_images, labeled_train_ds, val_ds, nepoch=600):
         vol_pred, vol_real, _ = inference_images(model, val_ds)
         rate, _ = stats(vol_pred, vol_real)
 
-        if best_rate is None or rate < best_rate:
+        if best_rate is None or (rate < best_rate and epoch > 4 * (nepoch // 5)):
             best_rate = rate
             best_model = copy.deepcopy(model).cpu()
             best_epoch = epoch
@@ -246,7 +247,7 @@ def retrain_pointnet(unlabeled_depthmaps, labeled_train_ds, val_ds, nepoch = 40)
 
     return best_model, best_val
     
-def retrain_combined(pretrained_point, pretrained_img, train_ds, val_ds, nepoch=5):
+def retrain_combined(pretrained_point, pretrained_img, train_ds, val_ds, nepoch=20):
     model = models.Image3dEnsemble()
     model.img_net.load_state_dict(pretrained_img.state_dict(), strict=False)
     model.point_net.load_state_dict(pretrained_point.state_dict(), strict=False)
@@ -278,7 +279,7 @@ def retrain_combined(pretrained_point, pretrained_img, train_ds, val_ds, nepoch=
         vol_pred, vol_real = inference_combined(model, val_ds)
         rate, _ = stats(vol_pred, vol_real) # weights seem dangerous
 
-        if best_rate is None or rate < best_rate:
+        if best_rate is None or (rate < best_rate and epoch > (nepoch // 4) * 3):
             best_rate = rate
             best_model = copy.deepcopy(model).cpu()
 
@@ -314,7 +315,7 @@ if __name__ == "__main__":
 
     for _ in range(2):
         print("\n\nFitting new combined model\n\n")
-        combined_model, combined_val = retrain_combined(best_pointnet_model, best_img_model, combined_train_loader, combined_val_loader, nepoch=30)
+        combined_model, combined_val = retrain_combined(best_pointnet_model, best_img_model, combined_train_loader, combined_val_loader)
         if best_combined_val is None or combined_val < best_combined_val:
             best_combined_val = combined_val
         else:
@@ -332,7 +333,7 @@ if __name__ == "__main__":
         print("\n\nRetrain images\n\n")
         unlabeled_images.plant_mapping["volume"] = datasets.vol_unorm(vol_pred.cpu())
         image_unlabeled_loader = DataLoader(unlabeled_images, 256, shuffle=True)
-        image_model, image_rate = retrain_image(image_unlabeled_loader, image_train_loader, image_val_loader, 300)
+        image_model, image_rate = retrain_image(image_unlabeled_loader, image_train_loader, image_val_loader)
         unlabeled_images.plant_mapping["volume"] = torch.nan
         if image_rate < best_image_rate:
             best_img_model = image_model

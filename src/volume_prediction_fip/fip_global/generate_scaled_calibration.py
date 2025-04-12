@@ -129,7 +129,7 @@ def scale_configuration(path_in, fip_extrinsics_in, path_out):
     with open(path_out, "w") as f:
         json.dump(sfm_calibration, f, indent=4)
 
-def main(openmvg_path, fip_extrinsics_folder):
+def calibrate(openmvg_path, fip_extrinsics_folder):
     with tempfile.TemporaryDirectory() as tempdir:
         os.makedirs("./build", exist_ok=False)
         os.makedirs('./build/images', exist_ok=True)
@@ -186,8 +186,7 @@ def main(openmvg_path, fip_extrinsics_folder):
                 elif os.path.isdir(item_path):
                     shutil.rmtree(item_path)
 
-
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Tries to create a calibration file via an openmvg Sfm. Will run on the images in the current folder.")
     parser.add_argument(
         "-o", "--openmvg_path",
@@ -202,4 +201,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    main(args.openmvg_path, args.fip_extrinsics)
+    calibrate(args.openmvg_path, args.fip_extrinsics)
+
+if __name__ == "__main__":
+    main()

@@ -8,7 +8,6 @@ import tqdm
 import hashlib
 import numpy as np
 import numpy.typing as npt
-import pandas as pd
 
 from torch.utils.data import Dataset, DataLoader, Sampler
 from torchvision.io import read_image
@@ -415,7 +414,7 @@ class MultiImageTrainDataset(Dataset):
         self.distance_normalization = distance_normlization
 
         # fix torch seed for image rotations
-        torch.manual_seed(self.generator.integers(0,1000000))
+        #torch.manual_seed(self.generator.integers(0,1000000))
 
         plant_mapping = pd.read_json(plant_mapping_path, orient='index', convert_axes=False, dtype={"plant_id" : str})
         plant_mapping = plant_mapping.rename_axis("plant_id")

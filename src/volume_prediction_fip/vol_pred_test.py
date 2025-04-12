@@ -4,10 +4,12 @@ just to check if something seems wrong with the pipeline as such. For that the p
 run on a few scans followed by checking if the pipeline agrees with the ground truth more or less.
 (There is no differentiation between test and train, since the aim is not to estimate population risk)
 """
-from fip_dataset.FIPDataset import FIPDataset
-import volume_prediction
 import matplotlib.pyplot as plt
 import numpy as np
+from volume_prediction_fip.fip_dataset.fip_dataset_manager import FIPDataset
+from volume_prediction_fip import volume_prediction
+from volume_prediction_fip.utils import helpers
+
 
 if __name__ == "__main__":
     nscans = 10
@@ -18,7 +20,7 @@ if __name__ == "__main__":
             "img_folder": r"F:\FIP-data\images",
             "ply_folder": r"F:\FIP-data\wheat-scans",
             "precompute_file": r"F:\FIP-data\csv\precomputed.json",
-            "pose_folder": r"C:\Users\Admin\Desktop\master_thesis\volume_prediction_fip\assets\poses"
+            "pose_folder": str(helpers.get_assets_path() / "poses")
         }
     data: FIPDataset = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["pose_folder"])
 

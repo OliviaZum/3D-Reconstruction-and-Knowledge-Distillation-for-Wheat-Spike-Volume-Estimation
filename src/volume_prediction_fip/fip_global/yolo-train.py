@@ -15,9 +15,6 @@ import os
 from typing import List
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
-import sys
-import sys
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
 import torch
 import numpy as np
 from ultralytics import SAM
