@@ -1,3 +1,18 @@
+"""
+Deprecated. Kept for reference/evaluation.
+Tried to regulate the Rigidinvariant model by forcing it to also predict the complete
+set of input histograms (effectively using it as autoencoder, with the sidetask to
+predict volume using the latent). Works way worse than simply training for direct volume
+prediction.
+Results:
+    Train only incomplete -> complete (wasserstein) (500~)
+    - Corr: 0.68, MAE: 790
+    - 
+    Train only incomplete -> complete (MSE) (500~)
+    - Corr: 0.68, MAE: 711
+"""
+
+
 import torch
 from torch.utils.data import DataLoader
 from torch import nn
@@ -12,17 +27,6 @@ import experiments.shared.models_3d as models_3d
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 arti_2_vol = torch.load("3dvol_approx/local_stuff/ply2volume_model.pth", weights_only=False).to(device).eval()
-
-"""
-Results:
-    Train only incomplete -> complete (wasserstein) (500~)
-    - Corr: 0.68, MAE: 790
-    - 
-    Train only incomplete -> complete (MSE) (500~)
-    - Corr: 0.68, MAE: 711
-
-    Deprecated. Kept for reference/evaluation.
-"""
 
 class RigidInvariantCompletion(nn.Module):
     def __init__(self, point_cloud_size_output = 1000, bins = 10, *args, **kwargs):

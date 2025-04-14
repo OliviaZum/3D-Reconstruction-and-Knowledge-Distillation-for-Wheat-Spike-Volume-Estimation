@@ -1,3 +1,15 @@
+"""
+Deprecated.
+
+Tried to learn a latent space over artificial spike scans,
+followed by using poisson surface reconstruction to estimate volume.
+There is also some code to learn volume prediction given the latent.
+
+Latent space generation works quite well - but significantly worse when
+there are rigid transformations. volume prediction given the latent (without poisson surface reconstruction)
+never worked well, and with surface reconstruction it's terribly slow. -> Gave up on this
+"""
+
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torch import nn

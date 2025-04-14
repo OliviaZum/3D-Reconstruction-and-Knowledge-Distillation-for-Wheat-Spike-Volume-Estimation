@@ -131,6 +131,12 @@ def get_artifical_image_dataset_sideviews():
     cache = helpers.get_exp_path() / "artificial_sideviews"
     return _get_image_dataset(split, base, cache, enable_distance=False)
 
+def get_artifical_image_dataset_sideviews6():
+    split = r"F:\Boxes-ds\artifical\bestpose_noshift_12\split_without2024_noextend_6img"
+    base = r"F:\Boxes-ds\artifical\bestpose_noshift_12"
+    cache = helpers.get_exp_path() / "artificial_sideviews6"
+    return _get_image_dataset(split, base, cache, enable_distance=False)
+
 def get_artificial_image_dataset_randompose():
     split = r"F:\Boxes-ds\artifical\randompose_noshift_12\split_without2024_noextend"
     base = r"F:\Boxes-ds\artifical\randompose_noshift_12"
@@ -177,5 +183,12 @@ def get_auto_split_dataset():
     base = Path(r"F:\Boxes-ds\auto_split")
     split = Path(r"F:\Boxes-ds\auto_split\split_without2024")
     cache_folder = Path(helpers.get_exp_path() / "auto_split_img_cache")
+
+    return _get_image_dataset(split, base, cache_folder, 1)
+
+def get_auto_split_dataset_second():
+    base = Path(r"F:\Boxes-ds\auto_split_new_pair")
+    split = Path(r"F:\Boxes-ds\auto_split_new_pair\split_without2024")
+    cache_folder = Path(helpers.get_exp_path() / "auto_split_new_pair_cache")
 
     return _get_image_dataset(split, base, cache_folder, 1)

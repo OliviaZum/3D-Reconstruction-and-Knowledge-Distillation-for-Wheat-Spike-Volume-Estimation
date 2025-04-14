@@ -83,7 +83,7 @@ def group_check(vol_real, vol_pred, k, sampling_points, group_by_gt = True):
     return torch.tensor(medians_real), torch.tensor(medians_pred)
 
 
-def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should_print=True, ignore_outliers = False, detail_eval = False):
+def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should_print=True, fraction_include = 1, detail_eval = False):
     model = model.eval()
     with torch.no_grad():
         vol_pred = []
@@ -107,12 +107,13 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
         vol_real = torch.concat(vol_real)
         weights = torch.concat(weights)
         logvars = torch.concat(logvars)
-        if ignore_outliers:
-             e = torch.abs(vol_pred - vol_real)
-             p95 = torch.quantile(e, 0.95)
-             mask = e < p95
-             vol_pred, vol_real, weights, logvars = [a[mask] for a in [vol_pred, vol_real, weights, logvars]]
-             plants = [p for m, p in zip(mask, plants) if m]
+        
+        if fraction_include < 1:
+            e = torch.abs(vol_pred - vol_real)
+            p95 = torch.quantile(e, fraction_include)
+            mask = e < p95
+            vol_pred, vol_real, weights, logvars = [a[mask] for a in [vol_pred, vol_real, weights, logvars]]
+            plants = [p for m, p in zip(mask, plants) if m]
 
         l = get_stats(vol_pred, vol_real)
         l["Loss"] = ((vol_pred - vol_real) ** 2 * weights).mean().item()
@@ -123,37 +124,38 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
             seasons = np.array(list(map(get_season, plants)))
             season_stats = {day: get_stats(vol_pred[seasons == day], vol_real[seasons == day]) for day in np.unique(seasons)}
             print(f"Season stats: {season_stats}")
-            season_to_colors = {
-                0: [0, 1, 1],
-                1: [0, 1, 0],
-                2: [0, 0, 1],
-                7: [1, 0, 1]
-            }
-            season_to_label = {
-                0: "Growth stage 0",
-                1: "Growth stage 1",
-                2: "Growth stage 2"
-            }
+            if show_plot:
+                season_to_colors = {
+                    0: [0, 1, 1],
+                    1: [0, 1, 0],
+                    2: [0, 0, 1],
+                    7: [1, 0, 1]
+                }
+                season_to_label = {
+                    0: "Growth stage 0",
+                    1: "Growth stage 1",
+                    2: "Growth stage 2"
+                }
 
-            k1, k2 = group_check(datasets.vol_unorm(vol_real), datasets.vol_unorm(vol_pred), 20, torch.arange(3000, 8000, 400), True)
-            plt.plot(k1, k2, label="Median line", linewidth=4, c="black")
-            print(f"Median mean small {np.abs(k1 - k2)[k1 < 5500].mean()}")
-            print(f"Median mean large {np.abs(k1 - k2)[k1 >= 5500].mean()}")
+                k1, k2 = group_check(datasets.vol_unorm(vol_real), datasets.vol_unorm(vol_pred), 20, torch.arange(3000, 8000, 400), True)
+                plt.plot(k1, k2, label="Median line", linewidth=4, c="black")
+                print(f"Median mean small {np.abs(k1 - k2)[k1 < 5500].mean()}")
+                print(f"Median mean large {np.abs(k1 - k2)[k1 >= 5500].mean()}")
 
-            plt.plot((2000, 8500), (2000, 8500), c="green", label="Perfect prediction")
-            plt.plot((2000, 8500), (3000, 9500), c="red", label="Error of 1000 [$mm^3$]")
-            plt.plot((2000, 8500), (1000, 7500), c="red")
-            for season in np.unique(seasons):
-                plt.scatter(datasets.vol_unorm(vol_real[seasons == season]),
-                            datasets.vol_unorm(vol_pred[seasons == season]),
-                            color=season_to_colors[season], label=season_to_label[season])
-            plt.xlabel(r"True volume [$mm^3$]")
-            plt.ylabel(r"Predicted volume [$mm^3$]")
-            plt.legend()
-            plt.tight_layout()
-            plt.show()
+                plt.plot((2000, 8500), (2000, 8500), c="green", label="Perfect prediction")
+                plt.plot((2000, 8500), (3000, 9500), c="red", label="Error of 1000 [$mm^3$]")
+                plt.plot((2000, 8500), (1000, 7500), c="red")
+                for season in np.unique(seasons):
+                    plt.scatter(datasets.vol_unorm(vol_real[seasons == season]),
+                                datasets.vol_unorm(vol_pred[seasons == season]),
+                                color=season_to_colors[season], label=season_to_label[season])
+                plt.xlabel(r"True volume [$mm^3$]")
+                plt.ylabel(r"Predicted volume [$mm^3$]")
+                plt.legend()
+                plt.tight_layout()
+                plt.show()
 
-            return l
+            return l, season_stats
 
         if show_plot:
             plt.plot((2000, 8500), (2000, 8500), c="green", label="Perfect prediction")
@@ -166,7 +168,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
             plt.show()
         
         return l
-
+    
 def warmup_multiplicative_schedule(e):
      return 0.01 if e < 40 else min(1/ (e * 0.03), 0.1)
     
@@ -179,7 +181,6 @@ def is_better_model(stats, best_stats):
 
     return rate > 0
 
-
 if __name__ == "__main__":
     accelerate.utils.set_seed(0)
 
@@ -187,7 +188,9 @@ if __name__ == "__main__":
     model_name = "self-distill-regulated_transformer.pth"
     #model_name = "nodistance-regulated_transformer.pth"
     #model_name = "nodistancenoseg-regulated_transformer.pth"
+    #model_name = "noaug-regulated_transformer.pth"
     #model_name = "artificial_bestpose_regulated_transformer.pth"
+    #model_name = "artificial_bestpose6_regulated_transformer.pth"
     #model_name = "artificial_randompose_regulated_transformer.pth"
     #model_name = "artificial_fipnormal_regulated_transformer.pth"
     #model_name = "artificial_fipuniform_regulated_transformer.pth"
@@ -195,15 +198,20 @@ if __name__ == "__main__":
 
     if model_name == "regulatedtransformer-direct.pth" or model_name == "self-distill-regulated_transformer.pth":
         if use_auto_pair:
-            train_dataset, val_dataset, test_dataset = utils_experiment.get_auto_split_dataset()
+            train_dataset, val_dataset, test_dataset = utils_experiment.get_auto_split_dataset_second()
         else:
             train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset()
     elif model_name == "nodistance-regulated_transformer.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance()
     elif model_name == "nodistancenoseg-regulated_transformer.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance_and_seg()
+    elif model_name == "noaug-regulated_transformer.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance_and_seg(disable_augmentation = True)
+        train_dataset.random_sequence_len = False
     elif model_name == "artificial_bestpose_regulated_transformer.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_artifical_image_dataset_sideviews()
+    elif model_name == "artificial_bestpose6_regulated_transformer.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_artifical_image_dataset_sideviews6()
     elif model_name == "artificial_randompose_regulated_transformer.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_artificial_image_dataset_randompose()
     elif model_name == "artificial_fipnormal_regulated_transformer.pth":
@@ -212,6 +220,7 @@ if __name__ == "__main__":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_artificial_dataset_fiplike_uniform("image")
     else:
          assert False
+
 
     train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, collate_fn=datasets.img_validation_collate_fn)
@@ -231,19 +240,49 @@ if __name__ == "__main__":
             test_dataset.max_seq_len = nimg
             td = Subset(test_dataset, ind)
             test_loader = DataLoader(td, batch_size=256, shuffle=False, collate_fn=datasets.img_validation_collate_fn)
-            l = evaluate(test_loader, model, False)
+            l = evaluate(test_loader, model, False, fraction_include=1)
             ls.append(l)
-        plt.plot(list(range(1, 11)), [l["Correlation"] for l in ls], label="Correlation")
-        plt.plot(list(range(1, 11)), [l["Steepness"] for l in ls], label="Steepness")
-        plt.xlabel("# Images")
-        plt.xticks(list(range(1, 11)))
-        plt.legend()
+        plt.plot(list(range(1, 11)), [l["Correlation"] for l in ls], label="Correlation", linewidth=3)
+        plt.plot(list(range(1, 11)), [l["Steepness"] for l in ls], label="Steepness", linewidth=3)
+        plt.xlabel("# Images", fontsize=24)
+        plt.xticks(list(range(1, 11)), fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.legend(prop={"size": 20})
+        plt.tight_layout()
+        plt.show()
+        exit(0)
+
+    # Plot performance for different levels of removing outliers
+    if False:
+        model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
+        checks = np.linspace(1, 0.3, 30)
+        ls = []
+        sstats = []
+        for v in checks:
+            l, sstat = evaluate(test_loader, model, fraction_include=v, detail_eval=True)
+            ls.append(l)
+            sstats.append(sstat)
+        if False:
+            for stage in [0, 1, 2]:
+                correlation_vals = [entry[stage]['Correlation'] for entry in sstats]
+                steepness_vals  = [entry[stage]['Steepness'] for entry in sstats]
+
+                plt.plot(checks, correlation_vals, label=f"stage {stage} - correlation")
+                plt.plot(checks, steepness_vals,  label=f"stage {stage} - steepness")
+        plt.plot(checks, [l["Correlation"] for l in ls], label="Correlation", linewidth=3)
+        plt.plot(checks, [l["Steepness"] for l in ls], label="Steepness", linewidth=3)
+        plt.xlabel("Fraction of included predictions", fontsize=24)
+        plt.legend(prop={"size": 20})
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.ylim(bottom=0.75)
+        plt.tight_layout()
         plt.show()
         exit(0)
 
     if True:
         model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
-        evaluate(test_loader, model, show_plot=True, ignore_outliers=False, detail_eval=True)
+        evaluate(test_loader, model, show_plot=True, fraction_include=1, detail_eval=True)
         exit(0)
 
     model = models.RegulatedTransformer().to(device)

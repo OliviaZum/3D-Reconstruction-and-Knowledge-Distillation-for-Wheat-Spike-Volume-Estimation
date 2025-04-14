@@ -444,6 +444,6 @@ if __name__ == "__main__":
 
     data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["pose_folder"])
     #data.spikescans.to_csv(r"F:\FIP-data\csv\fip_data_export.csv")
-    data.precompute_image_dataset(r"F:\Boxes-ds\auto_split_new_pair", 20, automatic_inferred=True, segment=True, use_depthmap=False)
+    data.precompute_image_dataset(r"F:\Boxes-ds\auto_split_new_pair", 20, automatic_inferred=True, segment=True, use_depthmap=True)
     #data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled-5000-depth", 6000, 10)
     #data.precompute_boxes(r"F:\FIP-data\csv\precomputed_new_setup.json", update_connections_only=True)

@@ -85,6 +85,7 @@ if __name__ == "__main__":
     #model_name = "lstm-no-aug.pth"
     #model_name = "lstm-fiplike-uniform.pth"
     model_name = "lstm-fiplike-normal.pth"
+    #model_name = "lstm-artificial_bestpose6.pth"
 
     if model_name == "lstm-real.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset()
@@ -98,6 +99,8 @@ if __name__ == "__main__":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_artificial_dataset_fiplike_uniform("image")
     elif model_name == "lstm-fiplike-normal.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_artificial_dataset_fiplike_normal("image")
+    elif model_name == "lstm-artificial_bestpose6.pth":
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_artifical_image_dataset_sideviews6()
 
     if model_name == "lstm-no-aug.pth":
         train_dataset.random_sequence_len = False

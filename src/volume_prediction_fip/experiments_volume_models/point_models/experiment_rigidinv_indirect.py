@@ -30,7 +30,7 @@ Results:
 class RigidInvariantCompletion(nn.Module):
     def __init__(self, point_cloud_size_output = 1000, bins = 10, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.pnet = models_3d.RigidInvariantPointNet(output="latent", latent_size=256)
+        self.pnet = models_3d.RigidInvariantPointNet(output="latent", latent_size=128)
         self.last = nn.Sequential(
             nn.Linear(128, point_cloud_size_output * bins),
         )
@@ -40,24 +40,12 @@ class RigidInvariantCompletion(nn.Module):
     
     def forward(self, x):
         latent = self.pnet(x)
-        mu = latent[:, :128]
-        logvar = latent[:, 128:]
-        if self.training or self.sample_eval:
-            x_samp = mu + torch.randn_like(logvar) * torch.exp(0.5 * logvar)
-        else:
-            x_samp = mu
-        x = self.last(x_samp)
+        x = self.last(latent)
         x = x.reshape(-1, self.point_cloud_size_output, self.bins)
-        #x = torch.nn.functional.softmax(x, dim=-1)
         if self.training:
             return x, latent
         else:
             return x
-    
-    def kldiv(self, latent, var_prior = 1):
-        mu = latent[:, :128]
-        logvar = latent[:, 128:]
-        return 0.5 * torch.mean((logvar.exp() / var_prior) + (mu ** 2 / var_prior) - 1 - logvar)
 
 def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, vari_inf = False):
     model = model.eval()

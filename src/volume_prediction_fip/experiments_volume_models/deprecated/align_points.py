@@ -1,3 +1,8 @@
+"""
+Really old code to try to align in the field spikes to their scanned counterpart.
+Does not work at all.
+"""
+
 import experiments.shared.datasets_3d as datasets_3d
 from pathlib import Path
 import experiments.shared.utils_3d as utils_3d

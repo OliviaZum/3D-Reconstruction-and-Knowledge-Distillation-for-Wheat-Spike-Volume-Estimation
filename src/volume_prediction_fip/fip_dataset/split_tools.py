@@ -66,7 +66,7 @@ class VolumeMapping:
 
             exclusive_df = new_df.loc[~new_df.index.isin(all_indices)]
             exclusive_df = exclusive_df[exclusive_df["images"].apply(lambda x: len(x) >= min_sequence_length_train)]
-            print(f"# Plants added {name}: {len(exclusive_df)}")
+            print(f"# Plants added {name} (overall): {len(exclusive_df)}")
 
             exclusive_df.to_json(out_df, orient="index")
 
@@ -74,6 +74,7 @@ class VolumeMapping:
         df_new = split_dataset.compute_plant_mapping_(csv_data)
 
         df_new.to_json(new_mapping.save_mapping_plants, orient="index")
+        print("The #removed plants indicate how many plants have been removed with respect to the old split, because they do not exist here.")
         create_sub_df_from_indices(df_new, self.save_mapping_test, new_mapping.save_mapping_test, "test")
         create_sub_df_from_indices(df_new, self.save_mapping_val, new_mapping.save_mapping_val, "val")
         if extend_train:
@@ -93,6 +94,6 @@ if __name__ == "__main__":
 
     # Adapts an existing split to a new dataset. That is new images/plants are taken to train from the new dataset (if extend_train is true),
     # but test and val are kept with only the plants that where there in the old dataset. 
-    v.adapt_new_dataset(r"F:\Boxes-ds\artifical\artificial_fippose_toprot\split_without2024_noextend",
-                        r"F:\Boxes-ds\artifical\artificial_fippose_toprot\vol_mapping.csv",
-                        6, 6, remove_artifical=False, extend_train=False)
+    v.adapt_new_dataset(r"F:\Boxes-ds\artifical\bestpose_noshift_12\split_without2024_noextend_6img",
+                        r"F:\Boxes-ds\artifical\bestpose_noshift_12\vol_mapping_6_img.csv",
+                        6, 6, remove_artifical=False, extend_train=True)
