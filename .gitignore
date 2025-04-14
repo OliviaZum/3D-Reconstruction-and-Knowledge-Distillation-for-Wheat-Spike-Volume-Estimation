@@ -3,3 +3,7 @@ weights/
 local_stuff/
 /lib
 *.cache
+jupyter
+volume_prediction_fip.egg-info/
+local_stuff_experiments/
+.venv
