@@ -76,11 +76,11 @@ In general things are described in more detail in comments. This just gives a qu
 # Preparing new data (in theory)
 
 A general outline for preparing new data is this:
-    - Adapt FIPDataset to use whatever layout you used to describe the dataset or recreate the old layout
-    - precompute bounding boxes and pairing for all FIP scenes
-    - Use the annotation tool to annotate which bounding boxes belong to a particular spike of the dataset
-    - Use again FIP dataset to export the cropped annotated spikes into some folder (things like segmentation, padding, and so
-        on can be configured, ideally take a look at the code)
-    - Use split_tools to generate a new train/test/val split or take over a split from an existing dataset
-(In general all those tools are heavily designed towards the existing dataset, so updates to the code are probably necessary)
+- Adapt FIPDataset to use whatever layout you used to describe the dataset or recreate the old layout
+- precompute bounding boxes and pairing for all FIP scenes
+- Use the annotation tool to annotate which bounding boxes belong to a particular spike of the dataset
+- Use again FIP dataset to export the cropped annotated spikes into some folder (things like segmentation, padding, and so
+    on can be configured, ideally take a look at the code)
+- Use split_tools to generate a new train/test/val split or take over a split from an existing dataset
+- (In general all those tools are heavily designed towards the existing dataset, so updates to the code are probably necessary)
 
