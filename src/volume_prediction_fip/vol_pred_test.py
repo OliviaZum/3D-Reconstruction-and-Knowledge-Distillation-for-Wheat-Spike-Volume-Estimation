@@ -19,7 +19,7 @@ if __name__ == "__main__":
             "csv_folder": r"F:\FIP-data\csv",
             "img_folder": r"F:\FIP-data\images",
             "ply_folder": r"F:\FIP-data\wheat-scans",
-            "precompute_file": r"F:\FIP-data\csv\precomputed.json",
+            "precompute_file": r"F:\FIP-data\csv\precomputed_new_setup.json",
             "pose_folder": str(helpers.get_assets_path() / "poses")
         }
     data: FIPDataset = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["pose_folder"])
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         print(img_dir)
         sub = data.spikescans[data.spikescans["image_dir"] == img_dir]
 
-        r, _ = volume_prediction.infer_volume(img_dir, data.get_pose_config(img_dir), 9, yolo_det, yolo_seg, dino, vol_model, set_seed=False)
+        r, _ = volume_prediction.infer_volume(img_dir, data.get_pose_config(img_dir), 9, yolo_det, yolo_seg, dino, vol_model, set_seed=True)
 
         for _, spike in sub.iterrows():
             main_cam = spike["label_selectedon"]
@@ -49,15 +49,16 @@ if __name__ == "__main__":
             for i, w in enumerate(det_boxes):
                 if not isinstance(w, list): # nan, no detection for this camera
                     continue
-                iou = FIPDataset.iou(main_box, w)
+                iou = helpers.iou(main_box, w)
                 if iou > max_iou:
                     max_iou = iou
                     max_box = i
-            if max_iou > 0.8:
+            if max_iou > 0.98:
                 vol_pred.append(vols[max_box])
                 vol_gt.append(spike["spikevolume"])
             else:
                 nopredfound_counter += 1
+        print(f"Overall found by now {len(vol_pred)} spikes.")
     print(f"Did not find corresponding box for {nopredfound_counter} spikes.")
     print(f"Correlation: {np.corrcoef(vol_gt, vol_pred)[0, 1]}")
     plt.scatter(vol_gt, vol_pred)
