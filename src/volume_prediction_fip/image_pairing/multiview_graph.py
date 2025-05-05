@@ -142,6 +142,7 @@ def estimate_distances(poses_conf, bounding_boxes: Dict[str, Dict[str, List[int]
         cluster_to_boxes.setdefault(cluster, [])
         box = box_id_to_box[(cam_name, box_id)]
         cluster_to_boxes[cluster].append((cam_name, box_id, box))
+    
 
     Ps = {cam_name: calibration_helpers.get_projection(poses_conf, cam_name) for cam_name in bounding_boxes.keys()}
 
@@ -152,12 +153,16 @@ def estimate_distances(poses_conf, bounding_boxes: Dict[str, Dict[str, List[int]
             bounding_boxes_to_distance.setdefault(cam_name, {})
             bounding_boxes_to_distance[cam_name][cluster] = None
 
+    estimate_list = []
     for cluster, boxes in cluster_to_boxes.items():
+        
+    
         if len(boxes) < min_view:
             set_cluster_unknown(boxes)
             continue
 
         estimates = []
+        label = [cluster]
         weights = []
         for k in range(num_samples):
             subset = np.random.choice(len(boxes), num_view, False)
@@ -194,6 +199,8 @@ def estimate_distances(poses_conf, bounding_boxes: Dict[str, Dict[str, List[int]
             set_cluster_unknown(boxes)
             continue
         estimate = (estimates[mask, :] * np.expand_dims(weights[mask], axis=1)).sum(axis=0) / count
+        estimate_label = [label, estimate]
+        estimate_list.append(estimate_label)
 
         for cam_name, _, _ in boxes:
             cam_pos = np.array(poses_conf[cam_name]["extrinsics"]["center"])
@@ -201,7 +208,7 @@ def estimate_distances(poses_conf, bounding_boxes: Dict[str, Dict[str, List[int]
             bounding_boxes_to_distance.setdefault(cam_name, {})
             bounding_boxes_to_distance[cam_name][cluster] = distance
 
-    return bounding_boxes_to_distance
+    return bounding_boxes_to_distance, estimate_list
 
 
 def lp_cluster_torch(graph: np.ndarray, device = 'cuda' if torch.cuda.is_available() else 'cpu',

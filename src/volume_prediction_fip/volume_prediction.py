@@ -16,11 +16,15 @@ from torchvision.transforms import v2
 import pandas as pd
 import accelerate
 import cv2
+import numpy as np
+
 
 from volume_prediction_fip.fip_global import fip_detection
+from volume_prediction_fip.fip_global import volumes_in_square
 from volume_prediction_fip.utils import helpers
 from volume_prediction_fip.experiments_volume_models.shared.datasets import distance_norm_transform, get_transform, vol_unorm
 from volume_prediction_fip.experiments_volume_models.shared.models import unflat
+
 
 class Stopwatch:
     def __init__(self):
@@ -63,6 +67,7 @@ You are guarranted that when iterating over the dict the elements appear in the 
 Also you can always get the patches corresponding to a result spike by accessing the dict at cluster_id.
 """
 def infer_volume(image_folder: Path | str,
+                 output_folder: Path,
                  calibration: Dict,
                  min_view: int,
                  detection_model: YOLO,
@@ -105,9 +110,24 @@ def infer_volume(image_folder: Path | str,
 
         if verbose:
             print(f"Spike pairing (Detection took: {s.elapsed()})")
-        # Spike pairing
-        connected_boxes = fip_detection.connect_boxes(boxes, calibration, min_view)
 
+        # Spike pairing, distances to cameras and estimated 3d values
+        connected_boxes, distances, estimated_3d_pos = fip_detection.connect_boxes(boxes, calibration, min_view)
+
+        # average distance to camera 7
+        dist_cam = {k: v for k, v in distances.items() if k == 'cam_07.png'}
+        distances_cam = dist_cam['cam_07.png']
+        #remove none
+        filtered_cam_dist = {k: v for k, v in distances_cam.items() if v is not None}
+        #mean distance: 
+        mean_value = np.mean(list(filtered_cam_dist.values()))   
+        print("mean height")
+        print(mean_value)
+
+        #outputs all labels (spikes) in a square of 40 x 40 cm in camera 7
+        labels_in_square, reconstructed_3d, square_3d = volumes_in_square.fn_labels_in_square(estimated_3d_pos, mean_value, output_folder, save_image=True)
+     
+        
         if move_models_to_cpu:
             torch.cuda.empty_cache()
 
@@ -249,7 +269,11 @@ def infer_volume(image_folder: Path | str,
             results.append(r)
 
         results = pd.DataFrame(results)
-        return results, cluster_to_patch
+      
+        #filter all the clusters / labels that are in the 40 x 40 cm square
+        filtered_df = results[results["cluster_id"].isin(labels_in_square)].copy()
+
+        return results, cluster_to_patch, reconstructed_3d, square_3d, filtered_df
 
 def get_default_models():
     yolo_det = helpers.get_detection_model()
@@ -269,37 +293,50 @@ def main():
 
     parser.add_argument("-c", "--calibration_file", type=Path, required=True, help="Path to calibration file (Create via generate_scaled_calibration in fip global)")
     parser.add_argument("-i", "--image_folder", type=Path, required=True, help="Path to the folder containing the images")
-    parser.add_argument("-o", "--output_file", type=Path, required=True, help="Path to store the output file to")
-    parser.add_argument("-od", "--output_directory", type=Path, required=False, help="A folder to which all preprocessed spikes are exported")
+    parser.add_argument("-od", "--output_directory", type=Path, required=False, help="A folder to which all preprocessed spikes, dataframes, and figures are exported")
     parser.add_argument("-mv", "--min_view", type=int, required=False, default=12, help="Minimum number of observations for a spike to estimate volume")
     parser.add_argument("-dv", "--disable_verbose", action="store_true", required=False, help="Disable printing")
 
     args = parser.parse_args()
     verbose = not args.disable_verbose
+    output_directory = Path(args.output_directory)
+    output_file = args.output_directory / "predicted_volume.csv"
 
     with open(args.calibration_file) as f:
         calibration = json.load(f)
 
+  
+    if output_file.is_file():
+        input(f"The output file exists. Press enter to continue overwrite, or Ctrl+C to abort")
+    if args.output_directory:
+        args.output_directory.mkdir(parents=True, exist_ok=True)
     if args.output_directory is not None and not args.output_directory.is_dir():
         print(f"{args.output_directory} is not a directory. Aborting.")
         exit(1)
-    if not args.output_file.parent.is_dir():
-        print(f"The folder for {args.output_file} seems to not exists. Aborting.")
-        exit(1)
-    if args.output_file.is_file():
-        input(f"The output file exists. Press enter to continue overwrite, or Ctrl+C to abort")
 
     yolo_det, yolo_seg, dino, vol_model = get_default_models()
-    r, cluster_to_patch = infer_volume(args.image_folder, calibration, 
+    r, cluster_to_patch, reconstruced_3d, square_3d, filtered_df = infer_volume(args.image_folder, output_directory, calibration, 
             args.min_view, yolo_det, yolo_seg, dino, vol_model, verbose=verbose)
     
-    r.to_csv(args.output_file, index=False)
+    #save result dataframes
+    r.to_csv(output_directory / "predicted_volume.csv", index=False)
+    filtered_df.to_csv(output_directory / "filtered_results.csv", index=False)
+
+    #plot final BB, total and in square
+    volumes_in_square.plot_BB_cam7(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
+    volumes_in_square.plot_BB_cam7_2colors(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
+
+    # create a subfolder so save spikes
+    subfolder = output_directory / "spikes"
+    subfolder.mkdir(parents=True, exist_ok=True)
 
     if args.output_directory is not None:
         for i, (vol, cluster) in enumerate(zip(r["volume"].to_list(), cluster_to_patch.values())):
             _, _, patches = zip(*cluster.values())
             for j, patch in enumerate(patches):
-                cv2.imwrite(args.output_directory / f"{i}_{j}_{vol}.jpg", patch)
+                output_path = subfolder / f"{i}_{j}_{vol}.jpg"
+                cv2.imwrite(str(output_path), patch)
+                
 
 if __name__ == "__main__":
     main()

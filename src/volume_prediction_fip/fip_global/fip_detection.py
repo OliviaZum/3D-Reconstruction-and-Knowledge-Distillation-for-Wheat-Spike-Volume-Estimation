@@ -54,7 +54,7 @@ def connect_boxes(boxes: Dict[str, Dict[str, List[int]]], poses_conf, min_view =
     graph, idx_to_instance = multiview_graph.build_epipolar_graph_opt(poses_conf, boxes)
     graph = graph.detach().cpu().numpy()
     labels = multiview_graph.lp_cluster_torch(graph).detach().cpu().numpy()
-    distances = multiview_graph.estimate_distances(poses_conf, boxes, labels, idx_to_instance, min_view if min_view >= 3 else 3)
+    distances, estimated_3d_pos = multiview_graph.estimate_distances(poses_conf, boxes, labels, idx_to_instance, min_view if min_view >= 3 else 3)
 
     labelcount = {}
     for v in labels:
@@ -73,7 +73,7 @@ def connect_boxes(boxes: Dict[str, Dict[str, List[int]]], poses_conf, min_view =
             label = None
         combined_results.append({"image": image_name, "cluster": label, "box": box, "distance": current_dist})
 
-    return combined_results
+    return combined_results, distances, estimated_3d_pos
 
 # Helper function to export the results of detection and pairing
 def save_results(boxes, results, dir):
