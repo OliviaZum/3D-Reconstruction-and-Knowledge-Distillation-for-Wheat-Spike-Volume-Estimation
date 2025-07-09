@@ -14,7 +14,8 @@ OPENMVG_PATH = "/home/zumstego/volume_prediction_fip/tools/openMVG/build/Linux-x
 POSES_FILE_NAME = "poses_scaled.json"
 
 now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-SUMMARY_CSV = f"calibration_summary_{now_str}.csv"
+os.makedirs("log_files", exist_ok=True)
+SUMMARY_CSV = os.path.join("log_files", f"calibration_summary_{now_str}.csv")
 
 print("paths")
 print(PLOTS_INPUT_DIR)

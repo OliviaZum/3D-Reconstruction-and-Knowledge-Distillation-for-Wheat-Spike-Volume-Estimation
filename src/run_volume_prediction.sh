@@ -7,7 +7,7 @@ for INPUT_SUBDIR in "$INPUT_PARENT"/*/; do
     PLOT_NAME=$(basename "$INPUT_SUBDIR")
     CONFIG_FILE="$INPUT_SUBDIR/poses_scaled.json"
     OUTPUT_SUBDIR="$OUTPUT_PARENT/$PLOT_NAME"
-    LOG_FILE="$OUTPUT_SUBDIR/log.txt"
+    LOG_FILE="log_files/$OUTPUT_SUBDIR/log.txt"
 
     PREDICTED_CSV="$OUTPUT_SUBDIR/predicted_volume.csv"
     FILTERED_CSV="$OUTPUT_SUBDIR/filtered_results.csv"
@@ -35,7 +35,7 @@ for INPUT_SUBDIR in "$INPUT_PARENT"/*/; do
         if [[ -f "$PREDICTED_CSV" && -f "$FILTERED_CSV" ]]; then
             echo "Done: $PLOT_NAME"
         else
-            echo "⚠️ Incomplete output for $PLOT_NAME" | tee -a "$LOG_FILE"
+            echo "Incomplete output for $PLOT_NAME" | tee -a "$LOG_FILE"
             if [ ! -f "$PREDICTED_CSV" ]; then
                 echo "Missing: $PREDICTED_CSV" >> "$LOG_FILE"
             fi

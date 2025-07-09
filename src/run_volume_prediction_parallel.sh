@@ -7,7 +7,8 @@ INPUT_PARENT="../../../../data-kp/FIP/Analysis/2023/WW034/debayered"
 OUTPUT_PARENT="../../../../data-kp/FIP/Analysis/2023/WW034/volume_prediction/2023"
 #INPUT_PARENT="../2_Messung_2024"
 #OUTPUT_PARENT="../2_Output_2024"
-SUMMARY_FILE="summary_$(date +%Y%m%d_%H%M%S).csv"
+mkdir -p log_files
+SUMMARY_FILE="log_files/summary_$(date +%Y%m%d_%H%M%S).csv"
 
 
 

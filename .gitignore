@@ -14,4 +14,4 @@ FIP_test/
 2_Messung_2024
 2_Output_2024
 check_empty_folders.py
-src/volume_prediction_fip/log_files
+src/log_files
