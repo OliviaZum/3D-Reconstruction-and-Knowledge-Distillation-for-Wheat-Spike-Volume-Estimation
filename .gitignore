@@ -9,3 +9,9 @@ local_stuff_experiments/
 .venv
 tools/
 FIP_test/
+1_Messung_2023
+1_Output_2023
+2_Messung_2024
+2_Output_2024
+check_empty_folders.py
+src/volume_prediction_fip/log_files

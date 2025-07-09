@@ -183,8 +183,7 @@ def fn_labels_in_square(estimated_3d_pos, mean_value, output_folder, save_image 
 
 def plot_BB_cam7(r, reconstruced_3d, filtered_df, square_3d, output_directory, image_folder):
 
-    input_folder = image_folder
-    path_calib_cam = input_folder / "simple_poses.json"
+    path_calib_cam = output_directory / "poses_scaled.json"
 
     #*********************************************
     # Load intrinsic parameters from YAML file
@@ -343,8 +342,7 @@ def plot_BB_cam7(r, reconstruced_3d, filtered_df, square_3d, output_directory, i
 
 def plot_BB_cam7_2colors(r, reconstruced_3d, filtered_df, square_3d, output_directory, image_folder):
 
-    input_folder = image_folder
-    path_calib_cam = input_folder / "simple_poses.json"
+    path_calib_cam = output_directory / "poses_scaled.json"
 
     #*********************************************
     # Load intrinsic parameters from YAML file
@@ -430,5 +428,6 @@ def plot_BB_cam7_2colors(r, reconstruced_3d, filtered_df, square_3d, output_dire
     #Plot square
     square_px = [world_to_pixel(x, y, z, K, R, C) for x, y, z in square_3d]  
     #cv2.polylines(image, [np.array(square_px, dtype=np.int32)], isClosed=True, color=(0, 0, 255), thickness=2)
+
 
     cv2.imwrite(str(output_directory / "BB_image_2colors.png"), image)

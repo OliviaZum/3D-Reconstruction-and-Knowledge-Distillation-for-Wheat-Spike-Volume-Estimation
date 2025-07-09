@@ -126,61 +126,86 @@ def scale_configuration(path_in, fip_extrinsics_in, path_out):
     for i in range(0, 12):
         sfm_calibration[u(i) + ".png"]["extrinsics"]["center"] = sfm_positions[i].tolist()
 
+    print("path out test")
+    print(path_out)
+    print(sfm_calibration)
     with open(path_out, "w") as f:
         json.dump(sfm_calibration, f, indent=4)
 
-def calibrate(openmvg_path, fip_extrinsics_folder):
+def calibrate(openmvg_path, fip_extrinsics_folder, output_folder, input_image_folder):
     with tempfile.TemporaryDirectory() as tempdir:
-        os.makedirs("./build", exist_ok=False)
-        os.makedirs('./build/images', exist_ok=True)
 
-        for item in os.listdir('.'):
+        build_folder = os.path.join(output_folder, '.build')
+        images_folder = os.path.join(build_folder, 'images')
+
+        os.makedirs(build_folder, exist_ok=False)
+        os.makedirs(images_folder, exist_ok=True)
+
+        sfm_data_json = os.path.join(build_folder, 'sfm_data.json')
+        pairs_txt = os.path.join(build_folder, 'pairs.txt')
+        matches_putative = os.path.join(build_folder, 'matches.putative.bin')
+        matches_geom = os.path.join(build_folder, 'matches.geom.bin')
+        sfm_output_bin = os.path.join(build_folder, 'sfm_data.bin')
+        sfm_output_conf = os.path.join(build_folder, 'sfm_data_conf.json')
+
+        simple_poses = os.path.join(build_folder, 'simple_poses.json')
+        scaled_poses = os.path.join(build_folder, 'poses_scaled.json')
+
+
+        for item in os.listdir(input_image_folder):
+            print("item")
+            print(item)
+            print(input_image_folder)
             if os.path.splitext(item)[1] in [".jpg", ".png"]:
-                shutil.copy(item, './build/images')
+                full_item_path = os.path.join(input_image_folder, item)
+                print(full_item_path)
+                shutil.copy(full_item_path, images_folder)
 
         subprocess.run([
             os.path.join(openmvg_path, 'openMVG_main_SfMInit_ImageListing'),
-            '-i', './build/images', '-o', 'build', '-f', '10200', '-g', '0'
+            '-i', images_folder, '-o', build_folder, '-f', '10200', '-g', '0'
         ], check=True)
 
         subprocess.run([
             os.path.join(openmvg_path, 'openMVG_main_ComputeFeatures'),
-            '-i', 'build/sfm_data.json', '-o', 'build'
+            '-i', sfm_data_json, '-o', build_folder
         ], check=True)
 
         subprocess.run([
             os.path.join(openmvg_path, 'openMVG_main_PairGenerator'),
-            '-i', 'build/sfm_data.json', '-o', 'build/pairs.txt', '-m', 'EXHAUSTIVE'
+            '-i', sfm_data_json, '-o', pairs_txt, '-m', 'EXHAUSTIVE'
         ], check=True)
 
         subprocess.run([
             os.path.join(openmvg_path, 'openMVG_main_ComputeMatches'),
-            '-i', 'build/sfm_data.json', '-o', 'build/matches.putative.bin', '-p', 'build/pairs.txt'
+            '-i', sfm_data_json, '-o', matches_putative, '-p', pairs_txt
         ], check=True)
 
         subprocess.run([
             os.path.join(openmvg_path, 'openMVG_main_GeometricFilter'),
-            '-i', 'build/sfm_data.json', '-m', 'build/matches.putative.bin', '-o', 'build/matches.geom.bin'
+            '-i', sfm_data_json, '-m', matches_putative, '-o', matches_geom
         ], check=True)
 
         subprocess.run([
             os.path.join(openmvg_path, 'openMVG_main_SfM'),
-            '-i', 'build/sfm_data.json', '-o', 'build', '-M', 'build/matches.geom.bin',
+            '-i', sfm_data_json, '-o', build_folder, '-M', matches_geom,
             '--sfm_engine', 'INCREMENTAL'
         ], check=True)
 
         subprocess.run([
             os.path.join(openmvg_path, 'openMVG_main_ConvertSfM_DataFormat'),
-            '-i', 'build/sfm_data.bin', '-o', 'build/sfm_data_conf.json', '-V', '-I', '-E'
+            '-i', sfm_output_bin, '-o', sfm_output_conf, '-V', '-I', '-E'
         ], check=True)
 
-        convert_openmvg_to_simplified("build/sfm_data_conf.json", "build/simple_poses.json")
-        scale_configuration("build/simple_poses.json", fip_extrinsics_folder, "poses_scaled.json")
+        convert_openmvg_to_simplified(sfm_output_conf, simple_poses)
+        scale_configuration(simple_poses, fip_extrinsics_folder, scaled_poses)
+
+        shutil.copy(scaled_poses, os.path.join(output_folder, 'poses_scaled.json'))
 
         # Clean up the build folder
-        for item in os.listdir('./build'):
-            if item not in ["sfm_data.bin", "SfMReconstruction_Report.html", "simple_poses.json", "sfm_data_conf.json"]:
-                item_path = os.path.join('./build', item)
+        for item in os.listdir(build_folder):
+            if item not in ["sfm_data.bin", "SfMReconstruction_Report.html", "simple_poses.json", "sfm_data_conf.json", "poses_scaled.json"]:
+                item_path = os.path.join(build_folder, item)
                 if os.path.isfile(item_path):
                     os.remove(item_path)
                 elif os.path.isdir(item_path):
@@ -198,10 +223,22 @@ def main():
         required=True,
         help="A folder containing possible extrinsics of the fip (scale will be averaged). This is used to scale the calibration obtained by Sfm correctly."
     )
+
+    parser.add_argument(
+        "-p", "--output_folder",
+        required=True,
+        help="A folder in which the poses are being saved"
+    )
+
+    parser.add_argument(
+        "-l", "--input_image_folder",
+        required=True,
+        help="A folder containing the images"
+    )
+
     args = parser.parse_args()
 
-
-    calibrate(args.openmvg_path, args.fip_extrinsics)
+    calibrate(args.openmvg_path, args.fip_extrinsics, args.output_folder, args.input_image_folder)
 
 if __name__ == "__main__":
     main()

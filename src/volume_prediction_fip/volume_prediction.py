@@ -113,6 +113,8 @@ def infer_volume(image_folder: Path | str,
 
         # Spike pairing, distances to cameras and estimated 3d values
         connected_boxes, distances, estimated_3d_pos = fip_detection.connect_boxes(boxes, calibration, min_view)
+        print("estimated_3d_pos")
+        print(estimated_3d_pos)
 
         # average distance to camera 7
         dist_cam = {k: v for k, v in distances.items() if k == 'cam_07.png'}
@@ -247,7 +249,7 @@ def infer_volume(image_folder: Path | str,
             batch = batch.to(device)
             mask_batch = mask_batch.to(device)
             v, _ = volume_model(batch, mask_batch)
-            v = v.cpu().squeeze()
+            v = v.cpu().view(-1)
             volumes.append(v)
         volumes = torch.concat(volumes)
         volumes = vol_unorm(volumes).to(torch.int32)
@@ -293,38 +295,52 @@ def main():
 
     parser.add_argument("-c", "--calibration_file", type=Path, required=True, help="Path to calibration file (Create via generate_scaled_calibration in fip global)")
     parser.add_argument("-i", "--image_folder", type=Path, required=True, help="Path to the folder containing the images")
-    parser.add_argument("-od", "--output_directory", type=Path, required=False, help="A folder to which all preprocessed spikes, dataframes, and figures are exported")
+    parser.add_argument("-od", "--output_directory", type=Path, required=False, help="A folder to which all preprocessed spikes, dataframes, and figures are exported (Folder with plot name)")
     parser.add_argument("-mv", "--min_view", type=int, required=False, default=12, help="Minimum number of observations for a spike to estimate volume")
     parser.add_argument("-dv", "--disable_verbose", action="store_true", required=False, help="Disable printing")
 
     args = parser.parse_args()
     verbose = not args.disable_verbose
+
+
     output_directory = Path(args.output_directory)
-    output_file = args.output_directory / "predicted_volume.csv"
 
-    with open(args.calibration_file) as f:
-        calibration = json.load(f)
-
-  
-    if output_file.is_file():
-        input(f"The output file exists. Press enter to continue overwrite, or Ctrl+C to abort")
+    #create folder with plot name
     if args.output_directory:
         args.output_directory.mkdir(parents=True, exist_ok=True)
     if args.output_directory is not None and not args.output_directory.is_dir():
         print(f"{args.output_directory} is not a directory. Aborting.")
         exit(1)
+    
+
+    #do something if output is already there, eg jump to next plot
+    #output_file = args.output_directory / "predicted_volume.csv"
+    #if output_file.is_file():
+    #        input(f"The output file exists. Press enter to continue overwrite, or Ctrl+C to abort")
+
+
+    with open(args.calibration_file) as f:
+        calibration = json.load(f)
+
 
     yolo_det, yolo_seg, dino, vol_model = get_default_models()
     r, cluster_to_patch, reconstruced_3d, square_3d, filtered_df = infer_volume(args.image_folder, output_directory, calibration, 
             args.min_view, yolo_det, yolo_seg, dino, vol_model, verbose=verbose)
     
-    #save result dataframes
-    r.to_csv(output_directory / "predicted_volume.csv", index=False)
-    filtered_df.to_csv(output_directory / "filtered_results.csv", index=False)
+    
+    # Get plot name from image folder
+    plot_name = args.image_folder.name
 
-    #plot final BB, total and in square
-    volumes_in_square.plot_BB_cam7(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
-    volumes_in_square.plot_BB_cam7_2colors(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
+    # Save dataframes with plot name
+    r.to_csv(output_directory / f"{plot_name}_predicted_volume.csv", index=False)
+    filtered_df.to_csv(output_directory / f"{plot_name}_filtered_results.csv", index=False)
+
+    print("output directory")
+    print(output_directory)
+
+    #plot final BB, total and in square --> take a lot of space!! (50 MB)
+    #volumes_in_square.plot_BB_cam7(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
+    #volumes_in_square.plot_BB_cam7_2colors(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
 
     # create a subfolder so save spikes
     subfolder = output_directory / "spikes"
