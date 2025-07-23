@@ -67,11 +67,11 @@ In general things are described in more detail in comments. This just gives a qu
 
 # Training the final model
 
-- Train a regulated transformer using image_models\experiment_regulated_transformer.py
-- Train the ply2volume model using point_models\experiment_rigidinv_direct.py (better use voxelization, but shouldn't matter)
-- Train a ply supervised rigidinvariant pointnet with point_models\experiment_rigidinv_indirect_2.py
-- Train the ensemble with combined_models\experiment_image_rigidinv_ensemble.py
-- Train a distilled version of the regulated transformer with combined_models\experiment_self_distill_ensemble.py
+- Train a regulated transformer using image_models\experiment_regulated_transformer.py. Use model_name = regulatedtransformer-direct.pth.
+- Train the ply2volume model using point_models\experiment_rigidinv_direct.py (better use voxelization, but shouldn't matter). Use model_name = ply2volume_model.pth.
+- Train a ply supervised rigidinvariant pointnet with point_models\experiment_rigidinv_indirect_2.py. Use model_name = rigidinv_indirect2.pth.
+- Train the ensemble with combined_models\experiment_image_rigidinv_ensemble.py. Use model_name = 3dglobimgensemble.pth. 
+- Train a distilled version of the regulated transformer with combined_models\experiment_self_distill_ensemble.py. Use model_name = self-distill-regulated_transformer.pth.
 
 # Preparing new data (in theory)
 
