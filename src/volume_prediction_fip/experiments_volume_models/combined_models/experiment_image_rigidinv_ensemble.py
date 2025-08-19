@@ -73,7 +73,8 @@ if __name__ == "__main__":
 
     model_name = "3dglobimgensemble.pth"
 
-    if True:
+    evaluation = False
+    if evaluation == True:
         model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)

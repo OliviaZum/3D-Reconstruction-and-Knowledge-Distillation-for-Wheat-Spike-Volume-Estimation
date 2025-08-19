@@ -81,14 +81,14 @@ if __name__ == "__main__":
     # Results vary quite a bit depending on seed
     accelerate.utils.set_seed(1, deterministic=True)
     
-    model_name = "real_volume_model-direct.pth"
-    #model_name = "ply2volume_model.pth"
+    #model_name = "real_volume_model-direct.pth"
+    model_name = "ply2volume_model.pth"
     #model_name = "ply2volume_voxelized_model.pth"
     #model_name = "fiplike_uniform_ply_model.pth"
     #model_name = "fiplike_normal_ply_model.pth"
 
     if model_name == "ply2volume_model.pth":
-        train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset(force_recompute=False, voxelize=False)
+        train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset(force_recompute=False, voxelize=True)
     elif model_name == "ply2volume_voxelized_model.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset(force_recompute=False, voxelize=True)
     elif model_name == "real_volume_model-direct.pth":
@@ -104,7 +104,8 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
 
-    if True:
+    evaluation = False
+    if evaluation == True:
         model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)
