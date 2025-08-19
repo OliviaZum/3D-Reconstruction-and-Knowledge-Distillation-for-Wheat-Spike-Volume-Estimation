@@ -52,7 +52,7 @@ def _get_ply_dataset(split_folder, base_folder, cache_folder, force_recompute = 
 # Get a dataset of real 3d reconstructed spikes
 def get_real_dataset3d(force_recompute = False):
     split_folder = Path("split_without2024")
-    base_folder = Path(r"F:\Boxes-ds\segmented_distance_depth")
+    base_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth")
     split_folder = base_folder / split_folder
     cache = Path(helpers.get_exp_path() / "dmap_real_default")
 
@@ -60,8 +60,10 @@ def get_real_dataset3d(force_recompute = False):
 
 # Get artificial point clouds dataset
 def get_ply_dataset(force_recompute = False, voxelize = False):
-    split_folder = Path(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
-    base_folder = Path(r"F:\FIP-data\wheat-scans")
+    split_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth/split_without2024")
+    base_folder = Path("/projects/zumstego/volume_prediction_fip/Fip-data/wheat-scans")
+
+    
     if voxelize:
         cache_path = Path(helpers.get_exp_path() / r"ply_cache_voxelized")
     else:
@@ -80,8 +82,8 @@ def get_combined_point_real_arti_dataset():
 
 # Unlabeled image and 3d dataset
 def get_unlabeled_dataset(force_recompute = False):
-    split_folder = Path(r"F:\Boxes-ds\unlabeled-5000-depth\split")
-    base_folder = Path(r"F:\Boxes-ds\unlabeled-5000-depth")
+    split_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/unlabeled-5000-depth/split")
+    base_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/unlabeled-5000-depth")
     cache_folder = Path(helpers.get_exp_path() / "cache_unlabeled")
 
     train_dataset_dm = datasets.DepthMapDataset(base_folder, split_folder / "mapping_train.json")
@@ -100,8 +102,8 @@ def get_unlabeled_dataset(force_recompute = False):
 
 # Default image dataset
 def get_default_image_dataset():
-    split_folder = Path(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
-    base_folder = Path(r"F:\Boxes-ds\segmented_distance_depth")
+    split_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth/split_without2024")
+    base_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth")
     cache_folder_image = Path(helpers.get_exp_path() / "default_image_cache")
 
     return _get_image_dataset(split_folder, base_folder, cache_folder_image)
@@ -180,15 +182,19 @@ def get_combined_image_point_dataset(include_ply = False):
     return train_dataset, val_dataset, test_dataset
 
 def get_auto_split_dataset():
-    base = Path(r"F:\Boxes-ds\auto_split")
-    split = Path(r"F:\Boxes-ds\auto_split\split_without2024")
+    #base = Path(r"F:\Boxes-ds\auto_split")
+    #split = Path(r"F:\Boxes-ds\auto_split\split_without2024")
+    base = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/auto_split")
+    split = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/auto_split/split_without2024")
     cache_folder = Path(helpers.get_exp_path() / "auto_split_img_cache")
 
     return _get_image_dataset(split, base, cache_folder, 1)
 
 def get_auto_split_dataset_second():
-    base = Path(r"F:\Boxes-ds\auto_split_new_pair")
-    split = Path(r"F:\Boxes-ds\auto_split_new_pair\split_without2024")
+    base = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/auto_split_new_pair")
+    split = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/auto_split_new_pair/split_without2024")
+    #base = Path(r"F:\Boxes-ds\auto_split_new_pair")
+    #split = Path(r"F:\Boxes-ds\auto_split_new_pair\split_without2024")
     cache_folder = Path(helpers.get_exp_path() / "auto_split_new_pair_cache")
 
     return _get_image_dataset(split, base, cache_folder, 1)

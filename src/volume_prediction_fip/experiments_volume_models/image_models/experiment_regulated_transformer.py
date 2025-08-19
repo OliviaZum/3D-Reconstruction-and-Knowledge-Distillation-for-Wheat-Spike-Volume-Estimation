@@ -184,8 +184,8 @@ def is_better_model(stats, best_stats):
 if __name__ == "__main__":
     accelerate.utils.set_seed(0)
 
-    #model_name = "regulatedtransformer-direct.pth"
-    model_name = "self-distill-regulated_transformer.pth"
+    model_name = "regulatedtransformer-direct.pth"
+    #model_name = "self-distill-regulated_transformer.pth"
     #model_name = "nodistance-regulated_transformer.pth"
     #model_name = "nodistancenoseg-regulated_transformer.pth"
     #model_name = "noaug-regulated_transformer.pth"
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     #model_name = "artificial_randompose_regulated_transformer.pth"
     #model_name = "artificial_fipnormal_regulated_transformer.pth"
     #model_name = "artificial_fipuniform_regulated_transformer.pth"
-    use_auto_pair = True
+    use_auto_pair = False
 
     if model_name == "regulatedtransformer-direct.pth" or model_name == "self-distill-regulated_transformer.pth":
         if use_auto_pair:
@@ -280,7 +280,8 @@ if __name__ == "__main__":
         plt.show()
         exit(0)
 
-    if True:
+    evaluation = False
+    if evaluation == True:
         model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True, fraction_include=1, detail_eval=True)
         exit(0)

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/zumstego/volume_prediction_fip/src/volume_prediction_fip/volume_prediction.py", line 8, in <module>
+    from ultralytics import YOLO
+ModuleNotFoundError: No module named 'ultralytics'

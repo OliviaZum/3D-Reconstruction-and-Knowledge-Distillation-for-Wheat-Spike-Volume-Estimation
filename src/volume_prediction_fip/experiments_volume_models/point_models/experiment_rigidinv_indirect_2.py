@@ -78,7 +78,9 @@ if __name__ == "__main__":
     model = models.RigidInvariantPointNet(output="volumelatent").to(device)
 
     model_name = "rigidinv_indirect2.pth"
-    if True:
+
+    evaluation = False
+    if evaluation == True:
         model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device)
         evaluate(test_loader, model, 5, True)
         exit(0)

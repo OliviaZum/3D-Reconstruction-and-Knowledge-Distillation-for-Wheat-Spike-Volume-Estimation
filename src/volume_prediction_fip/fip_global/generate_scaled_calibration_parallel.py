@@ -7,8 +7,11 @@ from datetime import datetime
 
 # === Configuration ===
 EXTRINSICS_DIR = "../assets/fip_calibration/extrinsics"
-PLOTS_INPUT_DIR = "../../../../data-kp/FIP/Analysis/2024/WW036/debayered"
-PLOTS_OUTPUT_DIR = "../../../../data-kp/FIP/Analysis/2023/WW034/volume_prediction/2024"
+PLOTS_INPUT_DIR = "/data-kp/FIP/Analysis/2024/WW036/debayered"
+PLOTS_OUTPUT_DIR = "/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2024"
+#PLOTS_INPUT_DIR = "/data-kp/FIP/Analysis/2023/WW034/debayered"
+#PLOTS_OUTPUT_DIR = "/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2023"
+
 FIP_CALIBRATE_EXECUTABLE = "fip-calibrate"  # Make sure it's in PATH or use full path
 OPENMVG_PATH = "/home/zumstego/volume_prediction_fip/tools/openMVG/build/Linux-x86_64-RELEASE"
 POSES_FILE_NAME = "poses_scaled.json"

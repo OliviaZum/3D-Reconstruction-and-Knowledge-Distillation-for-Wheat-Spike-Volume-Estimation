@@ -339,8 +339,8 @@ def main():
     print(output_directory)
 
     #plot final BB, total and in square --> take a lot of space!! (50 MB)
-    #volumes_in_square.plot_BB_cam7(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
-    #volumes_in_square.plot_BB_cam7_2colors(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
+    volumes_in_square.plot_BB_cam7(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
+    volumes_in_square.plot_BB_cam7_2colors(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
 
     # create a subfolder so save spikes
     subfolder = output_directory / "spikes"

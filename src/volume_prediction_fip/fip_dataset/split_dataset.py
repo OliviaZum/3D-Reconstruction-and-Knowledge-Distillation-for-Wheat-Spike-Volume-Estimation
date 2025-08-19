@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import List, Tuple, Dict
 
 def get_plant_constant_columns():
-    return ["plant_id", "volume", "labeled"]
+    return ["plant_id", "genotype_id", "volume", "labeled"]
 
 def remove_images(row: pd.Series, mask):
     for col in row.index.tolist():
@@ -235,6 +235,150 @@ def split_(
 
     return train_mapping, val_mapping, test_mapping
 
+def split_genotype_(
+        plant_mapping : pd.DataFrame,
+        rel_test_set_size : float,
+        rel_val_set_size : float,
+        random_generator : np.random.Generator,
+        min_view_train: int = 4,
+        min_view_test: int = 6,
+        verbose : bool = False,
+        manual_geno_key : Dict[str, str] = {}
+        ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Function to split the `plant_mapping` in training, validation and test mapping
+    
+    The validation & test only contain plants with at least one
+    non artificial image (unless all images are artificial).
+    Artificial images are deleted from the test and validation mapping.
+
+    Args:
+        plant_mapping (pd.DataFrame): plant_id -> volume, plant_id -> images mapping
+        rel_test_set_size (float, optional): Relative (to number of plants) test set size. Defaults to 0.2.
+        rel_val_set_size (float, optional): Relative (to number of plants) validation set size. Defaults to 0.1.
+        verbose (bool, optional): Print split sizes. Defaults to False.
+
+    Returns:
+        Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: train_mapping, validation_mapping, test_mapping
+
+    Warnings:
+        Warns if the plant mapping contains less than 50 plants with real world images.
+        
+    Examples:
+        >>> plant_mapping
+                volume               images artificial_mask
+        2_6_1   5000.0  [2_6_1_0.jpg, arti]   [False, True]
+        2_6_2   5000.0  [2_6_1_0.jpg, arti]   [False, True]
+        2_6_3   5000.0  [2_6_1_0.jpg, arti]   [False, True]
+        2_6_4   5000.0  [2_6_1_0.jpg, arti]   [False, True]
+        2_6_5   5000.0  [2_6_1_0.jpg, arti]   [False, True]
+        2_6_6   5000.0  [2_6_1_0.jpg, arti]   [False, True]
+        2_6_7   5000.0  [2_6_1_0.jpg, arti]   [False, True]
+        2_6_8   5000.0  [2_6_1_0.jpg, arti]   [False, True]
+        2_6_9   5000.0  [2_6_1_0.jpg, arti]   [False, True]
+        2_6_10  5000.0  [2_6_1_0.jpg, arti]   [False, True]
+        >>> train, val, test = split_(plant_mapping=df_in,
+        ...                           rel_test_set_size=0.2,
+        ...                           rel_val_set_size=0.1,
+        ...                           random_generator=np.random.default_rng(0))
+        >>> val
+               volume         images artificial_mask
+        2_6_1  5000.0  [2_6_1_0.jpg]         [False]
+    """
+
+    #add genotype id to the mapping dataframe
+
+    n_plants = plant_mapping.shape[0]
+    plant_mapping['genotype_id'] = plant_mapping.index.to_series().astype(str).str.extract(r'^(\d+_\d+)')
+
+    n_real_images = plant_mapping['artificial_mask'].apply(lambda x : len(x) - np.sum(x)).to_numpy()
+    n_all_arti = np.sum(n_real_images == 0)
+
+    mask_usable_test = n_real_images >= min_view_test
+    mask_usable_train = n_real_images >= min_view_train
+
+    #plant_mapping['genotype_id'] = plant_mapping.index.to_series().str.extract(r'^(\d+_\d+)')
+
+    genotype_plant_map : Dict[str, List[int]] = {}
+    for i in range(n_plants):
+        genotype_id = plant_mapping.iloc[i]['genotype_id']
+        if genotype_id in manual_geno_key:
+            genotype_id = manual_geno_key[genotype_id]
+
+        if genotype_id in genotype_plant_map:
+            genotype_plant_map[genotype_id].append(i)
+        else:
+            genotype_plant_map[genotype_id] = [i]
+        
+    genotype_ids = np.array(list(genotype_plant_map.keys()))
+
+    n_genos = genotype_ids.shape[0]
+    shuffled_idx = np.arange(n_genos)
+    random_generator.shuffle(shuffled_idx)
+
+    # Get the split indices on all genotypes
+    test_size = int(rel_test_set_size * n_genos)
+    val_size = int(rel_val_set_size * n_genos)
+    test_idx , val_idx, train_idx = np.split(shuffled_idx, [test_size, test_size + val_size])
+
+    train_plant_ids = []
+    val_plant_ids = []
+    test_plant_ids = []
+
+    if n_all_arti == n_plants:
+        print("artificial plants only")
+
+        for geno_id in genotype_ids[train_idx]:
+            plant_ids = genotype_plant_map[geno_id]
+            train_plant_ids += plant_ids
+
+        for geno_id in genotype_ids[val_idx]:
+            plant_ids = genotype_plant_map[geno_id]
+            val_plant_ids += plant_ids
+            
+        for geno_id in genotype_ids[test_idx]:
+            plant_ids = genotype_plant_map[geno_id]
+            test_plant_ids += plant_ids
+        
+    else: 
+        print("Real images")
+
+
+        for geno_id in genotype_ids[train_idx]:
+            plant_ids = genotype_plant_map[geno_id]
+            train_plant_ids += [i for i in plant_ids if mask_usable_train[i]]
+
+        for geno_id in genotype_ids[val_idx]:
+            plant_ids = genotype_plant_map[geno_id]
+            val_plant_ids += [i for i in plant_ids if mask_usable_test[i]]
+            
+        for geno_id in genotype_ids[test_idx]:
+            plant_ids = genotype_plant_map[geno_id]
+            test_plant_ids += [i for i in plant_ids if mask_usable_test[i]] 
+
+
+    train_mapping = plant_mapping.iloc[train_plant_ids]
+    test_mapping = plant_mapping.iloc[test_plant_ids]
+    val_mapping = plant_mapping.iloc[val_plant_ids]
+
+    print(val_mapping)
+
+    assert np.intersect1d(train_mapping.index, val_mapping.index).shape[0] == 0
+    assert np.intersect1d(train_mapping.index, test_mapping.index).shape[0] == 0
+    assert np.intersect1d(val_mapping.index, test_mapping.index).shape[0] == 0
+    
+    if not (n_all_arti == n_plants): # not all plants exclusively artificial
+        val_mapping = val_mapping.apply(remove_artificial, axis=1)
+        test_mapping = test_mapping.apply(remove_artificial, axis=1)
+
+    if verbose:
+        print(f"Plants in mapping: {n_plants}.")
+        print(f"Total train set size {train_mapping.shape[0]}")
+        print(f"Total validation set size {val_mapping.shape[0]}")
+        print(f"Total test set size {test_mapping.shape[0]}")
+
+    return train_mapping, val_mapping, test_mapping
+
 def compute_and_store_split(
         df_mapping : pd.DataFrame, 
         mapping_plants_path : Path,
@@ -244,8 +388,8 @@ def compute_and_store_split(
         mapping_plants_val_path: Path,
         value_column : str,
         random_generator : np.random.Generator,
-        test_set_size : int = 300,
-        val_set_size : int = 150,
+        rel_test_set_size : int = 300,
+        rel_val_set_size : int = 150,
         min_view_train: int = 3,
         min_view_test: int = 6,
         verbose : bool = False,
@@ -267,12 +411,30 @@ def compute_and_store_split(
     
     plant_mapping = compute_plant_mapping_(df_mapping=df_mapping)
 
-    train_mapping, val_mapping, test_mapping = split_(plant_mapping=plant_mapping,
-                                                      test_set_size=test_set_size,
-                                                      val_set_size=val_set_size,
+
+    #Design 2023
+    design_2023 = pd.read_csv("Design_2023.csv", encoding="ISO-8859-1")
+    design_2023['genotype_id'] = design_2023['range_lot'].astype(str) + "_" + design_2023['row_lot'].astype(str)
+    design_2023 = design_2023[['genotype_id', 'genotype_name']]
+
+    #Design 2024
+    design_2024 = pd.read_csv("Design_2024.csv", encoding="ISO-8859-1")
+    design_2024['genotype_id'] = design_2024['range_lot'].astype(str) + "_" + design_2024['row_lot'].astype(str)
+    design_2024 = design_2024[['genotype_id', 'genotype_name']]
+  
+    #merge them
+    design_2023_2024 = pd.concat([design_2023, design_2024], ignore_index=True)
+    design_2023_2024 = design_2023_2024.drop_duplicates(subset=['genotype_id', 'genotype_name'], keep='last')
+    
+    manual_geno_map = dict(zip(design_2023_2024['genotype_id'].astype(str), design_2023_2024['genotype_name'].astype(str)))
+
+    train_mapping, val_mapping, test_mapping = split_genotype_(plant_mapping=plant_mapping,
+                                                      rel_test_set_size=rel_test_set_size,
+                                                      rel_val_set_size=rel_val_set_size,
                                                       min_view_train=min_view_train,
                                                       min_view_test=min_view_test,
                                                       random_generator=random_generator,
+                                                      manual_geno_key=manual_geno_map,
                                                       verbose=verbose)
 
     mapping_train_path.parent.mkdir(parents=False, exist_ok=True)

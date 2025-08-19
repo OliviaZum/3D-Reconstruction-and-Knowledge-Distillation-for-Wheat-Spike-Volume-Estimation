@@ -146,6 +146,8 @@ class PlyDataset(Dataset):
         self.plant_mapping = self.plant_mapping.reset_index()
         self.voxelize = voxelize
 
+        print(ply_folder)
+
         ply_files = {p.stem: p for p in ply_folder.rglob("*.ply")}
         self.plant_mapping["ply_file"] = self.plant_mapping["plant_id"].map(ply_files)
         if self.plant_mapping["ply_file"].isna().any():

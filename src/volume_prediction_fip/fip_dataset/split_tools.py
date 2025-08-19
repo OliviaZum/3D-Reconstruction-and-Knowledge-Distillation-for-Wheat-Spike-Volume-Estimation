@@ -22,7 +22,7 @@ class VolumeMapping:
         self.save_mapping_all_val = mapping_path / "mapping_all_val.json"
 
     def create_split(self, mapping_file: str | Path, random_split_generator : np.random.Generator, min_sequence_length_train: int,
-                     min_sequence_length_test, test_set_size=250, val_set_size=150):
+                     min_sequence_length_test, rel_test_set_size=0.2, rel_val_set_size=0.1):
         df_mapping = pd.read_csv(mapping_file)
         split_dataset.compute_and_store_split(
             df_mapping=df_mapping,
@@ -33,8 +33,8 @@ class VolumeMapping:
             mapping_plants_val_path=self.save_mapping_all_val,
             value_column="volume",
             random_generator=random_split_generator,
-            test_set_size=test_set_size,
-            val_set_size=val_set_size,
+            rel_test_set_size=rel_test_set_size,
+            rel_val_set_size=rel_val_set_size,
             min_view_train=min_sequence_length_train,
             min_view_test=min_sequence_length_test,
             verbose=True,
@@ -87,13 +87,17 @@ class VolumeMapping:
 if __name__ == "__main__":
     # Defines a split. If this split does not yet exist and create_split is called, defines where to store 
     # the split. If it exists, the split defined here can be adapted for a new dataset using adapt_new_dataset.
-    v = VolumeMapping(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
+    #v = VolumeMapping(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
+    v = VolumeMapping(r"unlabeled-5000-depth")
+
 
     # Creates a new split based on the vol_mapping file of the dataset
     #v.create_split(r"F:\Boxes-ds\artifical\bestpose_noshift_12\vol_mapping.csv", np.random.default_rng(14), 6, 6)
+    v.create_split(r"unlabeled-5000-depth/vol_mapping.csv", np.random.default_rng(14), min_sequence_length_train=6, min_sequence_length_test=6, rel_test_set_size=0.2, rel_val_set_size=0)
+
 
     # Adapts an existing split to a new dataset. That is new images/plants are taken to train from the new dataset (if extend_train is true),
     # but test and val are kept with only the plants that where there in the old dataset. 
-    v.adapt_new_dataset(r"F:\Boxes-ds\artifical\bestpose_noshift_12\split_without2024_noextend_6img",
-                        r"F:\Boxes-ds\artifical\bestpose_noshift_12\vol_mapping_6_img.csv",
-                        6, 6, remove_artifical=False, extend_train=True)
+    #v.adapt_new_dataset(r"F:\Boxes-ds\artifical\bestpose_noshift_12\split_without2024_noextend_6img",
+                        #r"F:\Boxes-ds\artifical\bestpose_noshift_12\vol_mapping_6_img.csv",
+                        #6, 6, remove_artifical=False, extend_train=True)
