@@ -3,6 +3,9 @@ Contains mostly methods to quickly get certain types of dataset instances.
 If running experiments, file paths have to be adapted to point to the actual dataset.
 """
 
+#use: export CUBLAS_WORKSPACE_CONFIG=:4096:8
+
+
 from typing import Literal
 from pathlib import Path
 import torch
@@ -109,15 +112,15 @@ def get_default_image_dataset():
     return _get_image_dataset(split_folder, base_folder, cache_folder_image)
 
 def get_default_image_dataset_wo_distance():
-    split_folder = Path(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
-    base_folder = Path(r"F:\Boxes-ds\segmented_distance_depth")
+    split_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth/split_without2024")
+    base_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth")
     cache_folder = Path(helpers.get_exp_path() / "nodistancenorm_cache")
 
     return _get_image_dataset(split_folder, base_folder, cache_folder, enable_distance=False)
 
 def get_default_image_dataset_wo_distance_and_seg(disable_augmentation = False):
-    split_folder = Path(r"F:\Boxes-ds\spike_dataset_manual_20_pad\split_without2024")
-    base_folder = Path(r"F:\Boxes-ds\spike_dataset_manual_20_pad")
+    split_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/spike_dataset_manual_20_pad/split_without2024")
+    base_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/spike_dataset_manual_20_pad")
     if disable_augmentation:
         cache_folder = Path(helpers.get_exp_path() / "nodistancenosegnoaug_cache")
         ndupli = 1

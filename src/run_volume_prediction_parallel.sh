@@ -1,10 +1,10 @@
 #!/bin/bash
 export PYTHONPATH=$(pwd)
 
-INPUT_PARENT="/data-kp/FIP/Analysis/2024/WW036/debayered"
-OUTPUT_PARENT="/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2024"
-#INPUT_PARENT="../../../../data-kp/FIP/Analysis/2023/WW034/debayered"
-#OUTPUT_PARENT="../../../../data-kp/FIP/Analysis/2023/WW034/volume_prediction/2023"
+#INPUT_PARENT="/data-kp/FIP/Analysis/2024/WW036/debayered"
+OUTPUT_PARENT="/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2023"
+INPUT_PARENT="/data-kp/FIP/Analysis/2023/WW034/debayered"
+#OUTPUT_PARENT="/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2023"
 #python3 -c "import os; print('Current working directory:', os.getcwd())"
 
 
@@ -31,9 +31,9 @@ process_plot() {
     DATE_STR=$(echo "$PLOT_NAME" | grep -oE '[0-9]{8}_[0-9]{6}' | cut -d_ -f1)
 
     # Skip if date is before 2023-05-15 or 2024-05-15
-    if [[ "$DATE_STR" < "20240515" ]]; then
+    if [[ "$DATE_STR" < "20230515" ]]; then
         #echo "$PLOT_NAME,skipped,0,older_than_threshold" >> "$SUMMARY_FILE"
-        echo "Skipping $PLOT_NAME (date $DATE_STR is before 2024-05-15)"
+        echo "Skipping $PLOT_NAME (date $DATE_STR is before 2023-05-15)"
         return
     fi
 

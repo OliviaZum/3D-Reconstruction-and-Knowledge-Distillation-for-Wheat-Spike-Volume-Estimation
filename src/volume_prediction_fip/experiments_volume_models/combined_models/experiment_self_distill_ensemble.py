@@ -68,6 +68,10 @@ def stats(vol_pred, vol_real, weights = None, show_plot = False):
     A = np.vstack([vol_real, np.ones(len(vol_real))]).T
     linregcoeff, _, _, _ = np.linalg.lstsq(A, vol_pred, rcond=None)
     print(f"Steepness: {linregcoeff[0]}")
+    vp = datasets.vol_unorm(vol_pred)
+    vr = datasets.vol_unorm(vol_real)
+    print(f"Val MAPE: {(torch.abs((vr - vp) / (vr + 1e-8))).mean().item() * 100}")
+
     #rate = -(- mae + corr * (50 / 0.03) - abs(1 - linregcoeff[0]) * (50 / 0.1))
     rate = -(corr * (50 / 0.03) - abs(1 - linregcoeff[0]) * (50 / 0.1))
     print(f"Rate: {rate}")

@@ -1,0 +1,120 @@
+{
+   "plot_UID": "FPWW0340846_FIP2",
+   "campaign_name": "2023/WW034/FIP2/2023_06_08_09_52_Lot6/",
+   "position": {
+      "row": 122.0,
+      "t_sec": 1641695840.0,
+      "t_nsec": 846394062.0,
+      "imu_roll_rad": -0.0022985982413966,
+      "imu_tilt_rad": 0.0030172971153269,
+      "imu_pan_rad": 1.2589705326320595,
+      "s1_t_ms": 1641695840.211238,
+      "s1_gnssfix": 1.0,
+      "head_valid": 0.0,
+      "s1_lon_deg": 8.6828714,
+      "s1_lat_deg": 47.451008599999994,
+      "s1_hgt_mm": 608662.0,
+      "s1_hgt_asl_mm": 561299.0,
+      "s1_acc_hor_mm": 14.0,
+      "s1_acc_ver_mm": 18.0,
+      "s1_vel_n_mm_s": -18.0,
+      "s1_vel_e_mm_s": -3.0,
+      "s1_vel_d_mm_s": 34.0,
+      "s1_pdop": 123.0,
+      "s1_fixtype": 3.0,
+      "s1_diff_corr_app": 1.0,
+      "s2_t_ms": 1641695840.2528105,
+      "s2_relpos_n_mm": 1630.0,
+      "s2_relpos_e_mm": 640.0,
+      "s2_relpos_d_mm": 20.0,
+      "s2_rel_dist_mm": 1760.0,
+      "s2_head_deg": 21.59917,
+      "s2_acc_n_mm": 10.0,
+      "s2_acc_e_mm": 10.0,
+      "s2_acc_d_mm": 13.9,
+      "s2_acc_len_mm": 10.0,
+      "s2_acc_head_deg": 0.32487000000000005,
+      "s2_gnssfix": 1.0,
+      "s2_diff_corr_app": 1.0
+   },
+   "timestamp": "2023-06-08 08:54:23.786425",
+   "ground_distance": 3463.0,
+   "plant_distance": 2942.0,
+   "radar_raw_distances": [
+      {
+         "time": 1686210861.5,
+         "ground_distance": 3479,
+         "ground_confidence": 94,
+         "plant_distance": 2890,
+         "plant_confidence": 100
+      },
+      {
+         "time": 1686210861.7,
+         "ground_distance": 3474,
+         "ground_confidence": 93,
+         "plant_distance": 2884,
+         "plant_confidence": 100
+      },
+      {
+         "time": 1686210861.9,
+         "ground_distance": 3470,
+         "ground_confidence": 93,
+         "plant_distance": 2890,
+         "plant_confidence": 80
+      },
+      {
+         "time": 1686210862.1,
+         "ground_distance": 3475,
+         "ground_confidence": 94,
+         "plant_distance": 2988,
+         "plant_confidence": 80
+      },
+      {
+         "time": 1686210862.3,
+         "ground_distance": 3467,
+         "ground_confidence": 96,
+         "plant_distance": 2985,
+         "plant_confidence": 80
+      },
+      {
+         "time": 1686210862.5,
+         "ground_distance": 3449,
+         "ground_confidence": 97,
+         "plant_distance": 2899,
+         "plant_confidence": 100
+      },
+      {
+         "time": 1686210862.7,
+         "ground_distance": 3448,
+         "ground_confidence": 97,
+         "plant_distance": 2877,
+         "plant_confidence": 78
+      },
+      {
+         "time": 1686210862.9,
+         "ground_distance": 3446,
+         "ground_confidence": 97,
+         "plant_distance": 3007,
+         "plant_confidence": 80
+      },
+      {
+         "time": 1686210863.1,
+         "ground_distance": 3452,
+         "ground_confidence": 97,
+         "plant_distance": 2991,
+         "plant_confidence": 77
+      },
+      {
+         "time": 1686210863.3,
+         "ground_distance": 3459,
+         "ground_confidence": 97,
+         "plant_distance": 2996,
+         "plant_confidence": 80
+      }
+   ],
+   "FIP_metadata": {
+      "posy": 116970.0781,
+      "posx": 53688.8789,
+      "posz": 8811.0889
+   }
+}

@@ -53,6 +53,10 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False):
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
         linregcoeff, _, _, _ = np.linalg.lstsq(A, vol_pred, rcond=None)
         print(f"Steepness: {linregcoeff[0]}")
+        vp = datasets.vol_unorm(vol_pred)
+        vr = datasets.vol_unorm(vol_real)
+        print(f"Val MAPE: {(torch.abs((vr - vp) / (vr + 1e-8))).mean().item() * 100}")
+
         rate = -(- mae + corr * (50 / 0.03) - abs(1 - linregcoeff[0]) * (50 / 0.1))
         print(f"Rate: {rate}")
         if show_plot:
@@ -73,7 +77,7 @@ if __name__ == "__main__":
 
     model_name = "3dglobimgensemble.pth"
 
-    evaluation = False
+    evaluation = True
     if evaluation == True:
         model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
@@ -83,7 +87,7 @@ if __name__ == "__main__":
 
     pretrained_point = torch.load(helpers.get_exp_path() / f"rigidinv_indirect2.pth", weights_only=False)
     pretrained_img = torch.load(helpers.get_exp_path() / f"regulatedtransformer-direct.pth", weights_only=False)
-    #pretrained_img = torch.load(helpers.get_exp_path() / f"self-distill-regulated_transformer.pth", weights_only=False)
+    #pretrained_img = torch.load(helpers.get_exp_path() / f"self-distill-regulated_transformer.pth", weights_only=False)[]
 
     model.img_net.load_state_dict(pretrained_img.state_dict(), strict=False)
     model.point_net.load_state_dict(pretrained_point.state_dict(), strict=False)

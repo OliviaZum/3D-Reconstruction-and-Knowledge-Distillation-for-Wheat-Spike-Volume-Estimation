@@ -80,6 +80,11 @@ def evaluate(model, dataloader: DataLoader, show_plot = False, should_print=True
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
         linregcoeff, _, _, _ = np.linalg.lstsq(A, vol_pred, rcond=None)
         l["Steepness"] = linregcoeff[0]
+        # Compute unnormalized volumes
+        vp = datasets.vol_unorm(vol_pred)
+        vr = datasets.vol_unorm(vol_real)
+        l["MAPE"] = (torch.abs((vr - vp) / (vr + 1e-8))).mean().item() * 100
+
         if should_print:
              print(l)
         if show_plot:

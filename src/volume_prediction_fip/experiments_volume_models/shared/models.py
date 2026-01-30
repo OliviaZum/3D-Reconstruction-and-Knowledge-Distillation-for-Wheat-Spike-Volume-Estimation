@@ -194,6 +194,8 @@ class RigidInvariantPointNet(nn.Module):
         return latent
     
     def forward(self, x: torch.Tensor, mask: torch.Tensor):
+
+
         x = x.permute((0, 2, 1))
         features = self.l1(x)
         features = self.compute_mean(features, mask).squeeze()
@@ -363,21 +365,25 @@ class RegulatedTransformer(nn.Module):
             self.last_pred = fmlp3()
             self.last_conf = fmlp3()
 
+        self.kd_proj = nn.Linear(self.subdim * 2, self.subdim * 2)
+
     def forward(self, x: torch.Tensor, mask: torch.Tensor):
-        pred_sdim: torch.Tensor = self.subdim_pred(x[~mask])
+
+        pred_sdim: torch.Tensor = self.subdim_pred(x[~mask]) #
         conf_sdim = self.subdim_conf(x[~mask])
 
-        direct_pred = self.head_pred(pred_sdim)
-        direct_conf = self.head_conf(conf_sdim)
+        direct_pred = self.head_pred(pred_sdim) #mean prediction
+        direct_conf = self.head_conf(conf_sdim) #log variance prediction, (n_valid, 1), squeeze makes (n_valid)
 
+        #mask: 2D? (batch, n_images), true if empty
         direct_pred_unflat = unflat((x.shape[0], x.shape[1]), mask, direct_pred.squeeze())
-        direct_conf_unflat = unflat((x.shape[0], x.shape[1]), mask, direct_conf.squeeze())
+        direct_conf_unflat = unflat((x.shape[0], x.shape[1]), mask, direct_conf.squeeze()) #target shape: (batch, n_images), 2D tensor
         pred_sdim_unflat = unflat((x.shape[0], x.shape[1], self.subdim), mask, pred_sdim)
-        conf_sdim_unflat = unflat((x.shape[0], x.shape[1], self.subdim), mask, conf_sdim)
+        conf_sdim_unflat = unflat((x.shape[0], x.shape[1], self.subdim), mask, conf_sdim)# (n_valid, 192) --> (batch, n_images, 192)
         conf_sdim_unflat = unflat((x.shape[0], x.shape[1], self.subdim), mask, conf_sdim)
 
         pred_conf_cat = torch.cat((pred_sdim_unflat, conf_sdim_unflat), dim=2)
-        transformer_input = torch.cat((pred_conf_cat, self.volume_token.repeat(x.shape[0], 1, 1)), dim=1)
+        transformer_input = torch.cat((pred_conf_cat, self.volume_token.repeat(x.shape[0], 1, 1)), dim=1) #add volume token (batch, 1, 284)
         mask_n = torch.zeros((mask.shape[0], mask.shape[1] + 1), dtype=torch.bool, device=mask.device)
         mask_n[:, -1] = 0
         mask_n[:, 0:-1] = mask
@@ -442,6 +448,40 @@ class Image3dEnsemble(nn.Module):
         pointfeat = self.point_net(points, point_mask)
 
         combined = torch.concat((imgfeat, pointfeat), dim=-1)
+        
+        pred = self.final(combined)
+        return pred
+    
+class Image3dEnsemble_distill(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.img_net = RegulatedTransformer(output="features")
+        self.point_net = RigidInvariantPointNet(output="latent")
+
+        self.prec_img = nn.Sequential(
+            nn.Linear(384, 384),
+            nn.GELU(),
+            nn.Linear(384, 128)
+        )
+
+
+        self.final = nn.Sequential(
+            nn.Linear(256, 256),
+            nn.Dropout(0.1),
+            nn.GELU(),
+            nn.Linear(256, 1)
+        )
+
+    def forward(self, images, images_mask, points, point_mask, return_features=False):
+        imgfeat = self.img_net(images, images_mask, output="features")
+        imgfeat = self.prec_img(imgfeat)
+        pointfeat = self.point_net(points, point_mask, output="features")
+
+        combined = torch.concat((imgfeat, pointfeat), dim=-1)
+
+        if return_features:
+            return combined
+        
         pred = self.final(combined)
         return pred
     

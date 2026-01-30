@@ -101,22 +101,23 @@ def distance_sample(points: torch.Tensor, num_samples = 200, generator = None) -
     return distances
 
 def batched_torch_hist(x: torch.Tensor, weigths, start: float, end: float, bins: int):
-    bins = bins - 1
+    bins = bins - 1 # 9 bins
     bin_width = (end - start) / bins
-    end = end - start
+    end = end - start # 60
     x = x - start
-    x = (x / bin_width).floor().to(torch.int32)
+    x = (x / bin_width).floor().to(torch.int32) #nxn, bins index of all points j to point i 
     binlist = torch.arange(bins, device=x.device)
-    mask_eq = x.unsqueeze(-1) == binlist
-    mask_gt = (x >= bins).unsqueeze(-1)
-    mask_eq = torch.concat((mask_eq, mask_gt), dim=-1)
-    mask_eq = mask_eq * weigths.reshape((weigths.shape[0], 1, weigths.shape[1], 1))
-    counts = mask_eq.sum(dim=-2)
+    mask_eq = x.unsqueeze(-1) == binlist #add another dimension, one-hot endoding, true for bin index, nxnxbins
+    mask_gt = (x >= bins).unsqueeze(-1) #distances outside of 9 bins, nxnx1 
+    mask_eq = torch.concat((mask_eq, mask_gt), dim=-1) #merge bools of first 9 bins with bool of overflow bin, across last dimension
+    mask_eq = torch.as_tensor(mask_eq, device=weigths.device)
+    mask_eq = mask_eq * weigths.reshape((weigths.shape[0], 1, weigths.shape[1], 1)) #batch dim, 1, n_points, 1, broadcast over bins, zero out all columns j that were padded
+    counts = mask_eq.sum(dim=-2) #how many neighbours fall into a bin of point i
     return counts
 
 def to_rigid_invariant_representation(x: torch.Tensor, weights: torch.Tensor, num_samples = None, bins = 10, generator = None):
     with torch.no_grad():
-        w = distance_sample(x, num_samples, generator)
+        w = distance_sample(x, num_samples, generator) #nxn, distances
         u = batched_torch_hist(w, weights, 0, 60, bins).to(x.dtype)
         ns = u.sum(dim=2, keepdim=True)
         ns[ns == 0] = 1

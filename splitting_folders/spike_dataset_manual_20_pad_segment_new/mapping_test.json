@@ -1,0 +1,6175 @@
+{
+    "6_18_1": {
+        "volume": 3961.3701804176,
+        "images": [
+            "6_18_1_3_a.jpg",
+            "6_18_1_5_a.jpg",
+            "6_18_1_6_a.jpg",
+            "6_18_1_7_a.jpg",
+            "6_18_1_8_a.jpg",
+            "6_18_1_10_a.jpg",
+            "6_18_1_11_a.jpg",
+            "6_18_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_18_2": {
+        "volume": 3471.2202506888,
+        "images": [
+            "6_18_2_1_a.jpg",
+            "6_18_2_3_a.jpg",
+            "6_18_2_5_a.jpg",
+            "6_18_2_7_a.jpg",
+            "6_18_2_9_a.jpg",
+            "6_18_2_10_a.jpg",
+            "6_18_2_11_a.jpg",
+            "6_18_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_18_4": {
+        "volume": 5314.1171447051,
+        "images": [
+            "6_18_4_1_a.jpg",
+            "6_18_4_2_a.jpg",
+            "6_18_4_3_a.jpg",
+            "6_18_4_4_a.jpg",
+            "6_18_4_5_a.jpg",
+            "6_18_4_6_a.jpg",
+            "6_18_4_7_a.jpg",
+            "6_18_4_8_a.jpg",
+            "6_18_4_9_a.jpg",
+            "6_18_4_10_a.jpg",
+            "6_18_4_11_a.jpg",
+            "6_18_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_18_5": {
+        "volume": 5037.8667450635,
+        "images": [
+            "6_18_5_1_a.jpg",
+            "6_18_5_2_a.jpg",
+            "6_18_5_3_a.jpg",
+            "6_18_5_4_a.jpg",
+            "6_18_5_5_a.jpg",
+            "6_18_5_6_a.jpg",
+            "6_18_5_7_a.jpg",
+            "6_18_5_8_a.jpg",
+            "6_18_5_9_a.jpg",
+            "6_18_5_10_a.jpg",
+            "6_18_5_11_a.jpg",
+            "6_18_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_16_1": {
+        "volume": 4016.316758688,
+        "images": [
+            "10_16_1_1_a.jpg",
+            "10_16_1_3_a.jpg",
+            "10_16_1_4_a.jpg",
+            "10_16_1_5_a.jpg",
+            "10_16_1_6_a.jpg",
+            "10_16_1_7_a.jpg",
+            "10_16_1_8_a.jpg",
+            "10_16_1_9_a.jpg",
+            "10_16_1_10_a.jpg",
+            "10_16_1_11_a.jpg",
+            "10_16_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_16_2": {
+        "volume": 2911.0156616501,
+        "images": [
+            "10_16_2_1_a.jpg",
+            "10_16_2_2_a.jpg",
+            "10_16_2_3_a.jpg",
+            "10_16_2_4_a.jpg",
+            "10_16_2_5_a.jpg",
+            "10_16_2_6_a.jpg",
+            "10_16_2_7_a.jpg",
+            "10_16_2_8_a.jpg",
+            "10_16_2_9_a.jpg",
+            "10_16_2_10_a.jpg",
+            "10_16_2_11_a.jpg",
+            "10_16_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_16_3": {
+        "volume": 3591.0737094526,
+        "images": [
+            "10_16_3_1_a.jpg",
+            "10_16_3_2_a.jpg",
+            "10_16_3_3_a.jpg",
+            "10_16_3_4_a.jpg",
+            "10_16_3_5_a.jpg",
+            "10_16_3_6_a.jpg",
+            "10_16_3_7_a.jpg",
+            "10_16_3_8_a.jpg",
+            "10_16_3_9_a.jpg",
+            "10_16_3_10_a.jpg",
+            "10_16_3_11_a.jpg",
+            "10_16_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_16_5": {
+        "volume": 5864.5819449426,
+        "images": [
+            "10_16_5_1_a.jpg",
+            "10_16_5_2_a.jpg",
+            "10_16_5_3_a.jpg",
+            "10_16_5_4_a.jpg",
+            "10_16_5_5_a.jpg",
+            "10_16_5_6_a.jpg",
+            "10_16_5_7_a.jpg",
+            "10_16_5_8_a.jpg",
+            "10_16_5_9_a.jpg",
+            "10_16_5_10_a.jpg",
+            "10_16_5_11_a.jpg",
+            "10_16_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_9_1": {
+        "volume": 4397.709287452,
+        "images": [
+            "8_9_1_1_a.jpg",
+            "8_9_1_2_a.jpg",
+            "8_9_1_3_a.jpg",
+            "8_9_1_5_a.jpg",
+            "8_9_1_6_a.jpg",
+            "8_9_1_7_a.jpg",
+            "8_9_1_8_a.jpg",
+            "8_9_1_9_a.jpg",
+            "8_9_1_10_a.jpg",
+            "8_9_1_11_a.jpg",
+            "8_9_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_9_10": {
+        "volume": 4343.4035586597,
+        "images": [
+            "8_9_10_1_a.jpg",
+            "8_9_10_2_a.jpg",
+            "8_9_10_3_a.jpg",
+            "8_9_10_4_a.jpg",
+            "8_9_10_5_a.jpg",
+            "8_9_10_6_a.jpg",
+            "8_9_10_7_a.jpg",
+            "8_9_10_8_a.jpg",
+            "8_9_10_9_a.jpg",
+            "8_9_10_10_a.jpg",
+            "8_9_10_11_a.jpg",
+            "8_9_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_9_2": {
+        "volume": 3909.4287247951,
+        "images": [
+            "8_9_2_1_a.jpg",
+            "8_9_2_2_a.jpg",
+            "8_9_2_3_a.jpg",
+            "8_9_2_5_a.jpg",
+            "8_9_2_6_a.jpg",
+            "8_9_2_7_a.jpg",
+            "8_9_2_8_a.jpg",
+            "8_9_2_9_a.jpg",
+            "8_9_2_10_a.jpg",
+            "8_9_2_11_a.jpg",
+            "8_9_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_9_3": {
+        "volume": 6448.2103032164,
+        "images": [
+            "8_9_3_1_a.jpg",
+            "8_9_3_2_a.jpg",
+            "8_9_3_3_a.jpg",
+            "8_9_3_4_a.jpg",
+            "8_9_3_5_a.jpg",
+            "8_9_3_6_a.jpg",
+            "8_9_3_7_a.jpg",
+            "8_9_3_8_a.jpg",
+            "8_9_3_9_a.jpg",
+            "8_9_3_10_a.jpg",
+            "8_9_3_11_a.jpg",
+            "8_9_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_9_4": {
+        "volume": 7330.0863538645,
+        "images": [
+            "8_9_4_1_a.jpg",
+            "8_9_4_2_a.jpg",
+            "8_9_4_3_a.jpg",
+            "8_9_4_4_a.jpg",
+            "8_9_4_5_a.jpg",
+            "8_9_4_6_a.jpg",
+            "8_9_4_7_a.jpg",
+            "8_9_4_8_a.jpg",
+            "8_9_4_9_a.jpg",
+            "8_9_4_10_a.jpg",
+            "8_9_4_11_a.jpg",
+            "8_9_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_9_5": {
+        "volume": 5919.6416197318,
+        "images": [
+            "8_9_5_1_a.jpg",
+            "8_9_5_2_a.jpg",
+            "8_9_5_3_a.jpg",
+            "8_9_5_5_a.jpg",
+            "8_9_5_6_a.jpg",
+            "8_9_5_7_a.jpg",
+            "8_9_5_8_a.jpg",
+            "8_9_5_9_a.jpg",
+            "8_9_5_10_a.jpg",
+            "8_9_5_11_a.jpg",
+            "8_9_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_9_6": {
+        "volume": 5581.9860205384,
+        "images": [
+            "8_9_6_1_a.jpg",
+            "8_9_6_2_a.jpg",
+            "8_9_6_3_a.jpg",
+            "8_9_6_4_a.jpg",
+            "8_9_6_5_a.jpg",
+            "8_9_6_6_a.jpg",
+            "8_9_6_7_a.jpg",
+            "8_9_6_8_a.jpg",
+            "8_9_6_9_a.jpg",
+            "8_9_6_10_a.jpg",
+            "8_9_6_11_a.jpg",
+            "8_9_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_9_7": {
+        "volume": 7938.9272568089,
+        "images": [
+            "8_9_7_1_a.jpg",
+            "8_9_7_2_a.jpg",
+            "8_9_7_3_a.jpg",
+            "8_9_7_4_a.jpg",
+            "8_9_7_5_a.jpg",
+            "8_9_7_6_a.jpg",
+            "8_9_7_7_a.jpg",
+            "8_9_7_8_a.jpg",
+            "8_9_7_9_a.jpg",
+            "8_9_7_10_a.jpg",
+            "8_9_7_11_a.jpg",
+            "8_9_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_9_8": {
+        "volume": 5085.887313713,
+        "images": [
+            "8_9_8_1_a.jpg",
+            "8_9_8_2_a.jpg",
+            "8_9_8_3_a.jpg",
+            "8_9_8_5_a.jpg",
+            "8_9_8_6_a.jpg",
+            "8_9_8_7_a.jpg",
+            "8_9_8_8_a.jpg",
+            "8_9_8_9_a.jpg",
+            "8_9_8_10_a.jpg",
+            "8_9_8_11_a.jpg",
+            "8_9_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_9_9": {
+        "volume": 6779.2306176217,
+        "images": [
+            "8_9_9_1_a.jpg",
+            "8_9_9_2_a.jpg",
+            "8_9_9_3_a.jpg",
+            "8_9_9_4_a.jpg",
+            "8_9_9_5_a.jpg",
+            "8_9_9_6_a.jpg",
+            "8_9_9_7_a.jpg",
+            "8_9_9_8_a.jpg",
+            "8_9_9_9_a.jpg",
+            "8_9_9_10_a.jpg",
+            "8_9_9_11_a.jpg",
+            "8_9_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_19_1": {
+        "volume": 5077.2008359493,
+        "images": [
+            "6_19_1_1_a.jpg",
+            "6_19_1_2_a.jpg",
+            "6_19_1_3_a.jpg",
+            "6_19_1_4_a.jpg",
+            "6_19_1_6_a.jpg",
+            "6_19_1_8_a.jpg",
+            "6_19_1_9_a.jpg",
+            "6_19_1_10_a.jpg",
+            "6_19_1_11_a.jpg",
+            "6_19_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_19_2": {
+        "volume": 4684.082888063,
+        "images": [
+            "6_19_2_1_a.jpg",
+            "6_19_2_2_a.jpg",
+            "6_19_2_3_a.jpg",
+            "6_19_2_4_a.jpg",
+            "6_19_2_5_a.jpg",
+            "6_19_2_6_a.jpg",
+            "6_19_2_7_a.jpg",
+            "6_19_2_8_a.jpg",
+            "6_19_2_9_a.jpg",
+            "6_19_2_10_a.jpg",
+            "6_19_2_11_a.jpg",
+            "6_19_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_19_3": {
+        "volume": 3823.3228379832,
+        "images": [
+            "6_19_3_1_a.jpg",
+            "6_19_3_3_a.jpg",
+            "6_19_3_4_a.jpg",
+            "6_19_3_5_a.jpg",
+            "6_19_3_6_a.jpg",
+            "6_19_3_7_a.jpg",
+            "6_19_3_8_a.jpg",
+            "6_19_3_9_a.jpg",
+            "6_19_3_10_a.jpg",
+            "6_19_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_19_4": {
+        "volume": 8566.12170497,
+        "images": [
+            "6_19_4_1_a.jpg",
+            "6_19_4_2_a.jpg",
+            "6_19_4_3_a.jpg",
+            "6_19_4_4_a.jpg",
+            "6_19_4_5_a.jpg",
+            "6_19_4_6_a.jpg",
+            "6_19_4_7_a.jpg",
+            "6_19_4_8_a.jpg",
+            "6_19_4_9_a.jpg",
+            "6_19_4_10_a.jpg",
+            "6_19_4_11_a.jpg",
+            "6_19_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_19_5": {
+        "volume": 6452.3288677243,
+        "images": [
+            "6_19_5_1_a.jpg",
+            "6_19_5_2_a.jpg",
+            "6_19_5_3_a.jpg",
+            "6_19_5_4_a.jpg",
+            "6_19_5_5_a.jpg",
+            "6_19_5_6_a.jpg",
+            "6_19_5_7_a.jpg",
+            "6_19_5_8_a.jpg",
+            "6_19_5_9_a.jpg",
+            "6_19_5_10_a.jpg",
+            "6_19_5_11_a.jpg",
+            "6_19_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_7_1": {
+        "volume": 4232.2116103233,
+        "images": [
+            "8_7_1_1_a.jpg",
+            "8_7_1_2_a.jpg",
+            "8_7_1_3_a.jpg",
+            "8_7_1_5_a.jpg",
+            "8_7_1_6_a.jpg",
+            "8_7_1_7_a.jpg",
+            "8_7_1_8_a.jpg",
+            "8_7_1_10_a.jpg",
+            "8_7_1_11_a.jpg",
+            "8_7_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_7_10": {
+        "volume": 3793.2966587256,
+        "images": [
+            "8_7_10_1_a.jpg",
+            "8_7_10_2_a.jpg",
+            "8_7_10_3_a.jpg",
+            "8_7_10_5_a.jpg",
+            "8_7_10_6_a.jpg",
+            "8_7_10_7_a.jpg",
+            "8_7_10_8_a.jpg",
+            "8_7_10_9_a.jpg",
+            "8_7_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_7_2": {
+        "volume": 4102.6430857123,
+        "images": [
+            "8_7_2_1_a.jpg",
+            "8_7_2_2_a.jpg",
+            "8_7_2_3_a.jpg",
+            "8_7_2_5_a.jpg",
+            "8_7_2_6_a.jpg",
+            "8_7_2_7_a.jpg",
+            "8_7_2_8_a.jpg",
+            "8_7_2_9_a.jpg",
+            "8_7_2_10_a.jpg",
+            "8_7_2_11_a.jpg",
+            "8_7_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_7_3": {
+        "volume": 5294.1851855562,
+        "images": [
+            "8_7_3_1_a.jpg",
+            "8_7_3_2_a.jpg",
+            "8_7_3_3_a.jpg",
+            "8_7_3_4_a.jpg",
+            "8_7_3_5_a.jpg",
+            "8_7_3_6_a.jpg",
+            "8_7_3_7_a.jpg",
+            "8_7_3_8_a.jpg",
+            "8_7_3_9_a.jpg",
+            "8_7_3_10_a.jpg",
+            "8_7_3_11_a.jpg",
+            "8_7_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_7_4": {
+        "volume": 6995.7836984345,
+        "images": [
+            "8_7_4_1_a.jpg",
+            "8_7_4_2_a.jpg",
+            "8_7_4_3_a.jpg",
+            "8_7_4_4_a.jpg",
+            "8_7_4_5_a.jpg",
+            "8_7_4_7_a.jpg",
+            "8_7_4_8_a.jpg",
+            "8_7_4_9_a.jpg",
+            "8_7_4_10_a.jpg",
+            "8_7_4_11_a.jpg",
+            "8_7_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_7_6": {
+        "volume": 4123.4653245877,
+        "images": [
+            "8_7_6_1_a.jpg",
+            "8_7_6_2_a.jpg",
+            "8_7_6_3_a.jpg",
+            "8_7_6_4_a.jpg",
+            "8_7_6_5_a.jpg",
+            "8_7_6_6_a.jpg",
+            "8_7_6_7_a.jpg",
+            "8_7_6_8_a.jpg",
+            "8_7_6_9_a.jpg",
+            "8_7_6_10_a.jpg",
+            "8_7_6_11_a.jpg",
+            "8_7_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_7_7": {
+        "volume": 5579.5771159317,
+        "images": [
+            "8_7_7_1_a.jpg",
+            "8_7_7_2_a.jpg",
+            "8_7_7_3_a.jpg",
+            "8_7_7_4_a.jpg",
+            "8_7_7_5_a.jpg",
+            "8_7_7_6_a.jpg",
+            "8_7_7_7_a.jpg",
+            "8_7_7_8_a.jpg",
+            "8_7_7_9_a.jpg",
+            "8_7_7_10_a.jpg",
+            "8_7_7_11_a.jpg",
+            "8_7_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_7_9": {
+        "volume": 4454.2170123957,
+        "images": [
+            "8_7_9_1_a.jpg",
+            "8_7_9_2_a.jpg",
+            "8_7_9_3_a.jpg",
+            "8_7_9_4_a.jpg",
+            "8_7_9_5_a.jpg",
+            "8_7_9_6_a.jpg",
+            "8_7_9_7_a.jpg",
+            "8_7_9_8_a.jpg",
+            "8_7_9_9_a.jpg",
+            "8_7_9_10_a.jpg",
+            "8_7_9_11_a.jpg",
+            "8_7_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_10_1": {
+        "volume": 4565.3993090144,
+        "images": [
+            "19_10_1_1_a.jpg",
+            "19_10_1_2_a.jpg",
+            "19_10_1_3_a.jpg",
+            "19_10_1_5_a.jpg",
+            "19_10_1_6_a.jpg",
+            "19_10_1_7_a.jpg",
+            "19_10_1_8_a.jpg",
+            "19_10_1_9_a.jpg",
+            "19_10_1_10_a.jpg",
+            "19_10_1_11_a.jpg",
+            "19_10_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_10_10": {
+        "volume": 3615.1324922441,
+        "images": [
+            "19_10_10_1_a.jpg",
+            "19_10_10_2_a.jpg",
+            "19_10_10_3_a.jpg",
+            "19_10_10_5_a.jpg",
+            "19_10_10_7_a.jpg",
+            "19_10_10_8_a.jpg",
+            "19_10_10_9_a.jpg",
+            "19_10_10_10_a.jpg",
+            "19_10_10_11_a.jpg",
+            "19_10_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_10_2": {
+        "volume": 2869.1524890895,
+        "images": [
+            "19_10_2_1_a.jpg",
+            "19_10_2_3_a.jpg",
+            "19_10_2_5_a.jpg",
+            "19_10_2_6_a.jpg",
+            "19_10_2_7_a.jpg",
+            "19_10_2_8_a.jpg",
+            "19_10_2_9_a.jpg",
+            "19_10_2_11_a.jpg",
+            "19_10_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_10_3": {
+        "volume": 5390.9675066678,
+        "images": [
+            "19_10_3_1_a.jpg",
+            "19_10_3_2_a.jpg",
+            "19_10_3_3_a.jpg",
+            "19_10_3_4_a.jpg",
+            "19_10_3_5_a.jpg",
+            "19_10_3_6_a.jpg",
+            "19_10_3_7_a.jpg",
+            "19_10_3_8_a.jpg",
+            "19_10_3_9_a.jpg",
+            "19_10_3_10_a.jpg",
+            "19_10_3_11_a.jpg",
+            "19_10_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_10_4": {
+        "volume": 4630.4181213344,
+        "images": [
+            "19_10_4_1_a.jpg",
+            "19_10_4_2_a.jpg",
+            "19_10_4_3_a.jpg",
+            "19_10_4_4_a.jpg",
+            "19_10_4_5_a.jpg",
+            "19_10_4_6_a.jpg",
+            "19_10_4_7_a.jpg",
+            "19_10_4_8_a.jpg",
+            "19_10_4_9_a.jpg",
+            "19_10_4_10_a.jpg",
+            "19_10_4_11_a.jpg",
+            "19_10_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_10_5": {
+        "volume": 5001.4599923121,
+        "images": [
+            "19_10_5_1_a.jpg",
+            "19_10_5_2_a.jpg",
+            "19_10_5_3_a.jpg",
+            "19_10_5_4_a.jpg",
+            "19_10_5_5_a.jpg",
+            "19_10_5_6_a.jpg",
+            "19_10_5_7_a.jpg",
+            "19_10_5_8_a.jpg",
+            "19_10_5_9_a.jpg",
+            "19_10_5_10_a.jpg",
+            "19_10_5_11_a.jpg",
+            "19_10_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_10_6": {
+        "volume": 5338.162878292,
+        "images": [
+            "19_10_6_1_a.jpg",
+            "19_10_6_2_a.jpg",
+            "19_10_6_3_a.jpg",
+            "19_10_6_5_a.jpg",
+            "19_10_6_6_a.jpg",
+            "19_10_6_7_a.jpg",
+            "19_10_6_8_a.jpg",
+            "19_10_6_9_a.jpg",
+            "19_10_6_10_a.jpg",
+            "19_10_6_11_a.jpg",
+            "19_10_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_10_7": {
+        "volume": 5244.4132897901,
+        "images": [
+            "19_10_7_1_a.jpg",
+            "19_10_7_2_a.jpg",
+            "19_10_7_3_a.jpg",
+            "19_10_7_5_a.jpg",
+            "19_10_7_6_a.jpg",
+            "19_10_7_7_a.jpg",
+            "19_10_7_8_a.jpg",
+            "19_10_7_9_a.jpg",
+            "19_10_7_10_a.jpg",
+            "19_10_7_11_a.jpg",
+            "19_10_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_10_8": {
+        "volume": 4073.5162757647,
+        "images": [
+            "19_10_8_1_a.jpg",
+            "19_10_8_2_a.jpg",
+            "19_10_8_3_a.jpg",
+            "19_10_8_4_a.jpg",
+            "19_10_8_5_a.jpg",
+            "19_10_8_6_a.jpg",
+            "19_10_8_7_a.jpg",
+            "19_10_8_8_a.jpg",
+            "19_10_8_9_a.jpg",
+            "19_10_8_10_a.jpg",
+            "19_10_8_11_a.jpg",
+            "19_10_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_10_9": {
+        "volume": 4340.1313407739,
+        "images": [
+            "19_10_9_1_a.jpg",
+            "19_10_9_2_a.jpg",
+            "19_10_9_3_a.jpg",
+            "19_10_9_4_a.jpg",
+            "19_10_9_5_a.jpg",
+            "19_10_9_6_a.jpg",
+            "19_10_9_7_a.jpg",
+            "19_10_9_8_a.jpg",
+            "19_10_9_9_a.jpg",
+            "19_10_9_10_a.jpg",
+            "19_10_9_11_a.jpg",
+            "19_10_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_17_1": {
+        "volume": 5544.3065596278,
+        "images": [
+            "4_17_1_1_a.jpg",
+            "4_17_1_3_a.jpg",
+            "4_17_1_5_a.jpg",
+            "4_17_1_7_a.jpg",
+            "4_17_1_8_a.jpg",
+            "4_17_1_9_a.jpg",
+            "4_17_1_10_a.jpg",
+            "4_17_1_11_a.jpg",
+            "4_17_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_17_2": {
+        "volume": 4005.2202501566,
+        "images": [
+            "4_17_2_1_a.jpg",
+            "4_17_2_2_a.jpg",
+            "4_17_2_3_a.jpg",
+            "4_17_2_4_a.jpg",
+            "4_17_2_5_a.jpg",
+            "4_17_2_7_a.jpg",
+            "4_17_2_8_a.jpg",
+            "4_17_2_9_a.jpg",
+            "4_17_2_10_a.jpg",
+            "4_17_2_11_a.jpg",
+            "4_17_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_17_3": {
+        "volume": 4316.0769312213,
+        "images": [
+            "4_17_3_1_a.jpg",
+            "4_17_3_3_a.jpg",
+            "4_17_3_4_a.jpg",
+            "4_17_3_5_a.jpg",
+            "4_17_3_6_a.jpg",
+            "4_17_3_7_a.jpg",
+            "4_17_3_8_a.jpg",
+            "4_17_3_9_a.jpg",
+            "4_17_3_10_a.jpg",
+            "4_17_3_11_a.jpg",
+            "4_17_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_17_4": {
+        "volume": 6063.4312255312,
+        "images": [
+            "4_17_4_1_a.jpg",
+            "4_17_4_2_a.jpg",
+            "4_17_4_3_a.jpg",
+            "4_17_4_4_a.jpg",
+            "4_17_4_5_a.jpg",
+            "4_17_4_6_a.jpg",
+            "4_17_4_7_a.jpg",
+            "4_17_4_8_a.jpg",
+            "4_17_4_9_a.jpg",
+            "4_17_4_10_a.jpg",
+            "4_17_4_11_a.jpg",
+            "4_17_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_17_5": {
+        "volume": 4827.7276456132,
+        "images": [
+            "4_17_5_1_a.jpg",
+            "4_17_5_2_a.jpg",
+            "4_17_5_3_a.jpg",
+            "4_17_5_4_a.jpg",
+            "4_17_5_5_a.jpg",
+            "4_17_5_6_a.jpg",
+            "4_17_5_7_a.jpg",
+            "4_17_5_8_a.jpg",
+            "4_17_5_9_a.jpg",
+            "4_17_5_10_a.jpg",
+            "4_17_5_11_a.jpg",
+            "4_17_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "9_7_1": {
+        "volume": 4145.2916301134,
+        "images": [
+            "9_7_1_1_a.jpg",
+            "9_7_1_2_a.jpg",
+            "9_7_1_3_a.jpg",
+            "9_7_1_5_a.jpg",
+            "9_7_1_7_a.jpg",
+            "9_7_1_8_a.jpg",
+            "9_7_1_9_a.jpg",
+            "9_7_1_10_a.jpg",
+            "9_7_1_11_a.jpg",
+            "9_7_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "9_7_10": {
+        "volume": 3681.1564653853,
+        "images": [
+            "9_7_10_1_a.jpg",
+            "9_7_10_2_a.jpg",
+            "9_7_10_3_a.jpg",
+            "9_7_10_5_a.jpg",
+            "9_7_10_6_a.jpg",
+            "9_7_10_7_a.jpg",
+            "9_7_10_8_a.jpg",
+            "9_7_10_10_a.jpg",
+            "9_7_10_11_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "9_7_2": {
+        "volume": 2701.3845912079,
+        "images": [
+            "9_7_2_2_a.jpg",
+            "9_7_2_5_a.jpg",
+            "9_7_2_6_a.jpg",
+            "9_7_2_8_a.jpg",
+            "9_7_2_10_a.jpg",
+            "9_7_2_11_a.jpg",
+            "9_7_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "9_7_3": {
+        "volume": 3192.5505229004,
+        "images": [
+            "9_7_3_1_a.jpg",
+            "9_7_3_2_a.jpg",
+            "9_7_3_3_a.jpg",
+            "9_7_3_4_a.jpg",
+            "9_7_3_5_a.jpg",
+            "9_7_3_6_a.jpg",
+            "9_7_3_7_a.jpg",
+            "9_7_3_8_a.jpg",
+            "9_7_3_9_a.jpg",
+            "9_7_3_10_a.jpg",
+            "9_7_3_11_a.jpg",
+            "9_7_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "9_7_4": {
+        "volume": 4515.5017792668,
+        "images": [
+            "9_7_4_1_a.jpg",
+            "9_7_4_2_a.jpg",
+            "9_7_4_3_a.jpg",
+            "9_7_4_4_a.jpg",
+            "9_7_4_5_a.jpg",
+            "9_7_4_6_a.jpg",
+            "9_7_4_7_a.jpg",
+            "9_7_4_8_a.jpg",
+            "9_7_4_9_a.jpg",
+            "9_7_4_10_a.jpg",
+            "9_7_4_11_a.jpg",
+            "9_7_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "9_7_5": {
+        "volume": 3492.866473027,
+        "images": [
+            "9_7_5_1_a.jpg",
+            "9_7_5_2_a.jpg",
+            "9_7_5_3_a.jpg",
+            "9_7_5_4_a.jpg",
+            "9_7_5_5_a.jpg",
+            "9_7_5_6_a.jpg",
+            "9_7_5_7_a.jpg",
+            "9_7_5_8_a.jpg",
+            "9_7_5_9_a.jpg",
+            "9_7_5_10_a.jpg",
+            "9_7_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "9_7_6": {
+        "volume": 3579.5420962324,
+        "images": [
+            "9_7_6_1_a.jpg",
+            "9_7_6_2_a.jpg",
+            "9_7_6_3_a.jpg",
+            "9_7_6_5_a.jpg",
+            "9_7_6_6_a.jpg",
+            "9_7_6_7_a.jpg",
+            "9_7_6_8_a.jpg",
+            "9_7_6_9_a.jpg",
+            "9_7_6_10_a.jpg",
+            "9_7_6_11_a.jpg",
+            "9_7_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "9_7_7": {
+        "volume": 5390.7395685977,
+        "images": [
+            "9_7_7_1_a.jpg",
+            "9_7_7_2_a.jpg",
+            "9_7_7_3_a.jpg",
+            "9_7_7_4_a.jpg",
+            "9_7_7_5_a.jpg",
+            "9_7_7_6_a.jpg",
+            "9_7_7_7_a.jpg",
+            "9_7_7_8_a.jpg",
+            "9_7_7_9_a.jpg",
+            "9_7_7_10_a.jpg",
+            "9_7_7_11_a.jpg",
+            "9_7_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "9_7_8": {
+        "volume": 4402.3642327258,
+        "images": [
+            "9_7_8_1_a.jpg",
+            "9_7_8_2_a.jpg",
+            "9_7_8_3_a.jpg",
+            "9_7_8_5_a.jpg",
+            "9_7_8_6_a.jpg",
+            "9_7_8_7_a.jpg",
+            "9_7_8_8_a.jpg",
+            "9_7_8_9_a.jpg",
+            "9_7_8_10_a.jpg",
+            "9_7_8_11_a.jpg",
+            "9_7_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "9_7_9": {
+        "volume": 3864.9899717637,
+        "images": [
+            "9_7_9_1_a.jpg",
+            "9_7_9_2_a.jpg",
+            "9_7_9_3_a.jpg",
+            "9_7_9_5_a.jpg",
+            "9_7_9_6_a.jpg",
+            "9_7_9_7_a.jpg",
+            "9_7_9_8_a.jpg",
+            "9_7_9_9_a.jpg",
+            "9_7_9_10_a.jpg",
+            "9_7_9_11_a.jpg",
+            "9_7_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_19_1": {
+        "volume": 3208.5317001916,
+        "images": [
+            "19_19_1_1_a.jpg",
+            "19_19_1_2_a.jpg",
+            "19_19_1_3_a.jpg",
+            "19_19_1_4_a.jpg",
+            "19_19_1_5_a.jpg",
+            "19_19_1_6_a.jpg",
+            "19_19_1_7_a.jpg",
+            "19_19_1_8_a.jpg",
+            "19_19_1_9_a.jpg",
+            "19_19_1_10_a.jpg",
+            "19_19_1_11_a.jpg",
+            "19_19_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_19_2": {
+        "volume": 3431.5658824099,
+        "images": [
+            "19_19_2_1_a.jpg",
+            "19_19_2_2_a.jpg",
+            "19_19_2_3_a.jpg",
+            "19_19_2_4_a.jpg",
+            "19_19_2_5_a.jpg",
+            "19_19_2_6_a.jpg",
+            "19_19_2_7_a.jpg",
+            "19_19_2_8_a.jpg",
+            "19_19_2_9_a.jpg",
+            "19_19_2_10_a.jpg",
+            "19_19_2_11_a.jpg",
+            "19_19_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_19_3": {
+        "volume": 2605.1363599146,
+        "images": [
+            "19_19_3_1_a.jpg",
+            "19_19_3_2_a.jpg",
+            "19_19_3_3_a.jpg",
+            "19_19_3_4_a.jpg",
+            "19_19_3_5_a.jpg",
+            "19_19_3_6_a.jpg",
+            "19_19_3_7_a.jpg",
+            "19_19_3_8_a.jpg",
+            "19_19_3_9_a.jpg",
+            "19_19_3_10_a.jpg",
+            "19_19_3_11_a.jpg",
+            "19_19_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_19_4": {
+        "volume": 5234.3009274005,
+        "images": [
+            "19_19_4_1_a.jpg",
+            "19_19_4_2_a.jpg",
+            "19_19_4_3_a.jpg",
+            "19_19_4_4_a.jpg",
+            "19_19_4_5_a.jpg",
+            "19_19_4_6_a.jpg",
+            "19_19_4_7_a.jpg",
+            "19_19_4_8_a.jpg",
+            "19_19_4_9_a.jpg",
+            "19_19_4_10_a.jpg",
+            "19_19_4_11_a.jpg",
+            "19_19_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_19_5": {
+        "volume": 5091.7443933181,
+        "images": [
+            "19_19_5_1_a.jpg",
+            "19_19_5_2_a.jpg",
+            "19_19_5_3_a.jpg",
+            "19_19_5_4_a.jpg",
+            "19_19_5_5_a.jpg",
+            "19_19_5_6_a.jpg",
+            "19_19_5_7_a.jpg",
+            "19_19_5_8_a.jpg",
+            "19_19_5_9_a.jpg",
+            "19_19_5_10_a.jpg",
+            "19_19_5_11_a.jpg",
+            "19_19_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_8_1": {
+        "volume": 3267.1986087111,
+        "images": [
+            "4_8_1_2_a.jpg",
+            "4_8_1_5_a.jpg",
+            "4_8_1_6_a.jpg",
+            "4_8_1_7_a.jpg",
+            "4_8_1_8_a.jpg",
+            "4_8_1_9_a.jpg",
+            "4_8_1_10_a.jpg",
+            "4_8_1_11_a.jpg",
+            "4_8_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_8_10": {
+        "volume": 4316.7315753184,
+        "images": [
+            "4_8_10_1_a.jpg",
+            "4_8_10_2_a.jpg",
+            "4_8_10_3_a.jpg",
+            "4_8_10_5_a.jpg",
+            "4_8_10_6_a.jpg",
+            "4_8_10_7_a.jpg",
+            "4_8_10_8_a.jpg",
+            "4_8_10_9_a.jpg",
+            "4_8_10_10_a.jpg",
+            "4_8_10_11_a.jpg",
+            "4_8_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_8_2": {
+        "volume": 4337.2389112419,
+        "images": [
+            "4_8_2_1_a.jpg",
+            "4_8_2_2_a.jpg",
+            "4_8_2_3_a.jpg",
+            "4_8_2_5_a.jpg",
+            "4_8_2_6_a.jpg",
+            "4_8_2_7_a.jpg",
+            "4_8_2_8_a.jpg",
+            "4_8_2_9_a.jpg",
+            "4_8_2_10_a.jpg",
+            "4_8_2_11_a.jpg",
+            "4_8_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_8_3": {
+        "volume": 4713.6827125235,
+        "images": [
+            "4_8_3_1_a.jpg",
+            "4_8_3_2_a.jpg",
+            "4_8_3_3_a.jpg",
+            "4_8_3_5_a.jpg",
+            "4_8_3_6_a.jpg",
+            "4_8_3_7_a.jpg",
+            "4_8_3_8_a.jpg",
+            "4_8_3_9_a.jpg",
+            "4_8_3_10_a.jpg",
+            "4_8_3_11_a.jpg",
+            "4_8_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_8_4": {
+        "volume": 7116.593343545,
+        "images": [
+            "4_8_4_1_a.jpg",
+            "4_8_4_2_a.jpg",
+            "4_8_4_3_a.jpg",
+            "4_8_4_5_a.jpg",
+            "4_8_4_6_a.jpg",
+            "4_8_4_7_a.jpg",
+            "4_8_4_8_a.jpg",
+            "4_8_4_9_a.jpg",
+            "4_8_4_10_a.jpg",
+            "4_8_4_11_a.jpg",
+            "4_8_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_8_5": {
+        "volume": 5246.4297644531,
+        "images": [
+            "4_8_5_1_a.jpg",
+            "4_8_5_2_a.jpg",
+            "4_8_5_3_a.jpg",
+            "4_8_5_5_a.jpg",
+            "4_8_5_6_a.jpg",
+            "4_8_5_7_a.jpg",
+            "4_8_5_8_a.jpg",
+            "4_8_5_9_a.jpg",
+            "4_8_5_10_a.jpg",
+            "4_8_5_11_a.jpg",
+            "4_8_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_8_6": {
+        "volume": 3658.403371067,
+        "images": [
+            "4_8_6_2_a.jpg",
+            "4_8_6_6_a.jpg",
+            "4_8_6_7_a.jpg",
+            "4_8_6_8_a.jpg",
+            "4_8_6_9_a.jpg",
+            "4_8_6_10_a.jpg",
+            "4_8_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_8_7": {
+        "volume": 4904.1334013364,
+        "images": [
+            "4_8_7_1_a.jpg",
+            "4_8_7_2_a.jpg",
+            "4_8_7_3_a.jpg",
+            "4_8_7_6_a.jpg",
+            "4_8_7_7_a.jpg",
+            "4_8_7_8_a.jpg",
+            "4_8_7_9_a.jpg",
+            "4_8_7_10_a.jpg",
+            "4_8_7_11_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_8_8": {
+        "volume": 4617.7574423804,
+        "images": [
+            "4_8_8_1_a.jpg",
+            "4_8_8_2_a.jpg",
+            "4_8_8_3_a.jpg",
+            "4_8_8_5_a.jpg",
+            "4_8_8_6_a.jpg",
+            "4_8_8_7_a.jpg",
+            "4_8_8_8_a.jpg",
+            "4_8_8_9_a.jpg",
+            "4_8_8_10_a.jpg",
+            "4_8_8_11_a.jpg",
+            "4_8_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_8_9": {
+        "volume": 3625.3203455755,
+        "images": [
+            "4_8_9_1_a.jpg",
+            "4_8_9_2_a.jpg",
+            "4_8_9_3_a.jpg",
+            "4_8_9_5_a.jpg",
+            "4_8_9_6_a.jpg",
+            "4_8_9_7_a.jpg",
+            "4_8_9_8_a.jpg",
+            "4_8_9_9_a.jpg",
+            "4_8_9_10_a.jpg",
+            "4_8_9_11_a.jpg",
+            "4_8_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_18_2": {
+        "volume": 2821.917290941,
+        "images": [
+            "12_18_2_1_a.jpg",
+            "12_18_2_2_a.jpg",
+            "12_18_2_3_a.jpg",
+            "12_18_2_4_a.jpg",
+            "12_18_2_6_a.jpg",
+            "12_18_2_7_a.jpg",
+            "12_18_2_8_a.jpg",
+            "12_18_2_9_a.jpg",
+            "12_18_2_10_a.jpg",
+            "12_18_2_11_a.jpg",
+            "12_18_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_18_3": {
+        "volume": 4175.4197907053,
+        "images": [
+            "12_18_3_1_a.jpg",
+            "12_18_3_2_a.jpg",
+            "12_18_3_3_a.jpg",
+            "12_18_3_4_a.jpg",
+            "12_18_3_5_a.jpg",
+            "12_18_3_7_a.jpg",
+            "12_18_3_8_a.jpg",
+            "12_18_3_9_a.jpg",
+            "12_18_3_10_a.jpg",
+            "12_18_3_11_a.jpg",
+            "12_18_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_18_4": {
+        "volume": 5206.3662839414,
+        "images": [
+            "12_18_4_1_a.jpg",
+            "12_18_4_2_a.jpg",
+            "12_18_4_3_a.jpg",
+            "12_18_4_4_a.jpg",
+            "12_18_4_5_a.jpg",
+            "12_18_4_6_a.jpg",
+            "12_18_4_7_a.jpg",
+            "12_18_4_8_a.jpg",
+            "12_18_4_9_a.jpg",
+            "12_18_4_10_a.jpg",
+            "12_18_4_11_a.jpg",
+            "12_18_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_18_5": {
+        "volume": 4638.5344249446,
+        "images": [
+            "12_18_5_1_a.jpg",
+            "12_18_5_2_a.jpg",
+            "12_18_5_3_a.jpg",
+            "12_18_5_4_a.jpg",
+            "12_18_5_5_a.jpg",
+            "12_18_5_6_a.jpg",
+            "12_18_5_7_a.jpg",
+            "12_18_5_8_a.jpg",
+            "12_18_5_9_a.jpg",
+            "12_18_5_10_a.jpg",
+            "12_18_5_11_a.jpg",
+            "12_18_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_8_1": {
+        "volume": 3941.6386942204,
+        "images": [
+            "3_8_1_1_a.jpg",
+            "3_8_1_2_a.jpg",
+            "3_8_1_5_a.jpg",
+            "3_8_1_6_a.jpg",
+            "3_8_1_7_a.jpg",
+            "3_8_1_8_a.jpg",
+            "3_8_1_9_a.jpg",
+            "3_8_1_10_a.jpg",
+            "3_8_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_8_10": {
+        "volume": 3261.531490137,
+        "images": [
+            "3_8_10_2_a.jpg",
+            "3_8_10_5_a.jpg",
+            "3_8_10_6_a.jpg",
+            "3_8_10_7_a.jpg",
+            "3_8_10_8_a.jpg",
+            "3_8_10_9_a.jpg",
+            "3_8_10_10_a.jpg",
+            "3_8_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_8_6": {
+        "volume": 5866.4978114468,
+        "images": [
+            "3_8_6_1_a.jpg",
+            "3_8_6_2_a.jpg",
+            "3_8_6_3_a.jpg",
+            "3_8_6_5_a.jpg",
+            "3_8_6_6_a.jpg",
+            "3_8_6_7_a.jpg",
+            "3_8_6_8_a.jpg",
+            "3_8_6_9_a.jpg",
+            "3_8_6_10_a.jpg",
+            "3_8_6_11_a.jpg",
+            "3_8_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_8_7": {
+        "volume": 6114.1380136564,
+        "images": [
+            "3_8_7_1_a.jpg",
+            "3_8_7_3_a.jpg",
+            "3_8_7_5_a.jpg",
+            "3_8_7_6_a.jpg",
+            "3_8_7_7_a.jpg",
+            "3_8_7_8_a.jpg",
+            "3_8_7_9_a.jpg",
+            "3_8_7_10_a.jpg",
+            "3_8_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_8_8": {
+        "volume": 4478.3304027212,
+        "images": [
+            "3_8_8_1_a.jpg",
+            "3_8_8_2_a.jpg",
+            "3_8_8_5_a.jpg",
+            "3_8_8_6_a.jpg",
+            "3_8_8_7_a.jpg",
+            "3_8_8_8_a.jpg",
+            "3_8_8_10_a.jpg",
+            "3_8_8_11_a.jpg",
+            "3_8_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_8_9": {
+        "volume": 5590.0896483002,
+        "images": [
+            "3_8_9_1_a.jpg",
+            "3_8_9_2_a.jpg",
+            "3_8_9_3_a.jpg",
+            "3_8_9_4_a.jpg",
+            "3_8_9_5_a.jpg",
+            "3_8_9_6_a.jpg",
+            "3_8_9_7_a.jpg",
+            "3_8_9_8_a.jpg",
+            "3_8_9_9_a.jpg",
+            "3_8_9_10_a.jpg",
+            "3_8_9_11_a.jpg",
+            "3_8_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_17_4": {
+        "volume": 4829.8055476492,
+        "images": [
+            "19_17_4_1_a.jpg",
+            "19_17_4_2_a.jpg",
+            "19_17_4_3_a.jpg",
+            "19_17_4_4_a.jpg",
+            "19_17_4_5_a.jpg",
+            "19_17_4_6_a.jpg",
+            "19_17_4_7_a.jpg",
+            "19_17_4_8_a.jpg",
+            "19_17_4_9_a.jpg",
+            "19_17_4_10_a.jpg",
+            "19_17_4_11_a.jpg",
+            "19_17_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_17_5": {
+        "volume": 5895.3209549646,
+        "images": [
+            "19_17_5_1_a.jpg",
+            "19_17_5_2_a.jpg",
+            "19_17_5_3_a.jpg",
+            "19_17_5_4_a.jpg",
+            "19_17_5_5_a.jpg",
+            "19_17_5_6_a.jpg",
+            "19_17_5_7_a.jpg",
+            "19_17_5_8_a.jpg",
+            "19_17_5_9_a.jpg",
+            "19_17_5_10_a.jpg",
+            "19_17_5_11_a.jpg",
+            "19_17_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "17_8_1": {
+        "volume": 2958.7918700474,
+        "images": [
+            "17_8_1_1_a.jpg",
+            "17_8_1_3_a.jpg",
+            "17_8_1_5_a.jpg",
+            "17_8_1_6_a.jpg",
+            "17_8_1_7_a.jpg",
+            "17_8_1_8_a.jpg",
+            "17_8_1_9_a.jpg",
+            "17_8_1_10_a.jpg",
+            "17_8_1_11_a.jpg",
+            "17_8_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "17_8_10": {
+        "volume": 3951.9343673197,
+        "images": [
+            "17_8_10_2_a.jpg",
+            "17_8_10_3_a.jpg",
+            "17_8_10_5_a.jpg",
+            "17_8_10_6_a.jpg",
+            "17_8_10_7_a.jpg",
+            "17_8_10_8_a.jpg",
+            "17_8_10_9_a.jpg",
+            "17_8_10_10_a.jpg",
+            "17_8_10_11_a.jpg",
+            "17_8_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "17_8_2": {
+        "volume": 3146.7267248405,
+        "images": [
+            "17_8_2_1_a.jpg",
+            "17_8_2_2_a.jpg",
+            "17_8_2_3_a.jpg",
+            "17_8_2_5_a.jpg",
+            "17_8_2_7_a.jpg",
+            "17_8_2_8_a.jpg",
+            "17_8_2_9_a.jpg",
+            "17_8_2_10_a.jpg",
+            "17_8_2_11_a.jpg",
+            "17_8_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "17_8_3": {
+        "volume": 4311.5713246593,
+        "images": [
+            "17_8_3_1_a.jpg",
+            "17_8_3_2_a.jpg",
+            "17_8_3_3_a.jpg",
+            "17_8_3_4_a.jpg",
+            "17_8_3_5_a.jpg",
+            "17_8_3_6_a.jpg",
+            "17_8_3_7_a.jpg",
+            "17_8_3_8_a.jpg",
+            "17_8_3_9_a.jpg",
+            "17_8_3_10_a.jpg",
+            "17_8_3_11_a.jpg",
+            "17_8_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "17_8_4": {
+        "volume": 4313.2711069034,
+        "images": [
+            "17_8_4_1_a.jpg",
+            "17_8_4_2_a.jpg",
+            "17_8_4_3_a.jpg",
+            "17_8_4_4_a.jpg",
+            "17_8_4_5_a.jpg",
+            "17_8_4_6_a.jpg",
+            "17_8_4_7_a.jpg",
+            "17_8_4_8_a.jpg",
+            "17_8_4_9_a.jpg",
+            "17_8_4_10_a.jpg",
+            "17_8_4_11_a.jpg",
+            "17_8_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "17_8_5": {
+        "volume": 4238.9337331272,
+        "images": [
+            "17_8_5_1_a.jpg",
+            "17_8_5_2_a.jpg",
+            "17_8_5_3_a.jpg",
+            "17_8_5_5_a.jpg",
+            "17_8_5_6_a.jpg",
+            "17_8_5_7_a.jpg",
+            "17_8_5_8_a.jpg",
+            "17_8_5_9_a.jpg",
+            "17_8_5_10_a.jpg",
+            "17_8_5_11_a.jpg",
+            "17_8_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "17_8_6": {
+        "volume": 4448.0175131727,
+        "images": [
+            "17_8_6_1_a.jpg",
+            "17_8_6_2_a.jpg",
+            "17_8_6_3_a.jpg",
+            "17_8_6_4_a.jpg",
+            "17_8_6_5_a.jpg",
+            "17_8_6_6_a.jpg",
+            "17_8_6_7_a.jpg",
+            "17_8_6_8_a.jpg",
+            "17_8_6_9_a.jpg",
+            "17_8_6_10_a.jpg",
+            "17_8_6_11_a.jpg",
+            "17_8_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "17_8_7": {
+        "volume": 5527.7096188347,
+        "images": [
+            "17_8_7_2_a.jpg",
+            "17_8_7_3_a.jpg",
+            "17_8_7_5_a.jpg",
+            "17_8_7_6_a.jpg",
+            "17_8_7_7_a.jpg",
+            "17_8_7_8_a.jpg",
+            "17_8_7_9_a.jpg",
+            "17_8_7_10_a.jpg",
+            "17_8_7_11_a.jpg",
+            "17_8_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "17_8_8": {
+        "volume": 4552.3389440112,
+        "images": [
+            "17_8_8_1_a.jpg",
+            "17_8_8_2_a.jpg",
+            "17_8_8_3_a.jpg",
+            "17_8_8_6_a.jpg",
+            "17_8_8_7_a.jpg",
+            "17_8_8_9_a.jpg",
+            "17_8_8_10_a.jpg",
+            "17_8_8_11_a.jpg",
+            "17_8_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "17_8_9": {
+        "volume": 4124.3094447798,
+        "images": [
+            "17_8_9_1_a.jpg",
+            "17_8_9_2_a.jpg",
+            "17_8_9_3_a.jpg",
+            "17_8_9_5_a.jpg",
+            "17_8_9_6_a.jpg",
+            "17_8_9_7_a.jpg",
+            "17_8_9_8_a.jpg",
+            "17_8_9_9_a.jpg",
+            "17_8_9_10_a.jpg",
+            "17_8_9_11_a.jpg",
+            "17_8_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_18_1": {
+        "volume": 4136.146609833,
+        "images": [
+            "4_18_1_1_a.jpg",
+            "4_18_1_2_a.jpg",
+            "4_18_1_3_a.jpg",
+            "4_18_1_4_a.jpg",
+            "4_18_1_5_a.jpg",
+            "4_18_1_6_a.jpg",
+            "4_18_1_7_a.jpg",
+            "4_18_1_8_a.jpg",
+            "4_18_1_9_a.jpg",
+            "4_18_1_10_a.jpg",
+            "4_18_1_11_a.jpg",
+            "4_18_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_18_2": {
+        "volume": 5398.3802159891,
+        "images": [
+            "4_18_2_1_a.jpg",
+            "4_18_2_2_a.jpg",
+            "4_18_2_3_a.jpg",
+            "4_18_2_4_a.jpg",
+            "4_18_2_5_a.jpg",
+            "4_18_2_6_a.jpg",
+            "4_18_2_7_a.jpg",
+            "4_18_2_8_a.jpg",
+            "4_18_2_9_a.jpg",
+            "4_18_2_10_a.jpg",
+            "4_18_2_11_a.jpg",
+            "4_18_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_18_3": {
+        "volume": 2505.6681607517,
+        "images": [
+            "4_18_3_1_a.jpg",
+            "4_18_3_2_a.jpg",
+            "4_18_3_3_a.jpg",
+            "4_18_3_4_a.jpg",
+            "4_18_3_5_a.jpg",
+            "4_18_3_6_a.jpg",
+            "4_18_3_7_a.jpg",
+            "4_18_3_9_a.jpg",
+            "4_18_3_10_a.jpg",
+            "4_18_3_11_a.jpg",
+            "4_18_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_18_4": {
+        "volume": 5892.0605102538,
+        "images": [
+            "4_18_4_1_a.jpg",
+            "4_18_4_2_a.jpg",
+            "4_18_4_3_a.jpg",
+            "4_18_4_4_a.jpg",
+            "4_18_4_5_a.jpg",
+            "4_18_4_6_a.jpg",
+            "4_18_4_7_a.jpg",
+            "4_18_4_8_a.jpg",
+            "4_18_4_9_a.jpg",
+            "4_18_4_10_a.jpg",
+            "4_18_4_11_a.jpg",
+            "4_18_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "4_18_5": {
+        "volume": 5638.0881395204,
+        "images": [
+            "4_18_5_1_a.jpg",
+            "4_18_5_2_a.jpg",
+            "4_18_5_3_a.jpg",
+            "4_18_5_4_a.jpg",
+            "4_18_5_5_a.jpg",
+            "4_18_5_6_a.jpg",
+            "4_18_5_7_a.jpg",
+            "4_18_5_8_a.jpg",
+            "4_18_5_9_a.jpg",
+            "4_18_5_10_a.jpg",
+            "4_18_5_11_a.jpg",
+            "4_18_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_15_1": {
+        "volume": 3075.9816784468,
+        "images": [
+            "14_15_1_3_a.jpg",
+            "14_15_1_5_a.jpg",
+            "14_15_1_7_a.jpg",
+            "14_15_1_8_a.jpg",
+            "14_15_1_9_a.jpg",
+            "14_15_1_10_a.jpg",
+            "14_15_1_11_a.jpg",
+            "14_15_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_15_2": {
+        "volume": 4700.4348818854,
+        "images": [
+            "14_15_2_1_a.jpg",
+            "14_15_2_2_a.jpg",
+            "14_15_2_3_a.jpg",
+            "14_15_2_4_a.jpg",
+            "14_15_2_5_a.jpg",
+            "14_15_2_7_a.jpg",
+            "14_15_2_8_a.jpg",
+            "14_15_2_9_a.jpg",
+            "14_15_2_10_a.jpg",
+            "14_15_2_11_a.jpg",
+            "14_15_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_15_3": {
+        "volume": 3289.9591345503,
+        "images": [
+            "14_15_3_1_a.jpg",
+            "14_15_3_3_a.jpg",
+            "14_15_3_7_a.jpg",
+            "14_15_3_8_a.jpg",
+            "14_15_3_9_a.jpg",
+            "14_15_3_10_a.jpg",
+            "14_15_3_11_a.jpg",
+            "14_15_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_15_4": {
+        "volume": 4672.8069815271,
+        "images": [
+            "14_15_4_1_a.jpg",
+            "14_15_4_2_a.jpg",
+            "14_15_4_3_a.jpg",
+            "14_15_4_4_a.jpg",
+            "14_15_4_5_a.jpg",
+            "14_15_4_6_a.jpg",
+            "14_15_4_7_a.jpg",
+            "14_15_4_8_a.jpg",
+            "14_15_4_9_a.jpg",
+            "14_15_4_10_a.jpg",
+            "14_15_4_11_a.jpg",
+            "14_15_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_15_5": {
+        "volume": 5041.7580003737,
+        "images": [
+            "14_15_5_1_a.jpg",
+            "14_15_5_2_a.jpg",
+            "14_15_5_3_a.jpg",
+            "14_15_5_4_a.jpg",
+            "14_15_5_5_a.jpg",
+            "14_15_5_6_a.jpg",
+            "14_15_5_7_a.jpg",
+            "14_15_5_8_a.jpg",
+            "14_15_5_9_a.jpg",
+            "14_15_5_10_a.jpg",
+            "14_15_5_11_a.jpg",
+            "14_15_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_10_1": {
+        "volume": 3720.0110989523,
+        "images": [
+            "8_10_1_1_a.jpg",
+            "8_10_1_2_a.jpg",
+            "8_10_1_3_a.jpg",
+            "8_10_1_5_a.jpg",
+            "8_10_1_6_a.jpg",
+            "8_10_1_7_a.jpg",
+            "8_10_1_8_a.jpg",
+            "8_10_1_9_a.jpg",
+            "8_10_1_10_a.jpg",
+            "8_10_1_11_a.jpg",
+            "8_10_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_10_10": {
+        "volume": 3073.8968706154,
+        "images": [
+            "8_10_10_1_a.jpg",
+            "8_10_10_3_a.jpg",
+            "8_10_10_5_a.jpg",
+            "8_10_10_7_a.jpg",
+            "8_10_10_8_a.jpg",
+            "8_10_10_9_a.jpg",
+            "8_10_10_10_a.jpg",
+            "8_10_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_10_2": {
+        "volume": 2688.502161431,
+        "images": [
+            "8_10_2_1_a.jpg",
+            "8_10_2_2_a.jpg",
+            "8_10_2_3_a.jpg",
+            "8_10_2_5_a.jpg",
+            "8_10_2_7_a.jpg",
+            "8_10_2_8_a.jpg",
+            "8_10_2_9_a.jpg",
+            "8_10_2_10_a.jpg",
+            "8_10_2_11_a.jpg",
+            "8_10_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_10_3": {
+        "volume": 5060.8196844825,
+        "images": [
+            "8_10_3_1_a.jpg",
+            "8_10_3_2_a.jpg",
+            "8_10_3_3_a.jpg",
+            "8_10_3_4_a.jpg",
+            "8_10_3_5_a.jpg",
+            "8_10_3_6_a.jpg",
+            "8_10_3_7_a.jpg",
+            "8_10_3_8_a.jpg",
+            "8_10_3_9_a.jpg",
+            "8_10_3_10_a.jpg",
+            "8_10_3_11_a.jpg",
+            "8_10_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_10_4": {
+        "volume": 7113.2194261714,
+        "images": [
+            "8_10_4_1_a.jpg",
+            "8_10_4_2_a.jpg",
+            "8_10_4_3_a.jpg",
+            "8_10_4_5_a.jpg",
+            "8_10_4_6_a.jpg",
+            "8_10_4_7_a.jpg",
+            "8_10_4_8_a.jpg",
+            "8_10_4_9_a.jpg",
+            "8_10_4_10_a.jpg",
+            "8_10_4_11_a.jpg",
+            "8_10_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_10_5": {
+        "volume": 4135.7817571642,
+        "images": [
+            "8_10_5_1_a.jpg",
+            "8_10_5_3_a.jpg",
+            "8_10_5_5_a.jpg",
+            "8_10_5_6_a.jpg",
+            "8_10_5_7_a.jpg",
+            "8_10_5_8_a.jpg",
+            "8_10_5_9_a.jpg",
+            "8_10_5_10_a.jpg",
+            "8_10_5_11_a.jpg",
+            "8_10_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_10_6": {
+        "volume": 4618.1424898393,
+        "images": [
+            "8_10_6_1_a.jpg",
+            "8_10_6_2_a.jpg",
+            "8_10_6_3_a.jpg",
+            "8_10_6_4_a.jpg",
+            "8_10_6_5_a.jpg",
+            "8_10_6_6_a.jpg",
+            "8_10_6_7_a.jpg",
+            "8_10_6_8_a.jpg",
+            "8_10_6_9_a.jpg",
+            "8_10_6_10_a.jpg",
+            "8_10_6_11_a.jpg",
+            "8_10_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_10_7": {
+        "volume": 3693.2303683118,
+        "images": [
+            "8_10_7_1_a.jpg",
+            "8_10_7_2_a.jpg",
+            "8_10_7_3_a.jpg",
+            "8_10_7_4_a.jpg",
+            "8_10_7_5_a.jpg",
+            "8_10_7_6_a.jpg",
+            "8_10_7_7_a.jpg",
+            "8_10_7_8_a.jpg",
+            "8_10_7_9_a.jpg",
+            "8_10_7_10_a.jpg",
+            "8_10_7_11_a.jpg",
+            "8_10_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_10_8": {
+        "volume": 4467.9860510893,
+        "images": [
+            "8_10_8_1_a.jpg",
+            "8_10_8_2_a.jpg",
+            "8_10_8_3_a.jpg",
+            "8_10_8_4_a.jpg",
+            "8_10_8_5_a.jpg",
+            "8_10_8_6_a.jpg",
+            "8_10_8_7_a.jpg",
+            "8_10_8_8_a.jpg",
+            "8_10_8_9_a.jpg",
+            "8_10_8_10_a.jpg",
+            "8_10_8_11_a.jpg",
+            "8_10_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_16_1": {
+        "volume": 4125.143896286,
+        "images": [
+            "19_16_1_1_a.jpg",
+            "19_16_1_2_a.jpg",
+            "19_16_1_3_a.jpg",
+            "19_16_1_4_a.jpg",
+            "19_16_1_5_a.jpg",
+            "19_16_1_6_a.jpg",
+            "19_16_1_7_a.jpg",
+            "19_16_1_8_a.jpg",
+            "19_16_1_9_a.jpg",
+            "19_16_1_10_a.jpg",
+            "19_16_1_11_a.jpg",
+            "19_16_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_16_2": {
+        "volume": 4763.4212330256,
+        "images": [
+            "19_16_2_1_a.jpg",
+            "19_16_2_2_a.jpg",
+            "19_16_2_3_a.jpg",
+            "19_16_2_4_a.jpg",
+            "19_16_2_5_a.jpg",
+            "19_16_2_6_a.jpg",
+            "19_16_2_7_a.jpg",
+            "19_16_2_8_a.jpg",
+            "19_16_2_9_a.jpg",
+            "19_16_2_10_a.jpg",
+            "19_16_2_11_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_16_3": {
+        "volume": 4682.7901905847,
+        "images": [
+            "19_16_3_1_a.jpg",
+            "19_16_3_2_a.jpg",
+            "19_16_3_3_a.jpg",
+            "19_16_3_4_a.jpg",
+            "19_16_3_5_a.jpg",
+            "19_16_3_6_a.jpg",
+            "19_16_3_7_a.jpg",
+            "19_16_3_8_a.jpg",
+            "19_16_3_9_a.jpg",
+            "19_16_3_10_a.jpg",
+            "19_16_3_11_a.jpg",
+            "19_16_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_16_4": {
+        "volume": 7221.5317633075,
+        "images": [
+            "19_16_4_1_a.jpg",
+            "19_16_4_2_a.jpg",
+            "19_16_4_3_a.jpg",
+            "19_16_4_4_a.jpg",
+            "19_16_4_5_a.jpg",
+            "19_16_4_6_a.jpg",
+            "19_16_4_7_a.jpg",
+            "19_16_4_8_a.jpg",
+            "19_16_4_9_a.jpg",
+            "19_16_4_10_a.jpg",
+            "19_16_4_11_a.jpg",
+            "19_16_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_16_5": {
+        "volume": 6829.7545776762,
+        "images": [
+            "19_16_5_1_a.jpg",
+            "19_16_5_2_a.jpg",
+            "19_16_5_3_a.jpg",
+            "19_16_5_4_a.jpg",
+            "19_16_5_5_a.jpg",
+            "19_16_5_6_a.jpg",
+            "19_16_5_7_a.jpg",
+            "19_16_5_8_a.jpg",
+            "19_16_5_9_a.jpg",
+            "19_16_5_10_a.jpg",
+            "19_16_5_11_a.jpg",
+            "19_16_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_10_1": {
+        "volume": 5634.4675414781,
+        "images": [
+            "6_10_1_1_a.jpg",
+            "6_10_1_2_a.jpg",
+            "6_10_1_3_a.jpg",
+            "6_10_1_5_a.jpg",
+            "6_10_1_6_a.jpg",
+            "6_10_1_7_a.jpg",
+            "6_10_1_8_a.jpg",
+            "6_10_1_9_a.jpg",
+            "6_10_1_10_a.jpg",
+            "6_10_1_11_a.jpg",
+            "6_10_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_10_10": {
+        "volume": 3917.1941649193,
+        "images": [
+            "6_10_10_1_a.jpg",
+            "6_10_10_2_a.jpg",
+            "6_10_10_3_a.jpg",
+            "6_10_10_5_a.jpg",
+            "6_10_10_6_a.jpg",
+            "6_10_10_7_a.jpg",
+            "6_10_10_8_a.jpg",
+            "6_10_10_9_a.jpg",
+            "6_10_10_10_a.jpg",
+            "6_10_10_11_a.jpg",
+            "6_10_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_10_2": {
+        "volume": 5654.8588590536,
+        "images": [
+            "6_10_2_1_a.jpg",
+            "6_10_2_2_a.jpg",
+            "6_10_2_3_a.jpg",
+            "6_10_2_5_a.jpg",
+            "6_10_2_6_a.jpg",
+            "6_10_2_7_a.jpg",
+            "6_10_2_8_a.jpg",
+            "6_10_2_9_a.jpg",
+            "6_10_2_10_a.jpg",
+            "6_10_2_11_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_10_3": {
+        "volume": 6746.8417564391,
+        "images": [
+            "6_10_3_1_a.jpg",
+            "6_10_3_2_a.jpg",
+            "6_10_3_3_a.jpg",
+            "6_10_3_5_a.jpg",
+            "6_10_3_6_a.jpg",
+            "6_10_3_7_a.jpg",
+            "6_10_3_8_a.jpg",
+            "6_10_3_9_a.jpg",
+            "6_10_3_10_a.jpg",
+            "6_10_3_11_a.jpg",
+            "6_10_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_10_4": {
+        "volume": 6601.1985843828,
+        "images": [
+            "6_10_4_1_a.jpg",
+            "6_10_4_2_a.jpg",
+            "6_10_4_3_a.jpg",
+            "6_10_4_5_a.jpg",
+            "6_10_4_6_a.jpg",
+            "6_10_4_7_a.jpg",
+            "6_10_4_8_a.jpg",
+            "6_10_4_9_a.jpg",
+            "6_10_4_10_a.jpg",
+            "6_10_4_11_a.jpg",
+            "6_10_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_10_5": {
+        "volume": 6143.4470577834,
+        "images": [
+            "6_10_5_1_a.jpg",
+            "6_10_5_2_a.jpg",
+            "6_10_5_3_a.jpg",
+            "6_10_5_4_a.jpg",
+            "6_10_5_5_a.jpg",
+            "6_10_5_6_a.jpg",
+            "6_10_5_7_a.jpg",
+            "6_10_5_8_a.jpg",
+            "6_10_5_9_a.jpg",
+            "6_10_5_10_a.jpg",
+            "6_10_5_11_a.jpg",
+            "6_10_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_10_6": {
+        "volume": 5892.1033821638,
+        "images": [
+            "6_10_6_1_a.jpg",
+            "6_10_6_2_a.jpg",
+            "6_10_6_3_a.jpg",
+            "6_10_6_5_a.jpg",
+            "6_10_6_6_a.jpg",
+            "6_10_6_7_a.jpg",
+            "6_10_6_8_a.jpg",
+            "6_10_6_9_a.jpg",
+            "6_10_6_10_a.jpg",
+            "6_10_6_11_a.jpg",
+            "6_10_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_10_8": {
+        "volume": 7496.8346915029,
+        "images": [
+            "6_10_8_1_a.jpg",
+            "6_10_8_2_a.jpg",
+            "6_10_8_3_a.jpg",
+            "6_10_8_4_a.jpg",
+            "6_10_8_6_a.jpg",
+            "6_10_8_7_a.jpg",
+            "6_10_8_8_a.jpg",
+            "6_10_8_9_a.jpg",
+            "6_10_8_10_a.jpg",
+            "6_10_8_11_a.jpg",
+            "6_10_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_10_9": {
+        "volume": 6585.1009821064,
+        "images": [
+            "6_10_9_1_a.jpg",
+            "6_10_9_2_a.jpg",
+            "6_10_9_3_a.jpg",
+            "6_10_9_5_a.jpg",
+            "6_10_9_6_a.jpg",
+            "6_10_9_7_a.jpg",
+            "6_10_9_8_a.jpg",
+            "6_10_9_9_a.jpg",
+            "6_10_9_10_a.jpg",
+            "6_10_9_11_a.jpg",
+            "6_10_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_7_1": {
+        "volume": 2200.7155346885,
+        "images": [
+            "12_7_1_1_a.jpg",
+            "12_7_1_2_a.jpg",
+            "12_7_1_3_a.jpg",
+            "12_7_1_4_a.jpg",
+            "12_7_1_6_a.jpg",
+            "12_7_1_8_a.jpg",
+            "12_7_1_9_a.jpg",
+            "12_7_1_10_a.jpg",
+            "12_7_1_11_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_7_10": {
+        "volume": 2789.4060389411,
+        "images": [
+            "12_7_10_1_a.jpg",
+            "12_7_10_2_a.jpg",
+            "12_7_10_3_a.jpg",
+            "12_7_10_5_a.jpg",
+            "12_7_10_7_a.jpg",
+            "12_7_10_8_a.jpg",
+            "12_7_10_9_a.jpg",
+            "12_7_10_10_a.jpg",
+            "12_7_10_11_a.jpg",
+            "12_7_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_7_2": {
+        "volume": 3325.5315989288,
+        "images": [
+            "12_7_2_1_a.jpg",
+            "12_7_2_2_a.jpg",
+            "12_7_2_3_a.jpg",
+            "12_7_2_4_a.jpg",
+            "12_7_2_5_a.jpg",
+            "12_7_2_6_a.jpg",
+            "12_7_2_7_a.jpg",
+            "12_7_2_8_a.jpg",
+            "12_7_2_9_a.jpg",
+            "12_7_2_10_a.jpg",
+            "12_7_2_11_a.jpg",
+            "12_7_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_7_3": {
+        "volume": 4293.6031304477,
+        "images": [
+            "12_7_3_1_a.jpg",
+            "12_7_3_2_a.jpg",
+            "12_7_3_3_a.jpg",
+            "12_7_3_4_a.jpg",
+            "12_7_3_5_a.jpg",
+            "12_7_3_6_a.jpg",
+            "12_7_3_7_a.jpg",
+            "12_7_3_8_a.jpg",
+            "12_7_3_9_a.jpg",
+            "12_7_3_10_a.jpg",
+            "12_7_3_11_a.jpg",
+            "12_7_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_7_4": {
+        "volume": 5547.9505770967,
+        "images": [
+            "12_7_4_1_a.jpg",
+            "12_7_4_2_a.jpg",
+            "12_7_4_3_a.jpg",
+            "12_7_4_4_a.jpg",
+            "12_7_4_5_a.jpg",
+            "12_7_4_6_a.jpg",
+            "12_7_4_7_a.jpg",
+            "12_7_4_8_a.jpg",
+            "12_7_4_9_a.jpg",
+            "12_7_4_10_a.jpg",
+            "12_7_4_11_a.jpg",
+            "12_7_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_7_6": {
+        "volume": 5292.0563599785,
+        "images": [
+            "12_7_6_1_a.jpg",
+            "12_7_6_2_a.jpg",
+            "12_7_6_3_a.jpg",
+            "12_7_6_4_a.jpg",
+            "12_7_6_5_a.jpg",
+            "12_7_6_6_a.jpg",
+            "12_7_6_7_a.jpg",
+            "12_7_6_8_a.jpg",
+            "12_7_6_9_a.jpg",
+            "12_7_6_10_a.jpg",
+            "12_7_6_11_a.jpg",
+            "12_7_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_7_7": {
+        "volume": 8294.0063749772,
+        "images": [
+            "12_7_7_1_a.jpg",
+            "12_7_7_2_a.jpg",
+            "12_7_7_3_a.jpg",
+            "12_7_7_5_a.jpg",
+            "12_7_7_6_a.jpg",
+            "12_7_7_7_a.jpg",
+            "12_7_7_8_a.jpg",
+            "12_7_7_9_a.jpg",
+            "12_7_7_10_a.jpg",
+            "12_7_7_11_a.jpg",
+            "12_7_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_7_8": {
+        "volume": 4977.0567674706,
+        "images": [
+            "12_7_8_1_a.jpg",
+            "12_7_8_2_a.jpg",
+            "12_7_8_3_a.jpg",
+            "12_7_8_5_a.jpg",
+            "12_7_8_6_a.jpg",
+            "12_7_8_7_a.jpg",
+            "12_7_8_8_a.jpg",
+            "12_7_8_9_a.jpg",
+            "12_7_8_10_a.jpg",
+            "12_7_8_11_a.jpg",
+            "12_7_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "12_7_9": {
+        "volume": 5820.9098421092,
+        "images": [
+            "12_7_9_1_a.jpg",
+            "12_7_9_2_a.jpg",
+            "12_7_9_3_a.jpg",
+            "12_7_9_5_a.jpg",
+            "12_7_9_6_a.jpg",
+            "12_7_9_7_a.jpg",
+            "12_7_9_8_a.jpg",
+            "12_7_9_9_a.jpg",
+            "12_7_9_10_a.jpg",
+            "12_7_9_11_a.jpg",
+            "12_7_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "11_17_2": {
+        "volume": 2272.7396156714,
+        "images": [
+            "11_17_2_1_a.jpg",
+            "11_17_2_2_a.jpg",
+            "11_17_2_3_a.jpg",
+            "11_17_2_4_a.jpg",
+            "11_17_2_5_a.jpg",
+            "11_17_2_7_a.jpg",
+            "11_17_2_8_a.jpg",
+            "11_17_2_9_a.jpg",
+            "11_17_2_10_a.jpg",
+            "11_17_2_11_a.jpg",
+            "11_17_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "11_17_3": {
+        "volume": 3980.3444845338,
+        "images": [
+            "11_17_3_1_a.jpg",
+            "11_17_3_2_a.jpg",
+            "11_17_3_3_a.jpg",
+            "11_17_3_4_a.jpg",
+            "11_17_3_5_a.jpg",
+            "11_17_3_6_a.jpg",
+            "11_17_3_7_a.jpg",
+            "11_17_3_8_a.jpg",
+            "11_17_3_9_a.jpg",
+            "11_17_3_10_a.jpg",
+            "11_17_3_11_a.jpg",
+            "11_17_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "11_17_4": {
+        "volume": 4469.2857405978,
+        "images": [
+            "11_17_4_1_a.jpg",
+            "11_17_4_2_a.jpg",
+            "11_17_4_3_a.jpg",
+            "11_17_4_4_a.jpg",
+            "11_17_4_5_a.jpg",
+            "11_17_4_6_a.jpg",
+            "11_17_4_7_a.jpg",
+            "11_17_4_8_a.jpg",
+            "11_17_4_9_a.jpg",
+            "11_17_4_10_a.jpg",
+            "11_17_4_11_a.jpg",
+            "11_17_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "11_17_5": {
+        "volume": 5325.6965561369,
+        "images": [
+            "11_17_5_1_a.jpg",
+            "11_17_5_2_a.jpg",
+            "11_17_5_3_a.jpg",
+            "11_17_5_4_a.jpg",
+            "11_17_5_5_a.jpg",
+            "11_17_5_6_a.jpg",
+            "11_17_5_7_a.jpg",
+            "11_17_5_8_a.jpg",
+            "11_17_5_9_a.jpg",
+            "11_17_5_10_a.jpg",
+            "11_17_5_11_a.jpg",
+            "11_17_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_8_1": {
+        "volume": 2459.6194229288,
+        "images": [
+            "16_8_1_1_a.jpg",
+            "16_8_1_2_a.jpg",
+            "16_8_1_3_a.jpg",
+            "16_8_1_5_a.jpg",
+            "16_8_1_7_a.jpg",
+            "16_8_1_8_a.jpg",
+            "16_8_1_9_a.jpg",
+            "16_8_1_10_a.jpg",
+            "16_8_1_11_a.jpg",
+            "16_8_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_8_10": {
+        "volume": 2820.1831032484,
+        "images": [
+            "16_8_10_1_a.jpg",
+            "16_8_10_2_a.jpg",
+            "16_8_10_3_a.jpg",
+            "16_8_10_5_a.jpg",
+            "16_8_10_6_a.jpg",
+            "16_8_10_7_a.jpg",
+            "16_8_10_8_a.jpg",
+            "16_8_10_9_a.jpg",
+            "16_8_10_10_a.jpg",
+            "16_8_10_11_a.jpg",
+            "16_8_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_8_2": {
+        "volume": 4372.0315414855,
+        "images": [
+            "16_8_2_1_a.jpg",
+            "16_8_2_2_a.jpg",
+            "16_8_2_3_a.jpg",
+            "16_8_2_5_a.jpg",
+            "16_8_2_6_a.jpg",
+            "16_8_2_7_a.jpg",
+            "16_8_2_8_a.jpg",
+            "16_8_2_9_a.jpg",
+            "16_8_2_10_a.jpg",
+            "16_8_2_11_a.jpg",
+            "16_8_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_8_3": {
+        "volume": 4423.9822903119,
+        "images": [
+            "16_8_3_1_a.jpg",
+            "16_8_3_2_a.jpg",
+            "16_8_3_3_a.jpg",
+            "16_8_3_5_a.jpg",
+            "16_8_3_6_a.jpg",
+            "16_8_3_7_a.jpg",
+            "16_8_3_8_a.jpg",
+            "16_8_3_9_a.jpg",
+            "16_8_3_10_a.jpg",
+            "16_8_3_11_a.jpg",
+            "16_8_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_8_4": {
+        "volume": 3135.871179764,
+        "images": [
+            "16_8_4_1_a.jpg",
+            "16_8_4_2_a.jpg",
+            "16_8_4_3_a.jpg",
+            "16_8_4_5_a.jpg",
+            "16_8_4_6_a.jpg",
+            "16_8_4_7_a.jpg",
+            "16_8_4_8_a.jpg",
+            "16_8_4_9_a.jpg",
+            "16_8_4_10_a.jpg",
+            "16_8_4_11_a.jpg",
+            "16_8_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_8_5": {
+        "volume": 5060.98653385,
+        "images": [
+            "16_8_5_1_a.jpg",
+            "16_8_5_2_a.jpg",
+            "16_8_5_3_a.jpg",
+            "16_8_5_4_a.jpg",
+            "16_8_5_5_a.jpg",
+            "16_8_5_6_a.jpg",
+            "16_8_5_7_a.jpg",
+            "16_8_5_8_a.jpg",
+            "16_8_5_9_a.jpg",
+            "16_8_5_10_a.jpg",
+            "16_8_5_11_a.jpg",
+            "16_8_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_8_6": {
+        "volume": 4258.932479072,
+        "images": [
+            "16_8_6_1_a.jpg",
+            "16_8_6_2_a.jpg",
+            "16_8_6_3_a.jpg",
+            "16_8_6_5_a.jpg",
+            "16_8_6_6_a.jpg",
+            "16_8_6_7_a.jpg",
+            "16_8_6_8_a.jpg",
+            "16_8_6_9_a.jpg",
+            "16_8_6_11_a.jpg",
+            "16_8_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_8_7": {
+        "volume": 4268.785925435,
+        "images": [
+            "16_8_7_1_a.jpg",
+            "16_8_7_2_a.jpg",
+            "16_8_7_3_a.jpg",
+            "16_8_7_4_a.jpg",
+            "16_8_7_5_a.jpg",
+            "16_8_7_6_a.jpg",
+            "16_8_7_7_a.jpg",
+            "16_8_7_8_a.jpg",
+            "16_8_7_10_a.jpg",
+            "16_8_7_11_a.jpg",
+            "16_8_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_8_8": {
+        "volume": 4847.0787602742,
+        "images": [
+            "16_8_8_1_a.jpg",
+            "16_8_8_2_a.jpg",
+            "16_8_8_3_a.jpg",
+            "16_8_8_4_a.jpg",
+            "16_8_8_5_a.jpg",
+            "16_8_8_6_a.jpg",
+            "16_8_8_7_a.jpg",
+            "16_8_8_8_a.jpg",
+            "16_8_8_9_a.jpg",
+            "16_8_8_10_a.jpg",
+            "16_8_8_11_a.jpg",
+            "16_8_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_8_9": {
+        "volume": 3582.204149072,
+        "images": [
+            "16_8_9_1_a.jpg",
+            "16_8_9_2_a.jpg",
+            "16_8_9_3_a.jpg",
+            "16_8_9_5_a.jpg",
+            "16_8_9_6_a.jpg",
+            "16_8_9_7_a.jpg",
+            "16_8_9_8_a.jpg",
+            "16_8_9_9_a.jpg",
+            "16_8_9_10_a.jpg",
+            "16_8_9_11_a.jpg",
+            "16_8_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "2_16_1": {
+        "volume": 4145.3274206896,
+        "images": [
+            "2_16_1_1_a.jpg",
+            "2_16_1_2_a.jpg",
+            "2_16_1_3_a.jpg",
+            "2_16_1_4_a.jpg",
+            "2_16_1_5_a.jpg",
+            "2_16_1_7_a.jpg",
+            "2_16_1_8_a.jpg",
+            "2_16_1_9_a.jpg",
+            "2_16_1_10_a.jpg",
+            "2_16_1_11_a.jpg",
+            "2_16_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "2_16_2": {
+        "volume": 3559.3961346761,
+        "images": [
+            "2_16_2_1_a.jpg",
+            "2_16_2_2_a.jpg",
+            "2_16_2_3_a.jpg",
+            "2_16_2_4_a.jpg",
+            "2_16_2_5_a.jpg",
+            "2_16_2_7_a.jpg",
+            "2_16_2_8_a.jpg",
+            "2_16_2_9_a.jpg",
+            "2_16_2_10_a.jpg",
+            "2_16_2_11_a.jpg",
+            "2_16_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "2_16_3": {
+        "volume": 4404.7319183017,
+        "images": [
+            "2_16_3_1_a.jpg",
+            "2_16_3_2_a.jpg",
+            "2_16_3_3_a.jpg",
+            "2_16_3_4_a.jpg",
+            "2_16_3_7_a.jpg",
+            "2_16_3_8_a.jpg",
+            "2_16_3_10_a.jpg",
+            "2_16_3_11_a.jpg",
+            "2_16_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "2_16_4": {
+        "volume": 7251.2783210339,
+        "images": [
+            "2_16_4_1_a.jpg",
+            "2_16_4_2_a.jpg",
+            "2_16_4_3_a.jpg",
+            "2_16_4_4_a.jpg",
+            "2_16_4_5_a.jpg",
+            "2_16_4_6_a.jpg",
+            "2_16_4_7_a.jpg",
+            "2_16_4_8_a.jpg",
+            "2_16_4_9_a.jpg",
+            "2_16_4_10_a.jpg",
+            "2_16_4_11_a.jpg",
+            "2_16_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_10_1": {
+        "volume": 5471.0536183024,
+        "images": [
+            "3_10_1_1_a.jpg",
+            "3_10_1_2_a.jpg",
+            "3_10_1_5_a.jpg",
+            "3_10_1_6_a.jpg",
+            "3_10_1_7_a.jpg",
+            "3_10_1_9_a.jpg",
+            "3_10_1_11_a.jpg",
+            "3_10_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_10_10": {
+        "volume": 4355.8063051715,
+        "images": [
+            "3_10_10_1_a.jpg",
+            "3_10_10_2_a.jpg",
+            "3_10_10_3_a.jpg",
+            "3_10_10_5_a.jpg",
+            "3_10_10_6_a.jpg",
+            "3_10_10_7_a.jpg",
+            "3_10_10_8_a.jpg",
+            "3_10_10_9_a.jpg",
+            "3_10_10_10_a.jpg",
+            "3_10_10_11_a.jpg",
+            "3_10_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_10_2": {
+        "volume": 3691.7554943579,
+        "images": [
+            "3_10_2_2_a.jpg",
+            "3_10_2_5_a.jpg",
+            "3_10_2_6_a.jpg",
+            "3_10_2_7_a.jpg",
+            "3_10_2_8_a.jpg",
+            "3_10_2_9_a.jpg",
+            "3_10_2_10_a.jpg",
+            "3_10_2_11_a.jpg",
+            "3_10_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_10_3": {
+        "volume": 6647.5623158469,
+        "images": [
+            "3_10_3_1_a.jpg",
+            "3_10_3_2_a.jpg",
+            "3_10_3_3_a.jpg",
+            "3_10_3_4_a.jpg",
+            "3_10_3_5_a.jpg",
+            "3_10_3_6_a.jpg",
+            "3_10_3_7_a.jpg",
+            "3_10_3_8_a.jpg",
+            "3_10_3_9_a.jpg",
+            "3_10_3_10_a.jpg",
+            "3_10_3_11_a.jpg",
+            "3_10_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_10_4": {
+        "volume": 5667.1432359064,
+        "images": [
+            "3_10_4_1_a.jpg",
+            "3_10_4_2_a.jpg",
+            "3_10_4_3_a.jpg",
+            "3_10_4_4_a.jpg",
+            "3_10_4_5_a.jpg",
+            "3_10_4_6_a.jpg",
+            "3_10_4_7_a.jpg",
+            "3_10_4_8_a.jpg",
+            "3_10_4_9_a.jpg",
+            "3_10_4_10_a.jpg",
+            "3_10_4_11_a.jpg",
+            "3_10_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_10_6": {
+        "volume": 3915.9815990548,
+        "images": [
+            "3_10_6_1_a.jpg",
+            "3_10_6_3_a.jpg",
+            "3_10_6_5_a.jpg",
+            "3_10_6_8_a.jpg",
+            "3_10_6_9_a.jpg",
+            "3_10_6_10_a.jpg",
+            "3_10_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_10_7": {
+        "volume": 4669.0654064245,
+        "images": [
+            "3_10_7_1_a.jpg",
+            "3_10_7_2_a.jpg",
+            "3_10_7_3_a.jpg",
+            "3_10_7_4_a.jpg",
+            "3_10_7_5_a.jpg",
+            "3_10_7_6_a.jpg",
+            "3_10_7_7_a.jpg",
+            "3_10_7_8_a.jpg",
+            "3_10_7_9_a.jpg",
+            "3_10_7_10_a.jpg",
+            "3_10_7_11_a.jpg",
+            "3_10_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_10_8": {
+        "volume": 4652.3298517892,
+        "images": [
+            "3_10_8_1_a.jpg",
+            "3_10_8_2_a.jpg",
+            "3_10_8_3_a.jpg",
+            "3_10_8_5_a.jpg",
+            "3_10_8_6_a.jpg",
+            "3_10_8_7_a.jpg",
+            "3_10_8_8_a.jpg",
+            "3_10_8_9_a.jpg",
+            "3_10_8_10_a.jpg",
+            "3_10_8_11_a.jpg",
+            "3_10_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "3_10_9": {
+        "volume": 4480.590224979,
+        "images": [
+            "3_10_9_1_a.jpg",
+            "3_10_9_2_a.jpg",
+            "3_10_9_3_a.jpg",
+            "3_10_9_5_a.jpg",
+            "3_10_9_6_a.jpg",
+            "3_10_9_7_a.jpg",
+            "3_10_9_8_a.jpg",
+            "3_10_9_9_a.jpg",
+            "3_10_9_10_a.jpg",
+            "3_10_9_11_a.jpg",
+            "3_10_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_16_1": {
+        "volume": 5013.5657394884,
+        "images": [
+            "6_16_1_1_a.jpg",
+            "6_16_1_2_a.jpg",
+            "6_16_1_3_a.jpg",
+            "6_16_1_4_a.jpg",
+            "6_16_1_5_a.jpg",
+            "6_16_1_7_a.jpg",
+            "6_16_1_8_a.jpg",
+            "6_16_1_9_a.jpg",
+            "6_16_1_10_a.jpg",
+            "6_16_1_11_a.jpg",
+            "6_16_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_16_2": {
+        "volume": 4661.7972442997,
+        "images": [
+            "6_16_2_1_a.jpg",
+            "6_16_2_3_a.jpg",
+            "6_16_2_4_a.jpg",
+            "6_16_2_5_a.jpg",
+            "6_16_2_7_a.jpg",
+            "6_16_2_8_a.jpg",
+            "6_16_2_9_a.jpg",
+            "6_16_2_10_a.jpg",
+            "6_16_2_11_a.jpg",
+            "6_16_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_16_3": {
+        "volume": 5201.616333255,
+        "images": [
+            "6_16_3_1_a.jpg",
+            "6_16_3_2_a.jpg",
+            "6_16_3_3_a.jpg",
+            "6_16_3_4_a.jpg",
+            "6_16_3_5_a.jpg",
+            "6_16_3_7_a.jpg",
+            "6_16_3_8_a.jpg",
+            "6_16_3_9_a.jpg",
+            "6_16_3_10_a.jpg",
+            "6_16_3_11_a.jpg",
+            "6_16_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_16_4": {
+        "volume": 9300.765204485,
+        "images": [
+            "6_16_4_1_a.jpg",
+            "6_16_4_2_a.jpg",
+            "6_16_4_3_a.jpg",
+            "6_16_4_4_a.jpg",
+            "6_16_4_5_a.jpg",
+            "6_16_4_6_a.jpg",
+            "6_16_4_7_a.jpg",
+            "6_16_4_8_a.jpg",
+            "6_16_4_9_a.jpg",
+            "6_16_4_10_a.jpg",
+            "6_16_4_11_a.jpg",
+            "6_16_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "6_16_5": {
+        "volume": 5871.4214142328,
+        "images": [
+            "6_16_5_1_a.jpg",
+            "6_16_5_2_a.jpg",
+            "6_16_5_3_a.jpg",
+            "6_16_5_4_a.jpg",
+            "6_16_5_5_a.jpg",
+            "6_16_5_6_a.jpg",
+            "6_16_5_7_a.jpg",
+            "6_16_5_8_a.jpg",
+            "6_16_5_9_a.jpg",
+            "6_16_5_10_a.jpg",
+            "6_16_5_11_a.jpg",
+            "6_16_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_6_1": {
+        "volume": 5054.4832979097,
+        "images": [
+            "10_6_1_1_a.jpg",
+            "10_6_1_2_a.jpg",
+            "10_6_1_3_a.jpg",
+            "10_6_1_5_a.jpg",
+            "10_6_1_7_a.jpg",
+            "10_6_1_8_a.jpg",
+            "10_6_1_9_a.jpg",
+            "10_6_1_10_a.jpg",
+            "10_6_1_11_a.jpg",
+            "10_6_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_6_10": {
+        "volume": 4136.2072420468,
+        "images": [
+            "10_6_10_1_a.jpg",
+            "10_6_10_3_a.jpg",
+            "10_6_10_4_a.jpg",
+            "10_6_10_5_a.jpg",
+            "10_6_10_6_a.jpg",
+            "10_6_10_7_a.jpg",
+            "10_6_10_8_a.jpg",
+            "10_6_10_9_a.jpg",
+            "10_6_10_10_a.jpg",
+            "10_6_10_11_a.jpg",
+            "10_6_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_6_2": {
+        "volume": 4212.0475188265,
+        "images": [
+            "10_6_2_1_a.jpg",
+            "10_6_2_2_a.jpg",
+            "10_6_2_3_a.jpg",
+            "10_6_2_4_a.jpg",
+            "10_6_2_5_a.jpg",
+            "10_6_2_6_a.jpg",
+            "10_6_2_7_a.jpg",
+            "10_6_2_8_a.jpg",
+            "10_6_2_10_a.jpg",
+            "10_6_2_11_a.jpg",
+            "10_6_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_6_3": {
+        "volume": 5108.8044910147,
+        "images": [
+            "10_6_3_1_a.jpg",
+            "10_6_3_2_a.jpg",
+            "10_6_3_3_a.jpg",
+            "10_6_3_4_a.jpg",
+            "10_6_3_5_a.jpg",
+            "10_6_3_6_a.jpg",
+            "10_6_3_7_a.jpg",
+            "10_6_3_8_a.jpg",
+            "10_6_3_9_a.jpg",
+            "10_6_3_10_a.jpg",
+            "10_6_3_11_a.jpg",
+            "10_6_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_6_4": {
+        "volume": 5431.5479976583,
+        "images": [
+            "10_6_4_1_a.jpg",
+            "10_6_4_2_a.jpg",
+            "10_6_4_3_a.jpg",
+            "10_6_4_4_a.jpg",
+            "10_6_4_5_a.jpg",
+            "10_6_4_6_a.jpg",
+            "10_6_4_7_a.jpg",
+            "10_6_4_8_a.jpg",
+            "10_6_4_9_a.jpg",
+            "10_6_4_10_a.jpg",
+            "10_6_4_11_a.jpg",
+            "10_6_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_6_5": {
+        "volume": 4951.6092749784,
+        "images": [
+            "10_6_5_1_a.jpg",
+            "10_6_5_2_a.jpg",
+            "10_6_5_3_a.jpg",
+            "10_6_5_4_a.jpg",
+            "10_6_5_5_a.jpg",
+            "10_6_5_6_a.jpg",
+            "10_6_5_7_a.jpg",
+            "10_6_5_8_a.jpg",
+            "10_6_5_9_a.jpg",
+            "10_6_5_10_a.jpg",
+            "10_6_5_11_a.jpg",
+            "10_6_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_6_6": {
+        "volume": 4719.6415773246,
+        "images": [
+            "10_6_6_2_a.jpg",
+            "10_6_6_3_a.jpg",
+            "10_6_6_4_a.jpg",
+            "10_6_6_5_a.jpg",
+            "10_6_6_6_a.jpg",
+            "10_6_6_7_a.jpg",
+            "10_6_6_8_a.jpg",
+            "10_6_6_9_a.jpg",
+            "10_6_6_10_a.jpg",
+            "10_6_6_11_a.jpg",
+            "10_6_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_6_7": {
+        "volume": 3419.6444217322,
+        "images": [
+            "10_6_7_1_a.jpg",
+            "10_6_7_2_a.jpg",
+            "10_6_7_3_a.jpg",
+            "10_6_7_5_a.jpg",
+            "10_6_7_6_a.jpg",
+            "10_6_7_7_a.jpg",
+            "10_6_7_8_a.jpg",
+            "10_6_7_9_a.jpg",
+            "10_6_7_10_a.jpg",
+            "10_6_7_11_a.jpg",
+            "10_6_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "10_6_8": {
+        "volume": 4041.2985369173,
+        "images": [
+            "10_6_8_1_a.jpg",
+            "10_6_8_2_a.jpg",
+            "10_6_8_3_a.jpg",
+            "10_6_8_4_a.jpg",
+            "10_6_8_5_a.jpg",
+            "10_6_8_6_a.jpg",
+            "10_6_8_7_a.jpg",
+            "10_6_8_8_a.jpg",
+            "10_6_8_9_a.jpg",
+            "10_6_8_10_a.jpg",
+            "10_6_8_11_a.jpg",
+            "10_6_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "7_18_2": {
+        "volume": 5685.3752314752,
+        "images": [
+            "7_18_2_3_a.jpg",
+            "7_18_2_4_a.jpg",
+            "7_18_2_5_a.jpg",
+            "7_18_2_6_a.jpg",
+            "7_18_2_7_a.jpg",
+            "7_18_2_9_a.jpg",
+            "7_18_2_10_a.jpg",
+            "7_18_2_11_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "7_18_3": {
+        "volume": 3652.4528425577,
+        "images": [
+            "7_18_3_1_a.jpg",
+            "7_18_3_2_a.jpg",
+            "7_18_3_3_a.jpg",
+            "7_18_3_4_a.jpg",
+            "7_18_3_5_a.jpg",
+            "7_18_3_7_a.jpg",
+            "7_18_3_8_a.jpg",
+            "7_18_3_9_a.jpg",
+            "7_18_3_10_a.jpg",
+            "7_18_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "7_18_4": {
+        "volume": 7244.6612441737,
+        "images": [
+            "7_18_4_1_a.jpg",
+            "7_18_4_2_a.jpg",
+            "7_18_4_3_a.jpg",
+            "7_18_4_4_a.jpg",
+            "7_18_4_5_a.jpg",
+            "7_18_4_6_a.jpg",
+            "7_18_4_10_a.jpg",
+            "7_18_4_11_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "7_18_5": {
+        "volume": 4415.4096544561,
+        "images": [
+            "7_18_5_1_a.jpg",
+            "7_18_5_3_a.jpg",
+            "7_18_5_4_a.jpg",
+            "7_18_5_5_a.jpg",
+            "7_18_5_7_a.jpg",
+            "7_18_5_8_a.jpg",
+            "7_18_5_10_a.jpg",
+            "7_18_5_11_a.jpg",
+            "7_18_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_7_1": {
+        "volume": 3704.3986361756,
+        "images": [
+            "16_7_1_1_a.jpg",
+            "16_7_1_2_a.jpg",
+            "16_7_1_3_a.jpg",
+            "16_7_1_4_a.jpg",
+            "16_7_1_5_a.jpg",
+            "16_7_1_6_a.jpg",
+            "16_7_1_7_a.jpg",
+            "16_7_1_8_a.jpg",
+            "16_7_1_9_a.jpg",
+            "16_7_1_10_a.jpg",
+            "16_7_1_11_a.jpg",
+            "16_7_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_7_10": {
+        "volume": 3519.2586853504,
+        "images": [
+            "16_7_10_1_a.jpg",
+            "16_7_10_2_a.jpg",
+            "16_7_10_3_a.jpg",
+            "16_7_10_5_a.jpg",
+            "16_7_10_6_a.jpg",
+            "16_7_10_7_a.jpg",
+            "16_7_10_8_a.jpg",
+            "16_7_10_9_a.jpg",
+            "16_7_10_10_a.jpg",
+            "16_7_10_11_a.jpg",
+            "16_7_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_7_2": {
+        "volume": 3728.6288564177,
+        "images": [
+            "16_7_2_1_a.jpg",
+            "16_7_2_2_a.jpg",
+            "16_7_2_3_a.jpg",
+            "16_7_2_5_a.jpg",
+            "16_7_2_6_a.jpg",
+            "16_7_2_7_a.jpg",
+            "16_7_2_8_a.jpg",
+            "16_7_2_9_a.jpg",
+            "16_7_2_10_a.jpg",
+            "16_7_2_11_a.jpg",
+            "16_7_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_7_3": {
+        "volume": 4493.5758728208,
+        "images": [
+            "16_7_3_1_a.jpg",
+            "16_7_3_2_a.jpg",
+            "16_7_3_3_a.jpg",
+            "16_7_3_4_a.jpg",
+            "16_7_3_5_a.jpg",
+            "16_7_3_6_a.jpg",
+            "16_7_3_7_a.jpg",
+            "16_7_3_8_a.jpg",
+            "16_7_3_9_a.jpg",
+            "16_7_3_10_a.jpg",
+            "16_7_3_11_a.jpg",
+            "16_7_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_7_4": {
+        "volume": 6063.1091550477,
+        "images": [
+            "16_7_4_1_a.jpg",
+            "16_7_4_2_a.jpg",
+            "16_7_4_3_a.jpg",
+            "16_7_4_4_a.jpg",
+            "16_7_4_5_a.jpg",
+            "16_7_4_6_a.jpg",
+            "16_7_4_7_a.jpg",
+            "16_7_4_8_a.jpg",
+            "16_7_4_9_a.jpg",
+            "16_7_4_10_a.jpg",
+            "16_7_4_11_a.jpg",
+            "16_7_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_7_5": {
+        "volume": 4060.918869396,
+        "images": [
+            "16_7_5_1_a.jpg",
+            "16_7_5_2_a.jpg",
+            "16_7_5_3_a.jpg",
+            "16_7_5_4_a.jpg",
+            "16_7_5_5_a.jpg",
+            "16_7_5_6_a.jpg",
+            "16_7_5_7_a.jpg",
+            "16_7_5_8_a.jpg",
+            "16_7_5_9_a.jpg",
+            "16_7_5_10_a.jpg",
+            "16_7_5_11_a.jpg",
+            "16_7_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_7_7": {
+        "volume": 4606.7278766713,
+        "images": [
+            "16_7_7_1_a.jpg",
+            "16_7_7_2_a.jpg",
+            "16_7_7_3_a.jpg",
+            "16_7_7_4_a.jpg",
+            "16_7_7_5_a.jpg",
+            "16_7_7_6_a.jpg",
+            "16_7_7_7_a.jpg",
+            "16_7_7_8_a.jpg",
+            "16_7_7_9_a.jpg",
+            "16_7_7_10_a.jpg",
+            "16_7_7_11_a.jpg",
+            "16_7_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_7_8": {
+        "volume": 3643.7031312947,
+        "images": [
+            "16_7_8_2_a.jpg",
+            "16_7_8_6_a.jpg",
+            "16_7_8_7_a.jpg",
+            "16_7_8_8_a.jpg",
+            "16_7_8_9_a.jpg",
+            "16_7_8_10_a.jpg",
+            "16_7_8_11_a.jpg",
+            "16_7_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "16_7_9": {
+        "volume": 3842.3631852254,
+        "images": [
+            "16_7_9_1_a.jpg",
+            "16_7_9_2_a.jpg",
+            "16_7_9_3_a.jpg",
+            "16_7_9_5_a.jpg",
+            "16_7_9_6_a.jpg",
+            "16_7_9_7_a.jpg",
+            "16_7_9_8_a.jpg",
+            "16_7_9_9_a.jpg",
+            "16_7_9_10_a.jpg",
+            "16_7_9_11_a.jpg",
+            "16_7_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "18_18_2": {
+        "volume": 4642.3397695031,
+        "images": [
+            "18_18_2_2_a.jpg",
+            "18_18_2_3_a.jpg",
+            "18_18_2_4_a.jpg",
+            "18_18_2_5_a.jpg",
+            "18_18_2_6_a.jpg",
+            "18_18_2_8_a.jpg",
+            "18_18_2_10_a.jpg",
+            "18_18_2_11_a.jpg",
+            "18_18_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "18_18_3": {
+        "volume": 3533.235441429,
+        "images": [
+            "18_18_3_1_a.jpg",
+            "18_18_3_2_a.jpg",
+            "18_18_3_3_a.jpg",
+            "18_18_3_4_a.jpg",
+            "18_18_3_5_a.jpg",
+            "18_18_3_7_a.jpg",
+            "18_18_3_8_a.jpg",
+            "18_18_3_9_a.jpg",
+            "18_18_3_10_a.jpg",
+            "18_18_3_11_a.jpg",
+            "18_18_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "18_18_4": {
+        "volume": 6881.0010011721,
+        "images": [
+            "18_18_4_1_a.jpg",
+            "18_18_4_2_a.jpg",
+            "18_18_4_3_a.jpg",
+            "18_18_4_4_a.jpg",
+            "18_18_4_5_a.jpg",
+            "18_18_4_6_a.jpg",
+            "18_18_4_7_a.jpg",
+            "18_18_4_8_a.jpg",
+            "18_18_4_9_a.jpg",
+            "18_18_4_10_a.jpg",
+            "18_18_4_11_a.jpg",
+            "18_18_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "18_18_5": {
+        "volume": 4800.6302180029,
+        "images": [
+            "18_18_5_1_a.jpg",
+            "18_18_5_2_a.jpg",
+            "18_18_5_3_a.jpg",
+            "18_18_5_4_a.jpg",
+            "18_18_5_5_a.jpg",
+            "18_18_5_6_a.jpg",
+            "18_18_5_7_a.jpg",
+            "18_18_5_8_a.jpg",
+            "18_18_5_9_a.jpg",
+            "18_18_5_10_a.jpg",
+            "18_18_5_11_a.jpg",
+            "18_18_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_18_1": {
+        "volume": 3383.2257100645,
+        "images": [
+            "19_18_1_1_a.jpg",
+            "19_18_1_2_a.jpg",
+            "19_18_1_3_a.jpg",
+            "19_18_1_4_a.jpg",
+            "19_18_1_5_a.jpg",
+            "19_18_1_6_a.jpg",
+            "19_18_1_7_a.jpg",
+            "19_18_1_8_a.jpg",
+            "19_18_1_9_a.jpg",
+            "19_18_1_10_a.jpg",
+            "19_18_1_11_a.jpg",
+            "19_18_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_18_2": {
+        "volume": 4059.3693130849,
+        "images": [
+            "19_18_2_1_a.jpg",
+            "19_18_2_2_a.jpg",
+            "19_18_2_3_a.jpg",
+            "19_18_2_4_a.jpg",
+            "19_18_2_6_a.jpg",
+            "19_18_2_7_a.jpg",
+            "19_18_2_8_a.jpg",
+            "19_18_2_9_a.jpg",
+            "19_18_2_10_a.jpg",
+            "19_18_2_11_a.jpg",
+            "19_18_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_18_3": {
+        "volume": 3354.2915624673,
+        "images": [
+            "19_18_3_1_a.jpg",
+            "19_18_3_2_a.jpg",
+            "19_18_3_3_a.jpg",
+            "19_18_3_4_a.jpg",
+            "19_18_3_6_a.jpg",
+            "19_18_3_8_a.jpg",
+            "19_18_3_9_a.jpg",
+            "19_18_3_10_a.jpg",
+            "19_18_3_11_a.jpg",
+            "19_18_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_18_4": {
+        "volume": 5831.7273877297,
+        "images": [
+            "19_18_4_1_a.jpg",
+            "19_18_4_2_a.jpg",
+            "19_18_4_3_a.jpg",
+            "19_18_4_4_a.jpg",
+            "19_18_4_5_a.jpg",
+            "19_18_4_6_a.jpg",
+            "19_18_4_7_a.jpg",
+            "19_18_4_8_a.jpg",
+            "19_18_4_9_a.jpg",
+            "19_18_4_10_a.jpg",
+            "19_18_4_11_a.jpg",
+            "19_18_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "19_18_5": {
+        "volume": 5885.7138464157,
+        "images": [
+            "19_18_5_1_a.jpg",
+            "19_18_5_2_a.jpg",
+            "19_18_5_3_a.jpg",
+            "19_18_5_4_a.jpg",
+            "19_18_5_5_a.jpg",
+            "19_18_5_6_a.jpg",
+            "19_18_5_7_a.jpg",
+            "19_18_5_8_a.jpg",
+            "19_18_5_9_a.jpg",
+            "19_18_5_10_a.jpg",
+            "19_18_5_11_a.jpg",
+            "19_18_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_9_1": {
+        "volume": 5485.4639474988,
+        "images": [
+            "14_9_1_1_a.jpg",
+            "14_9_1_3_a.jpg",
+            "14_9_1_4_a.jpg",
+            "14_9_1_5_a.jpg",
+            "14_9_1_6_a.jpg",
+            "14_9_1_7_a.jpg",
+            "14_9_1_8_a.jpg",
+            "14_9_1_10_a.jpg",
+            "14_9_1_11_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_9_10": {
+        "volume": 3874.0439250128,
+        "images": [
+            "14_9_10_1_a.jpg",
+            "14_9_10_2_a.jpg",
+            "14_9_10_3_a.jpg",
+            "14_9_10_5_a.jpg",
+            "14_9_10_6_a.jpg",
+            "14_9_10_7_a.jpg",
+            "14_9_10_8_a.jpg",
+            "14_9_10_9_a.jpg",
+            "14_9_10_10_a.jpg",
+            "14_9_10_11_a.jpg",
+            "14_9_10_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_9_2": {
+        "volume": 3862.9202221912,
+        "images": [
+            "14_9_2_1_a.jpg",
+            "14_9_2_2_a.jpg",
+            "14_9_2_3_a.jpg",
+            "14_9_2_5_a.jpg",
+            "14_9_2_6_a.jpg",
+            "14_9_2_7_a.jpg",
+            "14_9_2_8_a.jpg",
+            "14_9_2_9_a.jpg",
+            "14_9_2_10_a.jpg",
+            "14_9_2_11_a.jpg",
+            "14_9_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_9_3": {
+        "volume": 3439.1432523045,
+        "images": [
+            "14_9_3_1_a.jpg",
+            "14_9_3_2_a.jpg",
+            "14_9_3_3_a.jpg",
+            "14_9_3_4_a.jpg",
+            "14_9_3_5_a.jpg",
+            "14_9_3_7_a.jpg",
+            "14_9_3_8_a.jpg",
+            "14_9_3_9_a.jpg",
+            "14_9_3_10_a.jpg",
+            "14_9_3_11_a.jpg",
+            "14_9_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_9_4": {
+        "volume": 2595.9764493522,
+        "images": [
+            "14_9_4_1_a.jpg",
+            "14_9_4_2_a.jpg",
+            "14_9_4_3_a.jpg",
+            "14_9_4_4_a.jpg",
+            "14_9_4_5_a.jpg",
+            "14_9_4_6_a.jpg",
+            "14_9_4_7_a.jpg",
+            "14_9_4_8_a.jpg",
+            "14_9_4_9_a.jpg",
+            "14_9_4_10_a.jpg",
+            "14_9_4_11_a.jpg",
+            "14_9_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_9_5": {
+        "volume": 4633.7660481693,
+        "images": [
+            "14_9_5_1_a.jpg",
+            "14_9_5_2_a.jpg",
+            "14_9_5_3_a.jpg",
+            "14_9_5_4_a.jpg",
+            "14_9_5_5_a.jpg",
+            "14_9_5_6_a.jpg",
+            "14_9_5_7_a.jpg",
+            "14_9_5_8_a.jpg",
+            "14_9_5_9_a.jpg",
+            "14_9_5_10_a.jpg",
+            "14_9_5_11_a.jpg",
+            "14_9_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_9_6": {
+        "volume": 3844.9903709338,
+        "images": [
+            "14_9_6_1_a.jpg",
+            "14_9_6_2_a.jpg",
+            "14_9_6_5_a.jpg",
+            "14_9_6_6_a.jpg",
+            "14_9_6_7_a.jpg",
+            "14_9_6_8_a.jpg",
+            "14_9_6_9_a.jpg",
+            "14_9_6_10_a.jpg",
+            "14_9_6_11_a.jpg",
+            "14_9_6_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_9_7": {
+        "volume": 4117.1350180589,
+        "images": [
+            "14_9_7_1_a.jpg",
+            "14_9_7_2_a.jpg",
+            "14_9_7_3_a.jpg",
+            "14_9_7_5_a.jpg",
+            "14_9_7_6_a.jpg",
+            "14_9_7_7_a.jpg",
+            "14_9_7_8_a.jpg",
+            "14_9_7_9_a.jpg",
+            "14_9_7_10_a.jpg",
+            "14_9_7_11_a.jpg",
+            "14_9_7_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_9_8": {
+        "volume": 3359.928590589,
+        "images": [
+            "14_9_8_1_a.jpg",
+            "14_9_8_2_a.jpg",
+            "14_9_8_3_a.jpg",
+            "14_9_8_4_a.jpg",
+            "14_9_8_5_a.jpg",
+            "14_9_8_6_a.jpg",
+            "14_9_8_7_a.jpg",
+            "14_9_8_8_a.jpg",
+            "14_9_8_10_a.jpg",
+            "14_9_8_11_a.jpg",
+            "14_9_8_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "14_9_9": {
+        "volume": 4766.8313301638,
+        "images": [
+            "14_9_9_1_a.jpg",
+            "14_9_9_2_a.jpg",
+            "14_9_9_3_a.jpg",
+            "14_9_9_4_a.jpg",
+            "14_9_9_5_a.jpg",
+            "14_9_9_6_a.jpg",
+            "14_9_9_7_a.jpg",
+            "14_9_9_8_a.jpg",
+            "14_9_9_9_a.jpg",
+            "14_9_9_10_a.jpg",
+            "14_9_9_11_a.jpg",
+            "14_9_9_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_16_1": {
+        "volume": 3035.5524600277,
+        "images": [
+            "8_16_1_1_a.jpg",
+            "8_16_1_2_a.jpg",
+            "8_16_1_3_a.jpg",
+            "8_16_1_4_a.jpg",
+            "8_16_1_5_a.jpg",
+            "8_16_1_6_a.jpg",
+            "8_16_1_7_a.jpg",
+            "8_16_1_8_a.jpg",
+            "8_16_1_9_a.jpg",
+            "8_16_1_10_a.jpg",
+            "8_16_1_11_a.jpg",
+            "8_16_1_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_16_2": {
+        "volume": 2967.169093571,
+        "images": [
+            "8_16_2_1_a.jpg",
+            "8_16_2_2_a.jpg",
+            "8_16_2_3_a.jpg",
+            "8_16_2_4_a.jpg",
+            "8_16_2_5_a.jpg",
+            "8_16_2_6_a.jpg",
+            "8_16_2_7_a.jpg",
+            "8_16_2_8_a.jpg",
+            "8_16_2_9_a.jpg",
+            "8_16_2_10_a.jpg",
+            "8_16_2_11_a.jpg",
+            "8_16_2_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_16_3": {
+        "volume": 4988.69259402,
+        "images": [
+            "8_16_3_1_a.jpg",
+            "8_16_3_2_a.jpg",
+            "8_16_3_3_a.jpg",
+            "8_16_3_4_a.jpg",
+            "8_16_3_5_a.jpg",
+            "8_16_3_6_a.jpg",
+            "8_16_3_7_a.jpg",
+            "8_16_3_9_a.jpg",
+            "8_16_3_10_a.jpg",
+            "8_16_3_11_a.jpg",
+            "8_16_3_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_16_4": {
+        "volume": 4259.2276834641,
+        "images": [
+            "8_16_4_1_a.jpg",
+            "8_16_4_2_a.jpg",
+            "8_16_4_3_a.jpg",
+            "8_16_4_4_a.jpg",
+            "8_16_4_5_a.jpg",
+            "8_16_4_6_a.jpg",
+            "8_16_4_7_a.jpg",
+            "8_16_4_8_a.jpg",
+            "8_16_4_9_a.jpg",
+            "8_16_4_10_a.jpg",
+            "8_16_4_11_a.jpg",
+            "8_16_4_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    },
+    "8_16_5": {
+        "volume": 5272.4198751588,
+        "images": [
+            "8_16_5_1_a.jpg",
+            "8_16_5_2_a.jpg",
+            "8_16_5_3_a.jpg",
+            "8_16_5_4_a.jpg",
+            "8_16_5_5_a.jpg",
+            "8_16_5_6_a.jpg",
+            "8_16_5_7_a.jpg",
+            "8_16_5_8_a.jpg",
+            "8_16_5_9_a.jpg",
+            "8_16_5_10_a.jpg",
+            "8_16_5_11_a.jpg",
+            "8_16_5_12_a.jpg"
+        ],
+        "artificial_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    }
+}

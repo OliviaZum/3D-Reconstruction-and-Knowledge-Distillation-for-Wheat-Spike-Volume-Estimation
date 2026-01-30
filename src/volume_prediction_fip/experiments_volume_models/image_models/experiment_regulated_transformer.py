@@ -21,6 +21,10 @@ Artificial randompose: {'MAE': 247.00242614746094, 'Correlation': 0.970975135459
 Artificial fiplike normal: {'MAE': 477.668212890625, 'Correlation': 0.8881649636876028, 'Loss': 0.08979550004005432, 'Steepness': 0.9243962589100745
 Artificial fiplike uniform: {'MAE': 495.8588562011719, 'Correlation': 0.8653908952381895, 'Loss': 0.08875340968370438, 'Steepness': 0.908395792635748}
 """
+#use: export CUBLAS_WORKSPACE_CONFIG=:4096:8
+#export CUBLAS_WORKSPACE_CONFIG=:16:8
+
+
 
 from torch.utils.data import DataLoader
 from torch import nn
@@ -67,6 +71,9 @@ def get_stats(vol_pred, vol_real):
     A = np.vstack([vol_real, np.ones(len(vol_real))]).T
     linregcoeff, _, _, _ = np.linalg.lstsq(A, vol_pred, rcond=None)
     l["Steepness"] = linregcoeff[0]
+    vp = datasets.vol_unorm(vol_pred)
+    vr = datasets.vol_unorm(vol_real)
+    l["MAPE"] = (torch.abs((vr - vp) / (vr + 1e-8))).mean().item() * 100
     return l
 
 def group_check(vol_real, vol_pred, k, sampling_points, group_by_gt = True):
@@ -184,8 +191,8 @@ def is_better_model(stats, best_stats):
 if __name__ == "__main__":
     accelerate.utils.set_seed(0)
 
-    model_name = "regulatedtransformer-direct.pth"
-    #model_name = "self-distill-regulated_transformer.pth"
+    #model_name = "regulatedtransformer-direct.pth"
+    model_name = "self-distill-regulated_transformer.pth"
     #model_name = "nodistance-regulated_transformer.pth"
     #model_name = "nodistancenoseg-regulated_transformer.pth"
     #model_name = "noaug-regulated_transformer.pth"
@@ -280,7 +287,7 @@ if __name__ == "__main__":
         plt.show()
         exit(0)
 
-    evaluation = False
+    evaluation = True
     if evaluation == True:
         model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True, fraction_include=1, detail_eval=True)
@@ -321,3 +328,27 @@ if __name__ == "__main__":
 
     print(f"\n Best stats {best_val}")
     torch.save(best_model, helpers.get_exp_path() / f"{model_name}")
+
+
+    #{'MAE': 675.1566772460938, 'Correlation': 0.7558175552055129, 'Steepness': 0.7455614340258181, 'MAPE': 15.356525778770447, 'Loss': 0.19118213653564453}
+    #{'MAE': 712.8218994140625, 'Correlation': 0.7463525798172536, 'Steepness': 0.7593150355364198, 'MAPE': 15.976999700069427, 'Loss': 0.20875975489616394}
+    
+    #4096:8
+    #{'MAE': 675.1566772460938, 'Correlation': 0.7558175552055129, 'Steepness': 0.7455614340258181, 'MAPE': 15.356525778770447, 'Loss': 0.19118213653564453}
+    
+    #16:8
+    #{'MAE': 666.13671875, 'Correlation': 0.7570779852580791, 'Steepness': 0.7263923261101991, 'MAPE': 15.119819343090057, 'Loss': 0.18902479112148285}
+
+    #creating .venv
+    #16:8
+    #{'MAE': 723.8834228515625, 'Correlation': 0.7552360497584256, 'Steepness': 0.8298041411096486, 'MAPE': 16.433194279670715, 'Loss': 0.19541175663471222}
+    #4096:8
+    #{'MAE': 669.3644409179688, 'Correlation': 0.7539337938001187, 'Steepness': 0.7362493785673844, 'MAPE': 15.144048631191254, 'Loss': 0.1944139450788498}
+    #16:8
+    #{'MAE': 723.8834228515625, 'Correlation': 0.7552360497584256, 'Steepness': 0.8298041411096486, 'MAPE': 16.433194279670715, 'Loss': 0.19541175663471222}
+    #{'MAE': 669.3644409179688, 'Correlation': 0.7539337938001187, 'Steepness': 0.7362493785673844, 'MAPE': 15.144048631191254, 'Loss': 0.1944139450788498}
+
+
+#pip freeze > requirements.lock.txt
+#source .venv/bin/activate
+#export CUBLAS_WORKSPACE_CONFIG=:4096:8

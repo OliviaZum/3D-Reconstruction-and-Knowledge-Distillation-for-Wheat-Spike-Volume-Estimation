@@ -44,6 +44,10 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
         linregcoeff, _, _, _ = np.linalg.lstsq(A, vol_pred, rcond=None)
         l["Steepness"] = linregcoeff[0]
+        vp = datasets.vol_unorm(vol_pred)
+        vr = datasets.vol_unorm(vol_real)
+        l["MAPE"] = (torch.abs((vr - vp) / (vr + 1e-8))).mean().item() * 100
+
         if should_print:
              print(l)
         if show_plot:
@@ -78,7 +82,8 @@ if __name__ == "__main__":
 
     model_name = "transformer.pth"
 
-    if True:
+    evaluation = False
+    if evaluation == True:
         model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)
