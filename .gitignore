@@ -15,3 +15,6 @@ FIP_test/
 2_Output_2024
 check_empty_folders.py
 src/log_files
+
+assets/model-weights/FoMo4Wheat_base.pth
+precomputed_new_setup.json
