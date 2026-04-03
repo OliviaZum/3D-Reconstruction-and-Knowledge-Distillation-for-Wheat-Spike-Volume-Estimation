@@ -1,10 +1,101 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <title>Wheat Spike Volume Estimation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 40px;
+        }
+        h1 {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        .authors {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .affiliation {
+            font-size: 16px;
+            color: gray;
+            margin-bottom: 20px;
+        }
+        .buttons a {
+            display: inline-block;
+            margin: 10px;
+            padding: 12px 20px;
+            background: #1f3b57;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .buttons a:hover {
+            background: #2c5d87;
+        }
+        img {
+            margin-top: 30px;
+            max-width: 100%;
+            border-radius: 10px;
+        }
+        .section {
+            text-align: left;
+            margin-top: 40px;
+        }
+        .section h2 {
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+        }
+    </style>
 </head>
+
 <body>
+<div class="container">
+
     <h1>3D Reconstruction and Knowledge Distillation for Wheat Spike Volume Estimation</h1>
-    <p>Website is working 🎉</p>
+
+   <div class="authors">
+        Olivia Zumsteg<sup>1*</sup>, Jannis Widmer<sup>1*</sup>, Yann Bourdé<sup>1</sup>, Norbert Kirchgessner<sup>1</sup><br>
+        Andreas Hund<sup>1</sup>, Lukas Roth<sup>1</sup>, Paraskevi Nousi<sup>2</sup>
+    </div>
+
+    <div class="affiliation">
+        <sup>1</sup>ETH Zurich, Switzerland · 
+        <sup>2</sup>Swiss Data Science Center, Switzerland
+    </div>
+
+    <div class="affiliation">
+        * Equal contribution &nbsp;&nbsp; † Corresponding author: 
+        <a href="mailto:zumstego@ethz.ch">zumstego@ethz.ch</a>
+    </div>
+
+    <div class="buttons">
+        <a href="#">📄 Paper (coming soon)</a>
+        <a href="https://github.com/OliviaZum/3D-Reconstruction-and-Knowledge-Distillation-for-Wheat-Spike-Volume-Estimation">💻 Code</a>
+    </div>
+
+    <!-- IMAGE -->
+    <img src="teaser.png" alt="Method overview">
+
+    <div class="section">
+        <h2>Abstract</h2>
+        <p>
+            We propose a method for estimating wheat spike volume from RGB images using 
+            vision transformers and knowledge distillation. By combining image-based and 
+            point cloud-based representations, the model achieves accurate and scalable 
+            volume prediction under field conditions.
+        </p>
+    </div>
+
+</div>
 </body>
 </html>
