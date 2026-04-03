@@ -8,6 +8,7 @@ import tqdm
 import hashlib
 import numpy as np
 import numpy.typing as npt
+import time
 
 from torch.utils.data import Dataset, DataLoader, Sampler
 from torchvision.io import read_image
@@ -38,6 +39,7 @@ def vol_norm(v):
     
 def vol_unorm(v):
     return v * 1000 + 4763
+
 
 class EqualBinSampler(Sampler):
     """
@@ -225,15 +227,26 @@ class DepthMapDataset(Dataset):
             self.cache = torch.load(path, weights_only=True)
         else:
             self.cache = torch.zeros((len(self.plant_mapping), self.point_cloud_size, 7))
+            total_reproj_time = 0
             for idx in tqdm.tqdm(range(len(self.plant_mapping)), "Creating cache"):
                 row = self.plant_mapping.iloc[[idx]]
                 rows = row.explode(column=["depth_name", "pose_file", "pose_key", "distance", "corner"])
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                start = time.time()
                 points, normals, weight = self.reprojector.reproject_images_3d(rows, voxel_size=0.002)
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                total_reproj_time += time.time() - start
                 data = torch.tensor(np.concatenate((points, normals, np.expand_dims(weight, 1)), axis=1), dtype=torch.float32)
                 data[:, 0:3] = (data[:, 0:3] - torch.mean(data[:, 0:3], dim=0, keepdim=True)) * 1000
 
                 inclen = min(self.point_cloud_size, data.shape[0])
                 self.cache[idx, 0:inclen, :] = data[0:inclen]
+
+            print("\n=== 3D Reprojection Timing ===")
+            print(f"Total reprojection time: {total_reproj_time:.2f}s")
+            print(f"Avg reprojection per spike: {total_reproj_time/len(self.plant_mapping):.4f}s")
 
             torch.save(self.cache, path)
     
@@ -532,7 +545,9 @@ class MultiImageTrainDataset(Dataset):
         # Create hash for current setup
         plant_mapping = self.plant_mapping.map(lambda x : tuple(x) if isinstance(x,list) else x)
         hash_ = hashlib.sha256(pd.util.hash_pandas_object(plant_mapping, index=True).values)
-        pretrained_model.train()
+        #pretrained_model.train()
+        pretrained_model.requires_grad_(False)
+
         pretrained_model = pretrained_model.to('cpu')
         hash_.update(str(pretrained_model).encode())
         hash_.update(str(pretrained_model.state_dict()).encode())
@@ -557,14 +572,35 @@ class MultiImageTrainDataset(Dataset):
 
             with torch.no_grad():
                 all_features = []
+                total_time = 0.0
+                total_spikes = 0
                 for _ in range(n_duplicates):
                     epoch_features = []
+
                     for img in tqdm.tqdm(dataloader, f"Creating {cache_path}, #duplicates {n_duplicates}"):
                             img = img.to(device)
+                            if torch.cuda.is_available():
+                                torch.cuda.synchronize()
+                            start = time.time()
+                            
+
                             features = pretrained_model(img)
+                            if torch.cuda.is_available():
+                                torch.cuda.synchronize()
+
+                            end = time.time()
+
+                            batch_time = end - start
+                            total_time += batch_time
+                            total_spikes += img.size(0)
+
                             epoch_features.append(features.cpu())
                     epoch_features = torch.concat(epoch_features, dim=0)
                     all_features.append(epoch_features)
+                print("\n=== DINO BACKBONE TIMING (REAL DATA) ===")
+                print(f"Total backbone time: {total_time:.4f}s")
+                print(f"Time per spike: {total_time / total_spikes:.6f}s")
+                print(f"Time per spike: {(total_time / total_spikes)*1000:.3f} ms")
                 all_features = torch.stack(all_features, dim=2)
             
             self.cache = {"features": all_features, "index": {y: x for x, y in ds.index_to_plant_and_index.items()}, "hash": hash_}
@@ -644,7 +680,8 @@ class Image3dCombidataset(Dataset):
     def __getitem__(self, index):
         if self.validation_mode:
             #torch_images, plant, key_padding_mask, out_label, loss_weight
-            images, _, imagemask, label, _ = self.image_dataset.__getitem__(index)
+            images, plant, imagemask, label, _ = self.image_dataset.__getitem__(index)
+            #plant_id = plant["plant_id"]
         else:
             images, label, imagemask, _ = self.image_dataset.__getitem__(index)
         
@@ -657,4 +694,5 @@ class Image3dCombidataset(Dataset):
         if self.return_ply:
             return images, points, points_ply, imagemask, pointmask, plymask, label, weight
         else:
+            #return images, plant_id, points, imagemask, pointmask, label, weight
             return images, points, imagemask, pointmask, label, weight

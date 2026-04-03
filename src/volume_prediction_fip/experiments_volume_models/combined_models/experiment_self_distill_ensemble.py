@@ -24,7 +24,7 @@ from volume_prediction_fip.experiments_volume_models.shared import utils_experim
 from volume_prediction_fip.utils import helpers
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-arti_2_vol = torch.load(helpers.get_exp_path() / "ply2volume_model.pth", weights_only=False).to(device).eval()
+arti_2_vol = torch.load(helpers.get_exp_path() / "ply2volume_model_new.pth", weights_only=False).to(device).eval()
 arti_2_vol.output = "features"
 
 class Mixedloader(Iterable):
@@ -73,7 +73,8 @@ def stats(vol_pred, vol_real, weights = None, show_plot = False):
     print(f"Val MAPE: {(torch.abs((vr - vp) / (vr + 1e-8))).mean().item() * 100}")
 
     #rate = -(- mae + corr * (50 / 0.03) - abs(1 - linregcoeff[0]) * (50 / 0.1))
-    rate = -(corr * (50 / 0.03) - abs(1 - linregcoeff[0]) * (50 / 0.1))
+    #rate = -(corr * (50 / 0.03) - abs(1 - linregcoeff[0]) * (50 / 0.1))
+    rate = -(corr * (50 / 0.03) - abs(1 - linregcoeff[0]) * (50 / 0.1) -mae )
     print(f"Rate: {rate}")
     if show_plot:
         plt.plot((2000, 8500), (2000, 8500))
@@ -90,7 +91,7 @@ def inference_combined(model, val_ds):
         weights = []
         for images, points, imagemask, pointmask, label, weight in val_ds:
             images, points, imagemask, pointmask = [t.to(device) for t in [images, points, imagemask, pointmask]]
-            points = utils_3d.to_rigid_invariant_representation(points[:, :, 0:3], points[:, :, 6], num_samples=None)
+            points = utils_3d.to_rigid_invariant_representation(points[:, :, 0:3], points[:, :, 6],num_samples=None)
             volume = model(images, imagemask, points, pointmask)
             volume = volume.cpu().squeeze()
             vol_pred.append(volume)
@@ -113,8 +114,8 @@ def inference_pointnet(model, val_ds):
 
         for _, data_ply, data_depthmap, plymask, mask, vol_batch, _ in val_ds:
             data_ply, data_depthmap, plymask, mask, vol_batch = [t.to(device) for t in (data_ply, data_depthmap, plymask, mask, vol_batch)]
-            data_depthmap = utils_3d.to_rigid_invariant_representation(data_depthmap[:, :, 0:3], data_depthmap[:, :, 6])
-            data_ply = utils_3d.to_rigid_invariant_representation(data_ply[:, :, 0:3], data_ply[:, :, 6])
+            data_depthmap = utils_3d.to_rigid_invariant_representation(data_depthmap[:, :, 0:3], data_depthmap[:, :, 6], bins=10)
+            data_ply = utils_3d.to_rigid_invariant_representation(data_ply[:, :, 0:3], data_ply[:, :, 6], bins=30)
 
             ply_latent = arti_2_vol(data_ply, plymask)
             volume, latent = model(data_depthmap, mask)
@@ -155,9 +156,9 @@ def inference_images(model, val_ds):
         return vol_pred, vol_real, weights
 
 def warmup_multiplicative_schedule(e):
-     return 0.01 if e < 10 else min(1/ (e * 0.03), 0.1)
+     return 0.01 if e < 40 else min(1/ (e * 0.03), 0.1)
 
-def retrain_image(unlabeled_images, labeled_train_ds, val_ds, nepoch=300):
+def retrain_image(unlabeled_images, labeled_train_ds, val_ds, nepoch=500):
     model = models.RegulatedTransformer().to(device)
     loader = Mixedloader(unlabeled_images, labeled_train_ds)
 
@@ -180,6 +181,7 @@ def retrain_image(unlabeled_images, labeled_train_ds, val_ds, nepoch=300):
             loss = lossfn(x, label, weight)
             if dt == 0:
                 loss = loss * 0.08
+                #loss = loss * 0.1
                 errs_train_nolabel.append(loss.item())  
             else:
                 errs_train_label.append(loss.item())
@@ -192,7 +194,8 @@ def retrain_image(unlabeled_images, labeled_train_ds, val_ds, nepoch=300):
         vol_pred, vol_real, _ = inference_images(model, val_ds)
         rate, _ = stats(vol_pred, vol_real)
 
-        if best_rate is None or (rate < best_rate and epoch > 4 * (nepoch // 5)):
+        if best_rate is None or (rate < best_rate and epoch > 400):
+        #if best_rate is None or (rate < best_rate and epoch > 4 * (nepoch // 5)):
             best_rate = rate
             best_model = copy.deepcopy(model).cpu()
             best_epoch = epoch
@@ -227,8 +230,8 @@ def retrain_pointnet(unlabeled_depthmaps, labeled_train_ds, val_ds, nepoch = 40)
                 _, data_ply, data_depthmap, plymask, mask, vol_batch, _ = data
                 data_ply, data_depthmap, plymask, mask, vol_batch = [t.to(device) for t in (data_ply, data_depthmap, plymask, mask, vol_batch)]
             
-                data_depthmap = utils_3d.to_rigid_invariant_representation(data_depthmap[:, :, 0:3], data_depthmap[:, :, 6])
-                data_ply = utils_3d.to_rigid_invariant_representation(data_ply[:, :, 0:3], data_ply[:, :, 6])
+                data_depthmap = utils_3d.to_rigid_invariant_representation(data_depthmap[:, :, 0:3], data_depthmap[:, :, 6], bins=10)
+                data_ply = utils_3d.to_rigid_invariant_representation(data_ply[:, :, 0:3], data_ply[:, :, 6], bins=30)
                 ply_latent = arti_2_vol(data_ply, plymask)
 
                 volume, latent = model(data_depthmap, mask)
@@ -251,14 +254,14 @@ def retrain_pointnet(unlabeled_depthmaps, labeled_train_ds, val_ds, nepoch = 40)
 
     return best_model, best_val
     
-def retrain_combined(pretrained_point, pretrained_img, train_ds, val_ds, nepoch=20):
+def retrain_combined(pretrained_point, pretrained_img, train_ds, val_ds, nepoch=30):
     model = models.Image3dEnsemble()
     model.img_net.load_state_dict(pretrained_img.state_dict(), strict=False)
     model.point_net.load_state_dict(pretrained_point.state_dict(), strict=False)
     model = model.to(device)
 
     optimizer = torch.optim.Adam(itertools.chain(model.final.parameters(), model.prec_img.parameters()), lr=0.002)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 3, 0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, 0.5)
 
     best_rate = None
     best_model = None
@@ -282,8 +285,9 @@ def retrain_combined(pretrained_point, pretrained_img, train_ds, val_ds, nepoch=
         print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
         vol_pred, vol_real = inference_combined(model, val_ds)
         rate, _ = stats(vol_pred, vol_real) # weights seem dangerous
-
-        if best_rate is None or (rate < best_rate and epoch > (nepoch // 4) * 3):
+        
+        if best_rate is None or (rate < best_rate and epoch > 15):
+        #if best_rate is None or (rate < best_rate and epoch > (nepoch // 4) * 3):
             best_rate = rate
             best_model = copy.deepcopy(model).cpu()
 
@@ -303,11 +307,11 @@ if __name__ == "__main__":
     combined_train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
     combined_val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
 
-    model_name = "self-distill-regulated_transformer.pth"
+    model_name = "self-distill-regulated_transformer_new_mae_rate_original.pth"
 
     # To evaluate on test use experiment_regulated_transformer, resp. experiment_image_rigidinv_ensemble
 
-    pretrained_point = torch.load(helpers.get_exp_path() / f"rigidinv_indirect2.pth", weights_only=False).to(device)
+    pretrained_point = torch.load(helpers.get_exp_path() / f"rigidinv_indirect2_new.pth", weights_only=False).to(device)
     pretrained_img = torch.load(helpers.get_exp_path() / f"regulatedtransformer-direct.pth", weights_only=False).to(device)
 
     best_combined_val = None
@@ -317,7 +321,7 @@ if __name__ == "__main__":
     vol_pred, vol_real, _ = inference_images(best_img_model.to(device), image_val_loader)
     best_image_rate, _ = stats(vol_pred, vol_real)
 
-    for _ in range(2):
+    for _ in range(5):
         print("\n\nFitting new combined model\n\n")
         combined_model, combined_val = retrain_combined(best_pointnet_model, best_img_model, combined_train_loader, combined_val_loader)
         if best_combined_val is None or combined_val < best_combined_val:
@@ -340,6 +344,7 @@ if __name__ == "__main__":
         image_model, image_rate = retrain_image(image_unlabeled_loader, image_train_loader, image_val_loader)
         unlabeled_images.plant_mapping["volume"] = torch.nan
         if image_rate < best_image_rate:
+            best_image_rate = image_rate
             best_img_model = image_model
         else:
             break

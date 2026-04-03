@@ -9,7 +9,7 @@ from sklearn.linear_model import LinearRegression
 import numpy as np
 from typing import List
 import torch
-from experiments_volume_models.shared import datasets, utils_experiment
+from volume_prediction_fip.experiments_volume_models.shared import datasets, utils_experiment
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
@@ -132,3 +132,7 @@ if __name__ == "__main__":
             model.train_call(features, mask, labels)
 
     evaluate(model, test_loader, True)
+
+    #{'MAE': 689.9323120117188, 'Correlation': 0.7026152059746232, 'SteSteepness': 0.40364894671394164, 'MAPE': 15.545886754989624}
+    #{'MAE': 688.12109375, 'Correlation': 0.7057950865331791, 'Steepness': 0.40530510483401433, 'MAPE': 15.497636795043945}
+#{'MAE': 692.282958984375, 'Correlation': 0.7021835633009355, 'Steepness': 0.4043618002965563, 'MAPE': 15.646551549434662}

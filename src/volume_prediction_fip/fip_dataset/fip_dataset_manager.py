@@ -10,6 +10,7 @@ import tqdm
 from volume_prediction_fip.fip_global import fip_detection
 from volume_prediction_fip.utils import helpers
 import torch
+import time
 
 class FIPDataset:
     """
@@ -109,14 +110,16 @@ class FIPDataset:
                 image_dir = row['image_dir']
                 labeled_data = json.loads(row['labeled_spike'])
                 verified = labeled_data.get("verified", False)
-                
-                for label in self.spikescans.loc[self.spikescans["image_dir"] == image_dir, "label"]:
+
+                image_dir_base = os.path.basename(image_dir.replace("\\", "/"))
+                    
+                for label in self.spikescans.loc[self.spikescans["image_dir"].apply(lambda p: os.path.basename(p.replace("\\", "/"))) == image_dir_base,"label"]:
+
                     new_row = {
-                        "image_dir": image_dir,
+                        "image_dir": self.spikescans.loc[self.spikescans["image_dir"].apply(lambda p: os.path.basename(p.replace("\\", "/"))) == image_dir_base,"image_dir"].iloc[0],
                         "label": label,
                         "verified": verified,
                     }
-                    
                     for cam_key in camkeys:
                         if cam_key in labeled_data and label in labeled_data[cam_key]:
                             new_row[cam_key] = labeled_data[cam_key][label]
@@ -127,7 +130,6 @@ class FIPDataset:
                         new_row["label_selectedon"] = labeled_data["label_selectedon"][label]
                     else:
                         new_row["label_selectedon"] = None
-                    
                     new_rows.append(new_row)
 
             df = pd.DataFrame(new_rows)
@@ -157,7 +159,16 @@ class FIPDataset:
         
         result = {}
         model = helpers.get_detection_model()
+
+        total_detection_time = 0
+        total_pairing_time = 0
+        total_folders = 0
+        
+        #folders = self.spikescans["image_dir"].unique()[:4]
+        #for folder in tqdm.tqdm(folders):
         for folder in tqdm.tqdm(self.spikescans["image_dir"].unique()):
+            total_folders += 1
+            print(folder)
             conf = self.get_pose_config(folder)
             if update_connections_only:
                 w = self.precomputed[folder]
@@ -169,11 +180,26 @@ class FIPDataset:
                     id += 1
                 print(len(w))
             else:
+                torch.cuda.synchronize()
+                start = time.time()
                 boxes, _ = fip_detection.find_objects_yolo(model, folder)
+                torch.cuda.synchronize()
+                total_detection_time += time.time() - start
+
+            torch.cuda.synchronize()
+            start = time.time()
             connected_boxes = fip_detection.connect_boxes(boxes, conf, min_view=0)
+            torch.cuda.synchronize()
+            total_pairing_time += time.time() - start
+            #print(f'connected boxes: {connected_boxes}')
             if torch.cuda.memory_reserved() // (1024**2) > 3500:
                 torch.cuda.empty_cache()
             result[folder] = connected_boxes
+        print("\n=== Timing ===")
+        print(f"Total detection time: {total_detection_time:.2f}s")
+        print(f"Avg detection per folder: {total_detection_time/total_folders:.2f}s")
+        print(f"Total pairing time: {total_pairing_time:.2f}s")
+        print(f"Avg pairing per folder: {total_pairing_time/total_folders:.2f}s")
         with open(precompute_file, "w") as f:
             json.dump(result, f)
         self.precomputed = result
@@ -188,6 +214,9 @@ class FIPDataset:
         if use_depthmap:
             tablecols.extend(["depth_name", "corner", "pose_file", "pose_key"])
         table = pd.DataFrame(columns=tablecols)
+        import time
+        total_seg_time = 0
+        seg_count = 0
         # Load all images
         all_imgs = {}
         for img_name in camkeys:
@@ -209,7 +238,14 @@ class FIPDataset:
                 crop_params = helpers.get_crop_params(box_size, img)
                 patch, _ = helpers.put_image_on_patch(box_size, img, crop_params)
                 if seg_model:
+                    if torch.cuda.is_available():
+                            torch.cuda.synchronize()
+                    start = time.time()
                     patch = fip_detection.segment_spike(seg_model, patch)
+                    if torch.cuda.is_available():
+                        torch.cuda.synchronize()
+                    total_seg_time += time.time() - start
+                    seg_count += 1
                     if patch is None:
                         continue
 
@@ -233,6 +269,10 @@ class FIPDataset:
                 if use_depthmap:
                     new_row = new_row | depth_row
                 table.loc[len(table)] = new_row
+        if seg_count > 0:
+            print("\n=== Segmentation Timing ===")
+            print(f"Total segmentation time: {total_seg_time:.2f}s")
+            print(f"Avg segmentation per image: {total_seg_time/seg_count:.4f}s")
         return table
     
     def get_box_with_max_overlap(self, box: List[int], boxes: List[Dict]):
@@ -272,7 +312,9 @@ class FIPDataset:
         camkeys = [f"cam_{i:02}.png" for i in range(1, 13)]
         # for now segmentation is done as a post step.
         seg_model = helpers.get_segmentation_model()
-        for folder in tqdm.tqdm(self.spikescans["image_dir"].unique()):
+        folders = self.spikescans["image_dir"].unique()[:4]
+        for folder in tqdm.tqdm(folders):
+        #for folder in tqdm.tqdm(self.spikescans["image_dir"].unique()):
             scans: pd.DataFrame = self.spikescans.loc[self.spikescans["image_dir"] == folder]
             precomp_json = {}
             for w in self.precomputed[folder]:
@@ -434,16 +476,30 @@ class FIPDataset:
 
 if __name__ == "__main__":
     config = {
-            "annotation_file": r"F:\FIP-data\csv\labeled_spikes.csv",
-            "csv_folder": r"F:\FIP-data\csv",
-            "img_folder": r"F:\FIP-data\images",
-            "ply_folder": r"F:\FIP-data\wheat-scans",
-            "precompute_file": r"F:\FIP-data\csv\precomputed_new_setup.json",
+            "annotation_file":  "/projects/zumstego/volume_prediction_fip/FIP-data/csv/labeled_spikes.csv",
+            "csv_folder":       "/projects/zumstego/volume_prediction_fip/FIP-data/csv",
+            "img_folder":       "/projects/zumstego/volume_prediction_fip/FIP-data/images",
+            "ply_folder":       "/projects/zumstego/volume_prediction_fip/FIP-data/wheat-scans",
+            "precompute_file":  "/projects/zumstego/volume_prediction_fip/FIP-data/csv/precomputed_new_setup_new_yolo.json",
             "pose_folder": str(helpers.get_assets_path() / "poses")
         }
 
-    data = FIPDataset(config["csv_folder"], config["img_folder"], config["ply_folder"], config["precompute_file"], config["annotation_file"], config["pose_folder"])
+    data = FIPDataset(config["csv_folder"], 
+                      config["img_folder"], 
+                      config["ply_folder"], 
+                      config["precompute_file"],
+                      #None, 
+                      config["annotation_file"], 
+                      config["pose_folder"], )
+    
+    print("\nChecking image_dir paths from spikescans:")
+    for p in data.spikescans["image_dir"].head(10):
+        print(p, "->", os.path.exists(p))
+
     #data.spikescans.to_csv(r"F:\FIP-data\csv\fip_data_export.csv")
-    data.precompute_image_dataset(r"F:\Boxes-ds\auto_split_new_pair", 20, automatic_inferred=True, segment=True, use_depthmap=True)
+    #data.precompute_image_dataset("/projects/zumstego/volume_prediction_fip/Boxes-ds/auto_split_new_pair_paper", 20, automatic_inferred=True, segment=True, use_depthmap=True)
     #data.generate_unlabeled_spikes(r"F:\Boxes-ds\unlabeled-5000-depth", 6000, 10)
     #data.precompute_boxes(r"F:\FIP-data\csv\precomputed_new_setup.json", update_connections_only=True)
+    
+    #data.precompute_boxes("/projects/zumstego/volume_prediction_fip/FIP-data/csv/precomputed_new_setup_new_yolo.json", update_connections_only=False)
+    data.precompute_image_dataset("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth_paper", 20, automatic_inferred=True, segment=True, use_depthmap=True)

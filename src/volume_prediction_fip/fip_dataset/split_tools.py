@@ -88,12 +88,14 @@ if __name__ == "__main__":
     # Defines a split. If this split does not yet exist and create_split is called, defines where to store 
     # the split. If it exists, the split defined here can be adapted for a new dataset using adapt_new_dataset.
     #v = VolumeMapping(r"F:\Boxes-ds\segmented_distance_depth\split_without2024")
-    v = VolumeMapping(r"unlabeled-5000-depth")
+    v = VolumeMapping("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth_paper/split_without2024/")
+    #v = VolumeMapping(r"unlabeled-5000-depth")
 
 
     # Creates a new split based on the vol_mapping file of the dataset
     #v.create_split(r"F:\Boxes-ds\artifical\bestpose_noshift_12\vol_mapping.csv", np.random.default_rng(14), 6, 6)
-    v.create_split(r"unlabeled-5000-depth/vol_mapping.csv", np.random.default_rng(14), min_sequence_length_train=6, min_sequence_length_test=6, rel_test_set_size=0.2, rel_val_set_size=0)
+    #v.create_split("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth_paper/vol_mapping.csv", np.random.default_rng(14), min_sequence_length_train=6, min_sequence_length_test=6, rel_test_set_size=0.2, rel_val_set_size=0)
+    v.create_split("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth_paper/vol_mapping.csv", np.random.default_rng(14), min_sequence_length_train=6, min_sequence_length_test=6, rel_test_set_size=0.2, rel_val_set_size=0.1)
 
 
     # Adapts an existing split to a new dataset. That is new images/plants are taken to train from the new dataset (if extend_train is true),

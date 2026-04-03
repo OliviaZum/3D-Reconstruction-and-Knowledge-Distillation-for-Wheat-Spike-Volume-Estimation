@@ -1,6 +1,9 @@
 from typing import Literal
 from torch import nn
 import torch
+import torchvision.models as tv_models
+from typing import Literal
+import timm
 
 # https://arxiv.org/pdf/1904.00069
 class PCNEncoder(nn.Module):
@@ -326,7 +329,7 @@ def unflat(shape, mask, input):
     unflat_array[~mask] = input
     return unflat_array
 
-class RegulatedTransformer(nn.Module):
+class  RegulatedTransformer(nn.Module):
     def __init__(self, output: Literal["features", "volume"] = "volume", *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.subdim = 192
@@ -365,7 +368,13 @@ class RegulatedTransformer(nn.Module):
             self.last_pred = fmlp3()
             self.last_conf = fmlp3()
 
-        self.kd_proj = nn.Linear(self.subdim * 2, self.subdim * 2)
+        
+        self.kd_proj = nn.Linear(384, 256)
+        #self.kd_proj = nn.Sequential(
+        #    nn.Linear(384, 384),
+        #    nn.GELU(),
+        #    nn.Linear(384, 256)
+        #)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor):
 
@@ -422,10 +431,304 @@ class RegulatedTransformerLoss(nn.Module):
         wsi, wec = self.weights
         return err_single_img.mean() * wsi + err_combined.mean() * wec
 
+import torch
+from torch import nn
+
+class RegulatedTransformerWithDINO(nn.Module):
+    """
+    Wrapper:
+    raw images -> DINOv2 -> (384-d features) -> RegulatedTransformer
+
+    Supports:
+    - fully frozen DINO
+    - fine-tuning the last DINO block
+    """
+    def __init__(
+        self,
+        regulated_transformer: nn.Module,
+        dino_type: Literal["dinov2", "dinov3"] = "dinov3",
+        finetune_last_dino_block: bool = False,
+    ):
+        super().__init__()
+
+        self.dino_type = dino_type
+        self.finetune_dino = finetune_last_dino_block
+
+        # -----------------------
+        # Load DINO backbone
+        # -----------------------
+
+        if dino_type=="dinov2":
+            self.dino = torch.hub.load(
+                "facebookresearch/dinov2", "dinov2_vits14"
+            )
+        elif dino_type=="dinov3":
+            self.dino = timm.create_model(
+                "vit_small_patch16_dinov3",
+                pretrained=True,
+                num_classes=0
+            )
+
+
+        self.dino.eval()
+
+        # -----------------------
+        # Freeze everything
+        # -----------------------
+        for p in self.dino.parameters():
+            p.requires_grad = False
+
+        # -----------------------
+        # Optionally unfreeze last block (+ norm)
+        # -----------------------
+        if self.finetune_dino:
+            if self.dino_type == "dinov2":
+                for p in self.dino.blocks[-1].parameters():
+                    p.requires_grad = True
+                for p in self.dino.norm.parameters():
+                    p.requires_grad = True
+
+            elif self.dino_type == "dinov3":
+                for p in self.dino.blocks[-1].parameters():
+                    p.requires_grad = True
+                for p in self.dino.norm.parameters():
+                    p.requires_grad = True
+
+
+
+        # -----------------------
+        # Downstream model
+        # -----------------------
+        self.regulated_transformer = regulated_transformer
+
+
+
+    #def _run_dino(self, images: torch.Tensor) -> torch.Tensor:
+    #    """
+    #    images: (N, 3, H, W)
+    #    returns: (N, 384) CLS token
+    #    """
+    #
+    #    # IMPORTANT:
+    #    # - If finetuning → gradients must flow
+    #    # - If frozen     → save memory with no_grad
+    #    if self.finetune_dino:
+    #        out = self.dino.forward_features(images)
+    #    else:
+    #        with torch.no_grad():
+    #            out = self.dino.forward_features(images)
+    #
+    #    # CLS token (exactly what you cached before)
+    #    feats = out["x_norm_clstoken"]  # (N, 384)
+    #    return feats
+    
+    def _run_dino(self, images: torch.Tensor) -> torch.Tensor:
+        if not self.finetune_dino:
+            with torch.no_grad():
+                return self._forward_dino(images)
+        return self._forward_dino(images)
+
+    def _forward_dino(self, images: torch.Tensor) -> torch.Tensor:
+        if self.dino_type == "dinov2":
+            out = self.dino.forward_features(images)
+            return out["x_norm_clstoken"]  # (N, 384)
+
+        elif self.dino_type == "dinov3":
+            return self.dino(images)       # (N, 384)
+
+    def forward(self, images: torch.Tensor, mask: torch.Tensor):
+        """
+        images: (B, N, 3, H, W) or (B, N, H, W)
+        mask:   (B, N)  True = invalid
+        """
+
+        # -----------------------
+        # Ensure RGB
+        # -----------------------
+        if images.dim() == 4:
+            # (B, N, H, W) → (B, N, 3, H, W)
+            images = images.unsqueeze(2).repeat(1, 1, 3, 1, 1)
+
+        if images.shape[2] != 3:
+            raise ValueError(f"Expected 3 channels, got {images.shape[2]}")
+
+        B, N, C, H, W = images.shape
+
+        # -----------------------
+        # Flatten images
+        # -----------------------
+        images_flat = images.view(B * N, C, H, W)
+        mask_flat = mask.view(B * N)
+
+        # -----------------------
+        # Select valid images only
+        # -----------------------
+        valid_images = images_flat[~mask_flat]
+
+        # -----------------------
+        # Run DINO
+        # -----------------------
+        feats = self._run_dino(valid_images)  # (n_valid, 384)
+
+        # -----------------------
+        # Re-pack to (B, N, 384)
+        # -----------------------
+        x = images.new_zeros(B * N, feats.shape[-1])
+        x[~mask_flat] = feats
+        x = x.view(B, N, -1)
+
+        # -----------------------
+        # Forward into original model
+        # -----------------------
+        return self.regulated_transformer(x, mask)
+
+class RegulatedTransformerWithResNet50(nn.Module):
+    """
+    Wrapper:
+    raw images -> ResNet50 -> (384-d features) -> RegulatedTransformer
+
+    Supports:
+    - fully frozen ResNet
+    - fine-tuning the last ResNet block (layer4)
+    """
+    def __init__(
+        self,
+        regulated_transformer: nn.Module,
+        finetune_last_resnet_block: bool = False,
+        pretrained: bool = True,
+    ):
+        super().__init__()
+
+        # -----------------------
+        # Load ResNet-50
+        # -----------------------
+        resnet = tv_models.resnet50(
+            weights=tv_models.ResNet50_Weights.IMAGENET1K_V1 if pretrained else None
+        )
+
+        # Remove classification head
+        self.backbone = nn.Sequential(
+            resnet.conv1,
+            resnet.bn1,
+            resnet.relu,
+            resnet.maxpool,
+            resnet.layer1,
+            resnet.layer2,
+            resnet.layer3,
+            resnet.layer4,
+            resnet.avgpool,   # (N, 2048, 1, 1)
+        )
+
+        # -----------------------
+        # Projection: 2048 -> 384
+        # -----------------------
+        self.proj = nn.Linear(2048, 384)
+
+        # -----------------------
+        # Freeze everything
+        # -----------------------
+        for p in self.backbone.parameters():
+            p.requires_grad = False
+        for p in self.proj.parameters():
+            p.requires_grad = False
+
+        # -----------------------
+        # Optionally unfreeze last block
+        # -----------------------
+        self.finetune_resnet = finetune_last_resnet_block
+        if self.finetune_resnet:
+            for p in resnet.layer4.parameters():
+                p.requires_grad = True
+            for p in self.proj.parameters():
+                p.requires_grad = True
+
+        # -----------------------
+        # Downstream model
+        # -----------------------
+        self.regulated_transformer = regulated_transformer
+
+    def _run_resnet(self, images: torch.Tensor) -> torch.Tensor:
+        """
+        images: (N, 3, H, W)
+        returns: (N, 384)
+        """
+
+        if self.finetune_resnet:
+            feats = self.backbone(images)
+        else:
+            with torch.no_grad():
+                feats = self.backbone(images)
+
+        feats = feats.flatten(1)     # (N, 2048)
+        feats = self.proj(feats)     # (N, 384)
+        return feats
+
+    def forward(self, images: torch.Tensor, mask: torch.Tensor):
+        """
+        images: (B, N, 3, H, W) or (B, N, H, W)
+        mask:   (B, N)  True = invalid
+        """
+
+        # -----------------------
+        # Ensure RGB
+        # -----------------------
+        if images.dim() == 4:
+            images = images.unsqueeze(2).repeat(1, 1, 3, 1, 1)
+
+        if images.shape[2] != 3:
+            raise ValueError(f"Expected 3 channels, got {images.shape[2]}")
+
+        B, N, C, H, W = images.shape
+
+        # -----------------------
+        # Flatten
+        # -----------------------
+        images_flat = images.view(B * N, C, H, W)
+        mask_flat = mask.view(B * N)
+
+        valid_images = images_flat[~mask_flat]
+
+        # -----------------------
+        # Run ResNet
+        # -----------------------
+        feats = self._run_resnet(valid_images)  # (n_valid, 384)
+
+        # -----------------------
+        # Re-pack
+        # -----------------------
+        x = images.new_zeros(B * N, feats.shape[-1])
+        x[~mask_flat] = feats
+        x = x.view(B, N, -1)
+
+        # -----------------------
+        # Forward into RT
+        # -----------------------
+        return self.regulated_transformer(x, mask)
+
+
+class RegulatedTransformerFeatureWrapper(nn.Module):
+    def __init__(self, base_model: RegulatedTransformer):
+        super().__init__()
+        self.base = base_model
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor):
+        # ensure per-image path is safe
+        safe_mask = torch.ones_like(mask, dtype=torch.bool)
+
+        # delegate to existing code unchanged
+        return self.base(x, safe_mask)
+
+
 class Image3dEnsemble(nn.Module):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, use_kd: bool = False, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.img_net = RegulatedTransformer(output="features")
+        base_img_net = RegulatedTransformer(output="features")
+
+        if use_kd:
+            self.img_net = RegulatedTransformerFeatureWrapper(base_img_net)
+        else:
+            self.img_net = base_img_net
+
         self.point_net = RigidInvariantPointNet(output="latent")
 
         self.prec_img = nn.Sequential(
@@ -452,38 +755,6 @@ class Image3dEnsemble(nn.Module):
         pred = self.final(combined)
         return pred
     
-class Image3dEnsemble_distill(nn.Module):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.img_net = RegulatedTransformer(output="features")
-        self.point_net = RigidInvariantPointNet(output="latent")
-
-        self.prec_img = nn.Sequential(
-            nn.Linear(384, 384),
-            nn.GELU(),
-            nn.Linear(384, 128)
-        )
-
-
-        self.final = nn.Sequential(
-            nn.Linear(256, 256),
-            nn.Dropout(0.1),
-            nn.GELU(),
-            nn.Linear(256, 1)
-        )
-
-    def forward(self, images, images_mask, points, point_mask, return_features=False):
-        imgfeat = self.img_net(images, images_mask, output="features")
-        imgfeat = self.prec_img(imgfeat)
-        pointfeat = self.point_net(points, point_mask, output="features")
-
-        combined = torch.concat((imgfeat, pointfeat), dim=-1)
-
-        if return_features:
-            return combined
-        
-        pred = self.final(combined)
-        return pred
     
 class SingleImageModel(nn.Module):
     def __init__(self, output: Literal["normal", "features"] = "normal", *args, **kwargs):
@@ -563,6 +834,60 @@ class AttentionBased(nn.Module):
         x = self.last_lin(x)
         
         return x
+
+class AttentionBasedVariance(nn.Module):
+    
+    def __init__(self, 
+                 dropout_rate : float = 0.5,
+                 layer: int = 4,
+                 head: int = 2,
+                 dim_forward: int = 4 * 384):
+        super(AttentionBasedVariance, self).__init__()
+        
+        self.single_img_mlp = nn.Linear(384, 384)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=384,
+            nhead=head,
+            dim_feedforward=dim_forward,
+            dropout=dropout_rate,
+            batch_first=True,
+        )
+        self.encoder = nn.TransformerEncoder(
+            encoder_layer=encoder_layer, num_layers=layer, norm=None
+        )
+
+        self.volume_token = nn.Parameter(torch.randn(1, 1, 384))
+
+         # two parallel heads
+        self.last_mean = nn.Sequential(
+            nn.Linear(384, 384),
+            nn.GELU(),
+            nn.Linear(384, 1)
+        )
+
+        self.last_logvar = nn.Sequential(
+            nn.Linear(384, 384),
+            nn.GELU(),
+            nn.Linear(384, 1)
+        )
+
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor):
+        
+        x = self.single_img_mlp(x)
+
+        x = torch.cat((x, self.volume_token.repeat(x.size(0), 1, 1)), dim=1)
+        mask_n = torch.zeros((mask.shape[0], mask.shape[1] + 1), dtype=torch.bool, device=mask.device)
+        mask_n[:, -1] = 0
+        mask_n[:, 0:-1] = mask
+
+        x = self.encoder(src=x, src_key_padding_mask=mask_n)
+        vol_token = x[:, -1]
+
+        mean = self.last_mean(vol_token)
+        logvar = self.last_logvar(vol_token)
+
+        return mean.squeeze(), logvar.squeeze()
     
 class LSTM_fixed_dimensions(nn.Module): 
     def __init__(self,
@@ -597,3 +922,43 @@ class LSTM_fixed_dimensions(nn.Module):
         x = self.output_layer(x)
 
         return x
+    
+
+class LSTM_variance(nn.Module): 
+    def __init__(self,
+                activation : nn.Module = nn.CELU,
+                output_size : int = 1, 
+                normalize : nn.Module = nn.LayerNorm,
+                dropout_rate : float = 0.5): 
+        super(LSTM_variance, self).__init__()
+        input_size = 384
+        hidden_size = 512
+        num_layers = 3
+
+        bidirectional = False
+        num_directions = 2 if bidirectional else 1
+        
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True, bidirectional=bidirectional, dropout=dropout_rate)
+        
+        self.norm = normalize(hidden_size * num_directions)
+        self.dropout = nn.Dropout(dropout_rate)
+        self.activation = activation()
+
+        # two heads
+        self.mean_head = nn.Linear(hidden_size, 1)
+        self.logvar_head = nn.Linear(hidden_size, 1)
+
+    def forward(self, x : torch.Tensor, mask : torch.Tensor = None):
+        assert x.dim() == 3, "Wrong input dimension, consider reshaping!" # batch x sequence x features
+        
+        if not mask is None:
+            x = torch.einsum('jkl,jk->jkl',x, ~mask)
+
+        lstm_out, _ = self.lstm(x)
+        lstm_out_last = lstm_out[:, -1, :]
+        last = self.dropout(self.activation(self.norm(lstm_out_last)))
+
+        mean = self.mean_head(last)
+        logvar = self.logvar_head(last)
+
+        return mean.squeeze(), logvar.squeeze()

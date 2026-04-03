@@ -5,16 +5,83 @@ If running experiments, file paths have to be adapted to point to the actual dat
 
 #use: export CUBLAS_WORKSPACE_CONFIG=:4096:8
 
-
 from typing import Literal
 from pathlib import Path
 import torch
 from volume_prediction_fip.experiments_volume_models.shared import datasets
 from volume_prediction_fip.utils import helpers
 
+
+import torch
+import torch.nn as nn
+from transformers import AutoModel
+
+import timm
+
+
 def _get_image_dataset(split_folder: Path, base_folder: Path, cache_folder_image: Path, ndupli_train = 10, enable_distance = True):
     split_folder, base_folder, cache_folder_image = [Path(s) for s in [split_folder, base_folder, cache_folder_image]]
-    pretrained_model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
+
+    pre_model = "dinov2"
+
+    if pre_model == "dinov2":
+        #DINOv2:
+        pretrained_model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
+        print(pretrained_model.blocks)
+        print(pretrained_model.patch_embed)
+    
+    elif pre_model == "dinov3":
+        #DINOv3:
+        pretrained_model = timm.create_model(
+        "vit_small_patch16_dinov3",
+        pretrained=True,
+        num_classes=0
+        )
+        pretrained_model.eval()
+        pretrained_model.requires_grad_(False)
+
+    elif pre_model == "resnet50":
+        #ResNet50:
+        pretrained_model = timm.create_model(
+            "resnet50",
+            pretrained=True,
+            num_classes=0   # <-- THIS is critical
+        )
+        pretrained_model.eval()
+        pretrained_model.requires_grad_(False)
+
+    elif pre_model == "resnet152":
+        #ResNet152:
+        pretrained_model = timm.create_model(
+        "resnet152",
+        pretrained=True,
+        num_classes=0
+        )
+        pretrained_model.eval()
+        pretrained_model.requires_grad_(False)
+
+    elif pre_model == ("fomo4wheat"):
+        # FoMo4Wheat backbone = DINOv2 ViT-B/14 with custom weights
+        pretrained_model = torch.hub.load(
+            "facebookresearch/dinov2",
+            "dinov2_vitb14"
+        )
+
+        ckpt = torch.load("assets/model-weights/FoMo4Wheat_base.pth", map_location="cpu")
+
+        # FoMo checkpoint is a full model → extract backbone weights
+        if hasattr(ckpt, "state_dict"):
+            state_dict = ckpt.state_dict()
+        else:
+            state_dict = ckpt
+
+        pretrained_model.load_state_dict(state_dict, strict=False)
+
+        pretrained_model.eval()
+        pretrained_model.requires_grad_(False)
+
+
+
     cache_folder_image.mkdir(exist_ok=True)
     train_dataset_image = datasets.MultiImageTrainDataset(base_folder, split_folder / "mapping_train.json", 
                                                           datasets.get_transform(True), "volume", 12, 4, True, distance_normlization=enable_distance)
@@ -27,6 +94,33 @@ def _get_image_dataset(split_folder: Path, base_folder: Path, cache_folder_image
     test_dataset_image.create_or_load_cache(pretrained_model, cache_folder_image / "testcache.pth", 1, num_workers=0)
 
     return train_dataset_image, val_dataset_image, test_dataset_image
+
+#for fine-tuning the backbones, load images directly:
+def _get_raw_image_dataset(split_folder: Path, base_folder: Path, enable_distance: bool = True):
+    """Get image dataset without DINO cache (returns raw images)."""
+    split_folder, base_folder = Path(split_folder), Path(base_folder)
+
+    train_dataset = datasets.MultiImageTrainDataset(
+        base_folder, split_folder / "mapping_train.json",
+        datasets.get_transform(True), "volume", 12, 4, True,
+        distance_normlization=enable_distance
+    )
+    # No cache - returns raw images
+    val_dataset = datasets.MultiImageTrainDataset(
+        base_folder, split_folder / "mapping_val.json",
+        datasets.get_transform(False), "volume", 12, 6, False,
+        validation_mode=True, distance_normlization=enable_distance
+    )
+    # No cache - returns raw images
+    test_dataset = datasets.MultiImageTrainDataset(
+        base_folder, split_folder / "mapping_test.json",
+        datasets.get_transform(False), "volume", 12, 6, False,
+        validation_mode=True, distance_normlization=enable_distance
+    )
+    # No cache - returns raw images
+
+    return train_dataset, val_dataset, test_dataset
+
 
 def _get_depthmap_dataset(split_folder, base_folder, cache_folder, force_recompute = False, filter_minview = False):
     split_folder, base_folder, cache_folder = [Path(s) for s in [split_folder, base_folder, cache_folder]]
@@ -64,13 +158,13 @@ def get_real_dataset3d(force_recompute = False):
 # Get artificial point clouds dataset
 def get_ply_dataset(force_recompute = False, voxelize = False):
     split_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth/split_without2024")
-    base_folder = Path("/projects/zumstego/volume_prediction_fip/Fip-data/wheat-scans")
+    base_folder = Path("/projects/zumstego/volume_prediction_fip/FIP-data/wheat-scans")
 
     
     if voxelize:
         cache_path = Path(helpers.get_exp_path() / r"ply_cache_voxelized")
     else:
-        cache_path = Path(helpers.get_exp_path() / r"ply_cache")
+        cache_path = Path(helpers.get_exp_path() / r"ply_cache_ply")
 
     return _get_ply_dataset(split_folder, base_folder, cache_path, force_recompute, voxelize)
     
@@ -111,12 +205,21 @@ def get_default_image_dataset():
 
     return _get_image_dataset(split_folder, base_folder, cache_folder_image)
 
+def get_raw_image_dataset():
+    """Get default image dataset without DINO cache (returns raw images for CNN training)."""
+    split_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth/split_without2024")
+    base_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth")
+
+    return _get_raw_image_dataset(split_folder, base_folder)
+
+
 def get_default_image_dataset_wo_distance():
     split_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth/split_without2024")
     base_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/segmented_distance_depth")
     cache_folder = Path(helpers.get_exp_path() / "nodistancenorm_cache")
 
     return _get_image_dataset(split_folder, base_folder, cache_folder, enable_distance=False)
+
 
 def get_default_image_dataset_wo_distance_and_seg(disable_augmentation = False):
     split_folder = Path("/projects/zumstego/volume_prediction_fip/Boxes-ds/spike_dataset_manual_20_pad/split_without2024")

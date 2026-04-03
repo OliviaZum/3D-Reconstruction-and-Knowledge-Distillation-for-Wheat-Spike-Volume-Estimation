@@ -130,7 +130,8 @@ def get_segmentation_model():
     return YOLO(get_assets_path() / "model-weights" / "yolo-medium-segment.pt")
 
 def get_detection_model():
-    return YOLO(get_assets_path() / "model-weights" / "yolo-medium-detect-mAp50-0766.pt")
+    #return YOLO(get_assets_path() / "model-weights" / "yolo-medium-detect-mAp50-0766.pt")
+    return YOLO(get_assets_path() / "model-weights" / "best_yolo11l_40ep.pt")
 
 def get_pose_file_path():
     return get_assets_path() / "poses"

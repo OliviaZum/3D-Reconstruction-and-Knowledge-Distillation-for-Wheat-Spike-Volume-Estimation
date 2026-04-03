@@ -51,7 +51,6 @@ def feature_stat_loss(student, teacher):
     return F.mse_loss(mu_s, mu_t) + F.mse_loss(std_s, std_t)
 
 
-
 def evaluate(dataloader: DataLoader, model: nn.Module, latw=5, show_plot=False, MSE_loss=True, L2_loss=False, l2_loss_feature=False, MSE_l2_loss=False):
     model = model.eval()
     with torch.no_grad():
@@ -62,7 +61,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, latw=5, show_plot=False, 
         for idx, data_ply, data_depthmap, plymask, mask, vol_batch, _ in dataloader:
             data_ply, data_depthmap, plymask, mask, vol_batch = [t.to(device) for t in (data_ply, data_depthmap, plymask, mask, vol_batch)]
             data_depthmap = utils_3d.to_rigid_invariant_representation(data_depthmap[:, :, 0:3], data_depthmap[:, :, 6], bins=bins)
-            data_ply = utils_3d.to_rigid_invariant_representation(data_ply[:, :, 0:3], data_ply[:, :, 6], bins=10)
+            data_ply = utils_3d.to_rigid_invariant_representation(data_ply[:, :, 0:3], data_ply[:, :, 6], bins=30)
 
             ply_latent = arti_2_vol(data_ply, plymask)
             
@@ -111,7 +110,9 @@ def evaluate(dataloader: DataLoader, model: nn.Module, latw=5, show_plot=False, 
 
         volloss = ((vol_pred - vol_real) ** 2).mean().item()
         latloss = lat_losses.mean().item()
-        loss = volloss + latloss * latw
+        #loss = volloss + latloss * latw
+        #use only the volume loss in evaluation
+        loss = volloss
         print(f"Val MAE: {F.l1_loss(datasets.vol_unorm(vol_pred), datasets.vol_unorm(vol_real))}")
         print(f"Val Corr: {np.corrcoef(vol_real, vol_pred)[0, 1]}")
         A = np.vstack([vol_real, np.ones(len(vol_real))]).T
@@ -139,6 +140,8 @@ best_val = None
 best_epoch = None
 
 
+
+
 if __name__ == "__main__":
     accelerate.utils.set_seed(1, deterministic=True)
     train_dataset, val_dataset, test_dataset = utils_experiment.get_combined_point_real_arti_dataset()
@@ -148,17 +151,17 @@ if __name__ == "__main__":
 
     ###########################
     bins=10
-    MSE_loss = True
+    MSE_loss = False
     L2_loss = False
     l2_loss_feature = False
-    MSE_l2_loss = False
+    MSE_l2_loss = True
 
     evaluation = True
     
     ###########################
 
     model = models.RigidInvariantPointNet(output="volumelatent", bins=bins).to(device)
-    model_name = "rigidinv_indirect2.pth"
+    model_name = "rigidinv_indirect2_new.pth"
 
     
     if evaluation == True:
@@ -167,15 +170,87 @@ if __name__ == "__main__":
 
         # ---- evaluation timing ----
         torch.cuda.synchronize()
-        eval_start = time.perf_counter()
 
-        evaluate(test_loader, model, latw=5, show_plot=True, MSE_loss=MSE_loss, L2_loss=L2_loss, l2_loss_feature=l2_loss_feature, MSE_l2_loss=MSE_l2_loss)
+        plot_pca = True
+        if plot_pca == True: 
+            all_features = []
+            all_volumes = []
+
+            with torch.no_grad():
+                for idx, data_ply, data_depthmap, plymask, mask, vol_batch, _ in test_loader:
+
+                    data_depthmap = data_depthmap.to(device)
+                    mask = mask.to(device)
+
+                    data_depthmap = utils_3d.to_rigid_invariant_representation(
+                        data_depthmap[:, :, 0:3],
+                        data_depthmap[:, :, 6],
+                        bins=bins
+                    )
+
+                    volume, latent = model(data_depthmap, mask)
+
+                    all_features.append(latent.cpu())
+                    all_volumes.append(vol_batch.cpu())
+
+            features = torch.cat(all_features)
+            volumes = torch.cat(all_volumes)
+
+            print("Feature shape:", features.shape)
+            print("Volume shape:", volumes.shape)
+
+            features_np = features.numpy()
+            volumes_np = volumes.numpy()
+
+            from sklearn.decomposition import PCA
+            pca = PCA(n_components=2)
+            lat2d = pca.fit_transform(features_np)
+
+            vol_mm3 = datasets.vol_unorm(torch.tensor(volumes_np)).numpy()
+
+            # ---- explained variance ----
+            expl_var = pca.explained_variance_ratio_ * 100
+            print(f"Explained variance PC1: {expl_var[0]:.2f}%")
+            print(f"Explained variance PC2: {expl_var[1]:.2f}%")
+            print(f"Cumulative (2 PCs): {(expl_var[0] + expl_var[1]):.2f}%")
+
+            plt.figure(figsize=(6,5))
+            sc = plt.scatter(
+                lat2d[:, 0],
+                lat2d[:, 1],
+                c=vol_mm3,
+                cmap="viridis",
+                s=30
+            )
+            cbar = plt.colorbar(sc)
+            cbar.set_label("True volume [mm³]", fontsize=20)
+            cbar.ax.tick_params(labelsize=14)            
+            plt.xlabel(f"PC1 ({expl_var[0]:.1f}%)", fontsize=22)
+            plt.ylabel(f"PC2 ({expl_var[1]:.1f}%)", fontsize=22)
+
+            plt.xticks(fontsize=14)
+            plt.yticks(fontsize=14)
 
 
-        torch.cuda.synchronize()
-        eval_time = time.perf_counter() - eval_start
+            # SAME axis as other models
+            plt.xlim(-22, 22)
+            plt.ylim(-22, 22)
+            plt.tight_layout()
 
-        print(f"Evaluation time: {eval_time:.2f}s")
+            save_path = helpers.get_exp_path() / f"pca_invariant_field_{model_name}.png"
+            plt.savefig(save_path, dpi=600)
+            print(f"Saved PCA plot to {save_path}")
+
+            corr_pc1 = np.corrcoef(lat2d[:,0], volumes_np)[0,1]
+            corr_pc2 = np.corrcoef(lat2d[:,1], volumes_np)[0,1]
+            print("Correlation PC1 vs normalized volume:", corr_pc1)
+            print("Correlation PC2 vs normalized volume:", corr_pc2)
+
+
+        else: 
+    
+            evaluate(test_loader, model)
+            
         exit(0)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.002)
@@ -187,7 +262,7 @@ if __name__ == "__main__":
     best_metrics = None
 
 
-    for epoch in range(51):
+    for epoch in range(60):
         torch.cuda.synchronize()
         epoch_start = time.perf_counter()
 
@@ -197,7 +272,7 @@ if __name__ == "__main__":
             data_ply, data_depthmap, plymask, mask, vol_batch = [t.to(device) for t in (data_ply, data_depthmap, plymask, mask, vol_batch)]
             
             data_depthmap = utils_3d.to_rigid_invariant_representation(data_depthmap[:, :, 0:3], data_depthmap[:, :, 6], bins=bins)
-            data_ply = utils_3d.to_rigid_invariant_representation(data_ply[:, :, 0:3], data_ply[:, :, 6], bins=10)
+            data_ply = utils_3d.to_rigid_invariant_representation(data_ply[:, :, 0:3], data_ply[:, :, 6], bins=30)
             
             ply_latent = arti_2_vol(data_ply, plymask)
             #ply_latent = torch.stack([train_latents[int(i)] for i in idx]).to(device)
@@ -241,6 +316,8 @@ if __name__ == "__main__":
             loss.backward()
             optimizer.step()
         scheduler.step()
+        torch.cuda.synchronize()
+        epoch_time = time.perf_counter() - epoch_start
 
 
         #err_val = evaluate(val_loader, model, latw=latw, MSE_loss=MSE_loss, l2_loss_feature=l2_loss_feature, MSE_l2_loss=MSE_l2_loss)
@@ -260,16 +337,17 @@ if __name__ == "__main__":
         #  but somewhat lower val performance
         #best_model = copy.deepcopy(model).cpu()
 
-        torch.cuda.synchronize()
-        epoch_time = time.perf_counter() - epoch_start
+        
+
+        n_train_spikes = len(train_dataset)
 
         print(
             f"epoch {epoch:03d} | "
             f"train loss: {np.mean(errs_train):.4f} | "
-            f"time: {epoch_time:.2f}s"
+            f"time: {epoch_time:.2f}s | "
+            f"time per spike: {epoch_time / n_train_spikes:.6f}s"
         )
-        print(f"epoch {epoch}. Train: {np.mean(errs_train)}")
-    
+            
     torch.save(best_model, helpers.get_exp_path() / f"{model_name}")
 
     print("\nBest validation model:")
@@ -280,6 +358,66 @@ if __name__ == "__main__":
     print(f"  val Corr: {best_metrics['corr']:.4f}")
     print(f"  Steepness: {best_metrics['steepness']:.4f}")
 
+#
+
+#Val MAE: 568.2422485351562
+#Val Corr: 0.8111921638106129
+#Steepness: 0.6507610423874474
+#Val MAPE: 12.830798327922821
+#Val Loss (+latent diff): 0.5186429619789124
+#Val Loss volume: 0.5186429619789124
+#Val Loss latent: 1.3072032928466797
+#Evaluation time: 0.71s
+
+#20 bin#s
+#Best validation model:
+#  epoch: 10
+#  val loss: 0.6774
+#  val MAE: 639.01
+#  val MAPE: 13.99
+#  val Corr: 0.7179
+#  Steepness: 0.4473
+#
+#Val MAE: 616.5095825195312
+#Val Corr: 0.7938290121666504
+#Steepness: 0.4754899838143742
+#Val MAPE: 13.86265754699707
+#Val Loss (+latent diff): 0.64007169008255
+#Val Loss volume: 0.64007169008255
+#Val Loss latent: 1.4081486463546753
+#Evaluation time: 0.66s
+
+#30bins: 
+#epoch: 12
+#val loss: 0.6717
+#val MAE: 641.71
+#val MAPE: 14.47
+#val Corr: 0.7152
+#Steepness: 0.5834
+#test:
+#Val MAE: 576.8935546875
+#Val Corr: 0.8123041757318951
+#Steepness: 0.6671020079316794
+#Val MAPE: 13.26044499874115
+
+#40 bins: 
+# epoch: 10
+#  val MAE: 646.15
+##  val loss: 0.6773
+#  val MAPE: 14.78
+#  val Corr: 0.7110
+#  Steepness: 0.4387
+#Val MAE: 648.5906982421875
+#Steepness: 0.4645179223792018
+##Val Corr: 0.7701552782394314
+#Val MAPE: 15.14013260602951
+
+
+##open new tmux, type 16:8, wihtout activate .venv
+#Val MAE: 597.1624755859375
+#Val Corr: 0.7984782821968334
+#Steepness: 0.6295723464608788
+#Val MAPE: 13.850374519824982
 
 #save the best model according to lowest validation loss: with 40 / 10 bins
 #use both, teacher and student
@@ -291,6 +429,13 @@ if __name__ == "__main__":
 #  val MAPE: 14.94
 #  val Corr: 0.7197
 #  Steepness: 0.5466
+
+#new yolo file: 
+#Val MAE: 576.8935546875
+#Val Corr: 0.8123041757318951
+#Steepness: 0.6671020079316794
+#Val MAPE: 13.26044499874115
+
 
 
 #save the best model according to lowest validation loss: with 20 / 10 bins

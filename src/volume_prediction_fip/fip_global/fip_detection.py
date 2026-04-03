@@ -73,7 +73,8 @@ def connect_boxes(boxes: Dict[str, Dict[str, List[int]]], poses_conf, min_view =
             label = None
         combined_results.append({"image": image_name, "cluster": label, "box": box, "distance": current_dist})
 
-    return combined_results, distances, estimated_3d_pos
+    #return combined_results, distances, estimated_3d_pos
+    return combined_results
 
 # Helper function to export the results of detection and pairing
 def save_results(boxes, results, dir):

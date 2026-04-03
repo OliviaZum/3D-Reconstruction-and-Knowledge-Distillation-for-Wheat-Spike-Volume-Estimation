@@ -61,7 +61,6 @@ def save_latents(dataloader: DataLoader, model: nn.Module, bins: int, out_name: 
                 batch[:, :, 0:3],
                 batch[:, :, 6],
                 num_samples=None,
-                bins=bins
             )
 
             latent = model(r, mask)  # [B, latent_dim]
@@ -115,12 +114,12 @@ if __name__ == "__main__":
     accelerate.utils.set_seed(1, deterministic=True)
     
     #model_name = "real_volume_model-direct.pth"
-    model_name = "ply2volume_model.pth"
+    model_name = "ply2volume_model_new.pth"
     #model_name = "ply2volume_voxelized_model.pth"
     #model_name = "fiplike_uniform_ply_model.pth"
     #model_name = "fiplike_normal_ply_model.pth"
 
-    if model_name == "ply2volume_model.pth":
+    if model_name == "ply2volume_model_new.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset(force_recompute=False, voxelize=True)
     elif model_name == "ply2volume_voxelized_model.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_ply_dataset(force_recompute=False, voxelize=True)
@@ -137,10 +136,10 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
     ##########################
-    bins = 10
+    bins = 30
+    print(f'Number of Bins: {bins}')
     evaluation = True
     ##########################
-
 
 
     if evaluation == True:
@@ -150,7 +149,90 @@ if __name__ == "__main__":
         torch.cuda.synchronize()
         eval_start = time.perf_counter()
 
-        evaluate(test_loader, model, show_plot=True, bins=bins)
+        plot_pca = True
+        if plot_pca == True: 
+                    
+            # IMPORTANT: switch model to latent mode
+            model.output = "latent"
+
+            all_features = []
+            all_volumes = []
+
+            with torch.no_grad():
+                for _, batch, vol_batch, mask, _ in test_loader:
+                    batch = batch.to(device)
+                    mask = mask.to(device)
+
+                    r = utils_3d.to_rigid_invariant_representation(
+                        batch[:, :, 0:3],
+                        batch[:, :, 6],
+                        num_samples=None,
+                        bins=bins
+                    )
+
+                    latent = model(r, mask)  # (B, latent_dim)
+                    all_features.append(latent.cpu())
+                    all_volumes.append(vol_batch.cpu())
+
+            features = torch.cat(all_features)
+            volumes = torch.cat(all_volumes)
+
+            print("Feature shape:", features.shape)
+            print("Volume shape:", volumes.shape)
+
+            features_np = features.numpy()
+            volumes_np = volumes.numpy()
+
+            from sklearn.decomposition import PCA
+
+            pca = PCA(n_components=2)
+            lat2d = pca.fit_transform(features_np)
+
+             # ---- explained variance ----
+            expl_var = pca.explained_variance_ratio_ * 100
+            print(f"Explained variance PC1: {expl_var[0]:.2f}%")
+            print(f"Explained variance PC2: {expl_var[1]:.2f}%")
+            print(f"Cumulative (2 PCs): {(expl_var[0] + expl_var[1]):.2f}%")
+
+            vol_mm3 = datasets.vol_unorm(torch.tensor(volumes_np)).numpy()
+
+            plt.figure(figsize=(6,5))
+            sc = plt.scatter(
+                lat2d[:, 0],
+                lat2d[:, 1],
+                c=vol_mm3,
+                cmap="viridis",
+                s=30
+            )
+            cbar = plt.colorbar(sc)
+            cbar.set_label("True volume [mm³]", fontsize=20)
+            cbar.ax.tick_params(labelsize=14)
+            plt.xlabel("PC1")
+            plt.ylabel("PC2")
+            plt.xlabel(f"PC1 ({expl_var[0]:.1f}%)", fontsize=22)
+            plt.ylabel(f"PC2 ({expl_var[1]:.1f}%)", fontsize=22)
+
+            plt.xticks(fontsize=14)
+            plt.yticks(fontsize=14)
+
+
+            # use SAME axis limit as ensemble
+            plt.xlim(-22, 22)
+            plt.ylim(-22, 22)
+
+            save_path = helpers.get_exp_path() / f"pca_rigidinv_direct_{model_name}.png"
+            plt.tight_layout()
+            plt.savefig(save_path, dpi=600)
+            print(f"Saved PCA plot to {save_path}")
+
+            corr_pc1 = np.corrcoef(lat2d[:,0], volumes_np)[0,1]
+            corr_pc2 = np.corrcoef(lat2d[:,1], volumes_np)[0,1]
+            print("Correlation PC1 vs normalized volume:", corr_pc1)
+            print("Correlation PC2 vs normalized volume:", corr_pc2)
+
+
+        else:
+            evaluate(test_loader, model, show_plot=True, bins=bins)
 
         torch.cuda.synchronize()
         eval_time = time.perf_counter() - eval_start
@@ -247,82 +329,64 @@ if __name__ == "__main__":
 
     torch.save(best_model, helpers.get_exp_path() / f"{model_name}")
 
+#final
+
 #learning rate: 
 #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, 0.5)
 #take best validation model 
 
-#20 bins: 
-
-#Val MAE: 110.01852416992188
-#Val Corr: 0.9948335476850508
-#Val Loss: 0.021435106173157692
-#Steepness: 1.0037353435423442
-#Val MAPE: 2.607983537018299
-#Evaluation time: 0.48s
-
-#30 bins: 
-#Val MAE: 114.49935913085938
-#Val Corr: 0.9936629390921988
-#Val Loss: 0.02451905608177185
-#Steepness: 1.0093361417796258
-#Val MAPE: 2.752685733139515
-#Evaluation time: 0.55s
-
-#40 bins
-#Val MAE: 110.071533203125
-#Val Corr: 0.995961092572018
-#Val Loss: 0.01948995143175125
-#Steepness: 1.0459007099380864
-#Val MAPE: 2.5372734293341637
-#Evaluation time: 0.61s
 
 
-#set to 10 bins: 
-#Val MAE: 104.51681518554688
-#Val Corr: 0.993079275072471
-#Val Loss: 0.02155246026813984
-#Steepness: 0.9681114811809532
-#Val MAPE: 2.290513552725315
 
-#set to 20 bins: 
-#Val MAE: 109.15414428710938
-#Val Corr: 0.9949240516254767
-#Val Loss: 0.020467158406972885
-#Steepness: 1.0047228355129814
-#Val MAPE: 2.5854114443063736
+#real dataset: otpitimzer 10, 0.5
 
-#set to 30 bins: 
-#Val MAE: 113.08631134033203
-#Val Corr: 0.9936150969452122
-#Val Loss: 0.02444547414779663
-#Steepness: 1.009861118974362
-#Val MAPE: 2.748478017747402
+#Number of Bins: 5
+#Val MAE: 628.263916015625
+#Val Corr: 0.7807985888032245
+#Val Loss: 0.6358693838119507
+#Steepness: 0.5345923046582944
+#Val MAPE: 14.111658930778503
+#Evaluation time: 0.37s
 
-#set to 40 bins: 
-#Val MAE: 109.586669921875
-#Val Corr: 0.9958728295554264
-#Val Loss: 0.01945229060947895
-#Steepness: 1.0454113786749848
-#Val MAPE: 2.523437701165676
+#Number of Bins: 10
+#Val MAE: 577.6362915039062
+#Val Corr: 0.8116039212084282
+#Val Loss: 0.5376783013343811
+#Steepness: 0.7108362061098719
+#Val MAPE: 13.212825357913971
+#Evaluation time: 0.42s
 
-#set to 50 bins: 
-#Val MAE: 105.56632232666016
-#Val Corr: 0.9937977754913688
-#Steepness: 1.0004258200443747
-#Val Loss: 0.019919315353035927
-#Val MAPE: 2.4266762658953667
-#Evaluation time: 0.69s
-
-#real data set: 
-#Val MAE: 594.2637329101562
-#Val Corr: 0.7960995003716316
-#Val Loss: 0.5577086806297302
-#Steepness: 0.6130315211274003
-#Val MAPE: 13.38384598493576
-#Evaluation time: 0.44s
-
-
+#Number of bins 15
+#Val MAE: 567.2279052734375
+#Val Corr: 0.8152441481652233
+#Val Loss: 0.5269496440887451
+#Steepness: 0.6307004556717791
+#Evaluation time: 0.43s
+#Val MAPE: 13.018052279949188
 
     
- 
+#Number of Bins: 20
+#Val MAE: 569.1702880859375
+#Val Loss: 0.5104888677597046
+#Val Corr: 0.8213859839749641
+#Steepness: 0.6769545099492628
+#Val MAPE: 12.915945053100586
+#Evaluation time: 0.48s
                 
+#bins 10: optimizer 5, 0.2
+#Number of Bins: 10
+#Val MAE: 584.6538696289062
+#Val Corr: 0.8081667876255458
+#Val Loss: 0.541265606880188
+#Steepness: 0.6708369714019186
+#Val MAPE: 13.3138969540596
+#Evaluation time: 0.40s
+
+#bins10, optimizer 2, 0.2
+#Number of Bins: 10
+#Val MAE: 606.1171875
+#Val Corr: 0.7915556022101682
+#Val Loss: 0.5837835669517517
+#Steepness: 0.622086008428909
+#Val MAPE: 13.704714179039001
+#Evaluation time: 0.41s

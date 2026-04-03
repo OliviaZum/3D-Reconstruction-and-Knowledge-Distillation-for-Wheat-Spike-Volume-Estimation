@@ -28,7 +28,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
             images = images.to(device)
             imagemask = imagemask.to(device)
             
-            volume = model(images, imagemask)
+            volume, logvar = model(images, imagemask)
             volume = volume.cpu().squeeze()
             vol_pred.append(volume)
             vol_real.append(label)
@@ -80,15 +80,15 @@ if __name__ == "__main__":
     val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, collate_fn=datasets.img_validation_collate_fn)
     test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False, collate_fn=datasets.img_validation_collate_fn)
 
-    model_name = "transformer.pth"
+    model_name = "transformer_variance.pth"
 
-    evaluation = False
+    evaluation = True
     if evaluation == True:
         model = torch.load(helpers.get_exp_path() / f"{model_name}", weights_only=False).to(device).eval()
         evaluate(test_loader, model, show_plot=True)
         exit(0)
 
-    model = models.AttentionBased().to(device)
+    model = models.AttentionBasedVariance().to(device)
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     scheduler = scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warmup_multiplicative_schedule)
@@ -101,9 +101,15 @@ if __name__ == "__main__":
         for images, label, imagemask, weight in train_loader:
             images, label, imagemask, weight = [t.to(device) for t in [images, label, imagemask, weight]]
 
-            x = model(images, imagemask)
+            mean, logvar = model(images, imagemask)
+
+            target = label
+            scale = weight
+
+            loss = ((mean - target) ** 2) / (2 * torch.exp(logvar)) + 0.5 * logvar
+            loss = (loss * scale).mean()
                 
-            loss = ((x.squeeze() - label) ** 2 * weight).mean()
+            #loss = ((x.squeeze() - label) ** 2 * weight).mean()
             errs_train.append(loss.item())
 
             optimizer.zero_grad()
@@ -113,7 +119,7 @@ if __name__ == "__main__":
         
         err_val = evaluate(val_loader, model)
 
-        if best_val is None or is_better_model(err_val, best_val):
+        if best_val is None or is_better_model(err_val, best_val) and epoch > 400:
             best_val = err_val
             best_model = copy.deepcopy(model).cpu()
             best_epoch = epoch
@@ -122,3 +128,5 @@ if __name__ == "__main__":
 
     print(f"\n Best stats {best_val}")
     torch.save(best_model, helpers.get_exp_path() / f"{model_name}")
+
+    #{'MAE': 796.1043090820312, 'Correlation': 0.7391043603508334, 'Loss': 0.2592303156852722, 'Steepness': 0.8451122349087687, 'MAPE': 17.73817241191864}

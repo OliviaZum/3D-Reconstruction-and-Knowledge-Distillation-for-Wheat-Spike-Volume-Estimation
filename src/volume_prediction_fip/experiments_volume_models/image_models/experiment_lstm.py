@@ -38,7 +38,7 @@ def evaluate(dataloader: DataLoader, model: nn.Module, show_plot = False, should
             images = images.to(device)
             imagemask = imagemask.to(device)
             
-            volume = model(images, imagemask)
+            volume, logvar = model(images, imagemask)
             volume = volume.cpu().squeeze()
             vol_pred.append(volume)
             vol_real.append(label)
@@ -82,15 +82,15 @@ def is_better_model(stats, best_stats):
 if __name__ == "__main__":
     accelerate.utils.set_seed(0)
 
-    #model_name = "lstm-real.pth"
+    model_name = "lstm-real_variance.pth"
     #model_name = "lstm-real-no-dist.pth"
     #model_name = "lstm-real-nodist-noseg.pth"
-    model_name = "lstm-no-aug.pth"
+    #model_name = "lstm-no-aug.pth"
     #model_name = "lstm-fiplike-uniform.pth"
     #model_name = "lstm-fiplike-normal.pth"
     #model_name = "lstm-artificial_bestpose6.pth"
 
-    if model_name == "lstm-real.pth":
+    if model_name == "lstm-real_variance.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset()
     elif model_name == "lstm-real-no-dist.pth":
         train_dataset, val_dataset, test_dataset = utils_experiment.get_default_image_dataset_wo_distance()
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         evaluate(test_loader, model, show_plot=True)
         exit(0)
 
-    model = models.LSTM_fixed_dimensions().to(device)
+    model = models.LSTM_variance().to(device)
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     scheduler = scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warmup_multiplicative_schedule)
@@ -135,12 +135,16 @@ if __name__ == "__main__":
         for images, label, imagemask, weight in train_loader:
             images, label, imagemask, weight = [t.to(device) for t in [images, label, imagemask, weight]]
 
-            x = model(images, imagemask)
+            mean, logvar = model(images, imagemask)
             
             if model_name == "lstm-no-aug.pth":
-                loss = ((x.squeeze() - label) ** 2).mean()    
+                scale = torch.ones_like(label)  
             else:
-                loss = ((x.squeeze() - label) ** 2 * weight).mean()
+                scale = weight
+
+            loss = ((mean - label) ** 2) / (2 * torch.exp(logvar)) + 0.5 * logvar
+            loss = (loss * scale).mean()
+
             errs_train.append(loss.item())
 
             optimizer.zero_grad()
@@ -150,7 +154,7 @@ if __name__ == "__main__":
         
         err_val = evaluate(val_loader, model)
 
-        if best_val is None or is_better_model(err_val, best_val):
+        if best_val is None or is_better_model(err_val, best_val) and epoch > 400:
             best_val = err_val
             best_model = copy.deepcopy(model).cpu()
             best_epoch = epoch
@@ -159,3 +163,5 @@ if __name__ == "__main__":
 
     print(f"\n Best stats {best_val}")
     torch.save(best_model, helpers.get_exp_path() / f"{model_name}")
+
+    #{'MAE': 679.20556640625, 'Correlation': 0.7287071664274305, 'Loss': 0.23475833237171173, 'Steepness': 0.6573531422046811}
