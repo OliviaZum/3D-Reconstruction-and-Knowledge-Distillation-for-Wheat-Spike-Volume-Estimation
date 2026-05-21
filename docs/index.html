@@ -123,10 +123,9 @@
             margin-bottom: 18px;
             color: black;
         }
-
         .highlight-row {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 40px;
             max-width: 900px;
             margin: 30px auto 0 auto;
@@ -241,44 +240,46 @@
 
 
 
-
+        
         <div class="highlights-section">
             <h2>Highlights</h2>
             <div class="underline"></div>
 
-            <div class="highlight-row">
-                <img src="Picture_githubpages.png" alt="Highlight image">
+            <div class="highlight-box"></div>
 
-                <div class="highlight-text">
-                    <h3>Methodology:</h3>
-                    <p>
-                        Regulated Transformer:
-                        Fast, but less accurate for volume estimation. Single image predictor to estimate per-image volume, reducing overestimation (regulation).
-                        Global predictor to learn volume token from 12 views per spike. 
+                <div class="highlight-row">
+                    <img src="Picture_githubpages.png" alt="Highlight image">
 
-                        Rigid-invariant point cloud model: Higher accuracy but long inference time. Use KD to align features from indoor and outdoor point clouds to improve field point cloud models.
-                        Use KD to transfer 3D information to image models.
+                    <div class="highlight-text">
+                        <h3>Methodology:</h3>
+                        <p>
+                            Regulated Transformer:
+                            Fast, but less accurate for volume estimation. Single image predictor to estimate per-image volume, reducing overestimation (regulation).
+                            Global predictor to learn volume token from 12 views per spike. 
+
+                            Rigid-invariant point cloud model: Higher accuracy but long inference time. Use KD to align features from indoor and outdoor point clouds to improve field point cloud models.
+                            Use KD to transfer 3D information to image models.
 
 
-                    </p>
+                        </p>
+                    </div>
                 </div>
-            </div>
 
-            <div class="highlight-row reverse">
-                <div class="highlight-text">
-                    <h3>Results</h3>
-                    <p>
-                        DINOv2 outperforms other backbones variants. 
-                        RT and rigid-invariant point cloud models outperform 
-                        baseline models. Distilling knowledge from the strongest 
-                        ensemble into the RT minimizes both error and processing time.
+                <div class="highlight-row reverse">
+                    <div class="highlight-text">
+                        <h3>Results</h3>
+                        <p>
+                            DINOv2 outperforms other backbones variants. 
+                            RT and rigid-invariant point cloud models outperform 
+                            baseline models. Distilling knowledge from the strongest 
+                            ensemble into the RT minimizes both error and processing time.
 
-                    </p>
+                        </p>
+                    </div>
+                    <img src="results_github_pages.png" alt="Second highlight image">
                 </div>
-                <img src="results_github_pages.png" alt="Second highlight image">
+
             </div>
-
-
         </div>
 
 
