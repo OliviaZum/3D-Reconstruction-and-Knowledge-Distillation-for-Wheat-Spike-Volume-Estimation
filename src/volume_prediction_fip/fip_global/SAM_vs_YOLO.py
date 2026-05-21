@@ -271,7 +271,7 @@ def detection():
     # -----------------------
     # parameters (EXACTLY as original)
     # -----------------------
-    PADDING = 20
+    PADDING = 8
     PATCH_SIZE = 300
 
     # -----------------------
@@ -336,13 +336,19 @@ def segmentation_yolo():
     # -----------------------
     img_path = CURRENT_IMAGE
 
-
     snippets_dir = img_path.parent / "snipplets" / img_path.stem
     assert snippets_dir.exists(), f"Snipplets folder not found: {snippets_dir}"
 
     # -----------------------
-    # segmentation
+    # load full image once
     # -----------------------
+    full_img = cv2.imread(str(img_path))
+    assert full_img is not None
+    H, W = full_img.shape[:2]
+
+    # full-image combined mask
+    full_mask_combined = np.zeros((H, W), dtype=np.uint8)
+
 
     # -----------------------
     # Preload snippets (NO I/O in timing)
@@ -405,6 +411,68 @@ def segmentation_yolo():
 
         cv2.imwrite(str(out_path), combined_mask)
 
+        # -----------------------
+        # reconstruct snippet mask into full-image coordinates
+        # -----------------------
+        idx = snippet_path.stem.split("_")[1]
+        meta_path = snippets_dir / f"snippet_{idx}_meta.npy"
+        meta = np.load(meta_path, allow_pickle=True).item()
+
+        ox1, oy1, ox2, oy2 = meta["orig_box"]
+        cx1, cy1, cx2, cy2 = meta["cutbox"]
+
+        cut_w = cx2 - cx1
+        cut_h = cy2 - cy1
+        if cut_w <= 0 or cut_h <= 0:
+            continue
+
+        # PATCH -> CUTBOX: remove patch padding
+        patch_h, patch_w = mask.shape
+        start_y = (patch_h - cut_h) // 2
+        start_x = (patch_w - cut_w) // 2
+
+        mask_cut = mask[
+            start_y:start_y + cut_h,
+            start_x:start_x + cut_w
+        ]
+
+        if mask_cut.sum() == 0:
+            continue
+
+        # CUTBOX -> ORIG_BOX: remove crop padding
+        mask_orig = np.zeros((oy2 - oy1, ox2 - ox1), dtype=np.uint8)
+
+        dx = ox1 - cx1
+        dy = oy1 - cy1
+
+        h, w = mask_orig.shape
+
+        y0 = max(dy, 0)
+        x0 = max(dx, 0)
+        y1 = min(dy + h, mask_cut.shape[0])
+        x1 = min(dx + w, mask_cut.shape[1])
+
+        out_y0 = y0 - dy
+        out_x0 = x0 - dx
+        out_y1 = out_y0 + (y1 - y0)
+        out_x1 = out_x0 + (x1 - x0)
+
+        if y1 > y0 and x1 > x0:
+            mask_orig[out_y0:out_y1, out_x0:out_x1] = mask_cut[y0:y1, x0:x1]
+
+        if mask_orig.sum() == 0:
+            continue
+
+        # paste into full-image mask
+        full_mask_combined[oy1:oy2, ox1:ox2] = np.logical_or(
+            full_mask_combined[oy1:oy2, ox1:ox2],
+            mask_orig
+        ).astype(np.uint8)
+
+    cv2.imwrite(
+    str(snippets_dir / "full_image_seg.png"),
+    full_mask_combined * 255
+    )
 
     torch.cuda.synchronize()
     total_end = time.perf_counter()
@@ -441,7 +509,7 @@ def segmentation_SAM():
     # -------------------------------------------------
     # model
     # -------------------------------------------------
-    model = SAM("sam2_s.pt")
+    model = SAM("assets/model-weights/sam2_s.pt")
 
     # -------------------------------------------------
     # paths
@@ -476,12 +544,14 @@ def segmentation_SAM():
     full_img = cv2.imread(str(img_path))
     assert full_img is not None
 
+    full_mask_combined = np.zeros(full_img.shape[:2], dtype=np.uint8)
+
     # -------------------------------------------------
     # run SAM segmentation
     # -------------------------------------------------
 
     # collect all boxes first
-    PADDING = 20
+    PADDING = 8
     PATCH_SIZE = 300
 
     meta_paths = sorted(snippets_dir.glob("snippet_*_meta.npy"))
@@ -504,6 +574,8 @@ def segmentation_SAM():
             continue
 
         full_mask = (r.masks.data[0].cpu().numpy() > 0).astype(np.uint8)
+
+        full_mask_combined = np.logical_or(full_mask_combined, full_mask).astype(np.uint8)
 
         # ---- reproduce SAME geometry as detection() ----
         crop_mask, _ = helpers.extend_image_box(
@@ -531,6 +603,11 @@ def segmentation_SAM():
         out_mask_path = snippets_dir_sam / f"{snippet_name}_seg.png"
 
         cv2.imwrite(str(out_mask_path), combined_mask)
+
+    cv2.imwrite(
+    str(snippets_dir_sam / "full_image_seg.png"),
+    full_mask_combined * 255
+    )
 
     torch.cuda.synchronize()
     total_end = time.perf_counter()
@@ -569,14 +646,17 @@ if __name__ == "__main__":
 
         CURRENT_IMAGE = img_path
 
-        #detection()
+        detection()
         #ious = segmentation_yolo() 
+        
         #GLOBAL IoU (non-zero only):
-        #Mean     : 0.6873
-        #Variance : 0.056285
-        #Std Dev  : 0.2372
+        #Mean     : 0.7341
+        #Variance : 0.028426
+        #Std Dev  : 0.1686
+        #Used 2464 / 2464 masks
 
         ious = segmentation_SAM()
+
 
         if ious is not None:
             all_ious.extend(ious)

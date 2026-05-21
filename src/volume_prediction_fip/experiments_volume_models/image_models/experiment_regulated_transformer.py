@@ -256,8 +256,8 @@ if __name__ == "__main__":
     accelerate.utils.set_seed(0)
 
     #model_name = "regulatedtransformer-direct.pth"
-    #model_name = "self-distill-regulated_transformer_new_mae_rate_original.pth"
-    model_name = "kd_regulated_transformer_new2.pth"
+    model_name = "self-distill-regulated_transformer_new_mae_rate_original.pth"
+    #model_name = "kd_regulated_transformer_new2.pth"
     #model_name = "nodistance-regulated_transformer.pth"
     #model_name = "nodistancenoseg-regulated_transformer.pth"
     #model_name = "noaug-regulated_transformer.pth"
@@ -416,7 +416,7 @@ if __name__ == "__main__":
         print(f"Pure forward time per spike: {time_per_spike*1000:.3f} ms")
 
 
-        print_features = True
+        print_features = False
         if print_features: 
 
             # ---- switch regulated transformer to feature mode ----

@@ -137,4 +137,5 @@ def get_pose_file_path():
     return get_assets_path() / "poses"
 
 def get_volume_model_path():
-    return get_assets_path() / "model-weights" / "self-distill-regulated_transformer.pth"
+    return get_assets_path() / "model-weights" / "self-distill-regulated_transformer_new_mae_rate_original.pth"
+    #return get_assets_path() / "model-weights" / "self-distill-regulated_transformer_oldsplit.pth"

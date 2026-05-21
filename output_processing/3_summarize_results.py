@@ -2,7 +2,8 @@ import pandas as pd
 from pathlib import Path
 
 # Folder to scan
-base_folder = Path("/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2023")
+#base_folder = Path("/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2023")
+base_folder = Path("/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2024")
 
 # Collect results
 summary = []
@@ -46,5 +47,6 @@ for file in base_folder.rglob("*_filtered_results.csv"):
 
 # Save summary as CSV
 summary_df = pd.DataFrame(summary)
-summary_df.to_csv("summary_output_2023_new.csv", index=False)
+#summary_df.to_csv("output_processing/estimation_2023_2024/summary_output_2023_new.csv", index=False)
+summary_df.to_csv("output_processing/estimation_2023_2024/summary_output_2024_new.csv", index=False)
 print(" Summary saved to summary_output.csv")

@@ -87,7 +87,7 @@ def infer_volume(image_folder: Path | str,
         batch_size_dino = 500 # Batch size for dino feature extraction
         batch_size_volpred = 256 # Batch size for volume prediction
         min_img_after_seg = 6 # The minimum number of images a cluster should have after segmentation (if below the cluster is removed)
-        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        device = torch.device("cuda:1") if torch.cuda.is_available() else torch.device("cpu")
         # Move models between cpu and gpu to decrease gpu mem usage. If there is lots of memory, one could make this
         # slightly faster by disabling.
         move_models_to_cpu = True 
@@ -324,6 +324,9 @@ def main():
 
 
     yolo_det, yolo_seg, dino, vol_model = get_default_models()
+    #print("Check: Models")
+    #print(yolo_det)
+    #print(yolo_seg)
     r, cluster_to_patch, reconstruced_3d, square_3d, filtered_df = infer_volume(args.image_folder, output_directory, calibration, 
             args.min_view, yolo_det, yolo_seg, dino, vol_model, verbose=verbose)
     
@@ -338,20 +341,24 @@ def main():
     print("output directory")
     print(output_directory)
 
-    #plot final BB, total and in square --> take a lot of space!! (50 MB)
-    volumes_in_square.plot_BB_cam7(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
-    volumes_in_square.plot_BB_cam7_2colors(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
+    #save a large number of output images: 
+    save_output_images = False
+    if save_output_images:
 
-    # create a subfolder so save spikes
-    subfolder = output_directory / "spikes"
-    subfolder.mkdir(parents=True, exist_ok=True)
+        #plot final BB, total and in square --> take a lot of space!! (50 MB)
+        volumes_in_square.plot_BB_cam7(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
+        volumes_in_square.plot_BB_cam7_2colors(r, reconstruced_3d, filtered_df, square_3d, output_directory, args.image_folder)
 
-    if args.output_directory is not None:
-        for i, (vol, cluster) in enumerate(zip(r["volume"].to_list(), cluster_to_patch.values())):
-            _, _, patches = zip(*cluster.values())
-            for j, patch in enumerate(patches):
-                output_path = subfolder / f"{i}_{j}_{vol}.jpg"
-                cv2.imwrite(str(output_path), patch)
+        # create a subfolder so save spikes, takes a lot of space
+        subfolder = output_directory / "spikes"
+        subfolder.mkdir(parents=True, exist_ok=True)
+
+        if args.output_directory is not None:
+            for i, (vol, cluster) in enumerate(zip(r["volume"].to_list(), cluster_to_patch.values())):
+                _, _, patches = zip(*cluster.values())
+                for j, patch in enumerate(patches):
+                    output_path = subfolder / f"{i}_{j}_{vol}.jpg"
+                    cv2.imwrite(str(output_path), patch)
                 
 
 if __name__ == "__main__":

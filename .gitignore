@@ -15,6 +15,9 @@ FIP_test/
 2_Output_2024
 check_empty_folders.py
 src/log_files
-
+delete_or_keep
+Yolo_vs_SAM
+final-testset.PNG
+assets/model-weights/sam2_s.pt
 assets/model-weights/FoMo4Wheat_base.pth
 precomputed_new_setup.json

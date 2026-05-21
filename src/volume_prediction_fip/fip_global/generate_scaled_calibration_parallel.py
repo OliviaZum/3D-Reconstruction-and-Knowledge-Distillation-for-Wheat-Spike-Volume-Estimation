@@ -6,15 +6,23 @@ import subprocess
 from datetime import datetime
 
 # === Configuration ===
+###########################################################################
+
 EXTRINSICS_DIR = "../assets/fip_calibration/extrinsics"
-PLOTS_INPUT_DIR = "/data-kp/FIP/Analysis/2024/WW036/debayered"
-PLOTS_OUTPUT_DIR = "/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2024"
+#PLOTS_INPUT_DIR = "/data-kp/FIP/Analysis/2024/WW036/debayered"
+#PLOTS_OUTPUT_DIR = "/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2024"
 #PLOTS_INPUT_DIR = "/data-kp/FIP/Analysis/2023/WW034/debayered"
 #PLOTS_OUTPUT_DIR = "/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2023"
+
+PLOTS_INPUT_DIR = "../FIP_test/1_Messung_2023/"
+PLOTS_OUTPUT_DIR = "../FIP_test/1_Output_2023/"
 
 FIP_CALIBRATE_EXECUTABLE = "fip-calibrate"  # Make sure it's in PATH or use full path
 OPENMVG_PATH = "/home/zumstego/volume_prediction_fip/tools/openMVG/build/Linux-x86_64-RELEASE"
 POSES_FILE_NAME = "poses_scaled.json"
+
+###########################################################################
+print("cwd:", os.getcwd())
 
 now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
 os.makedirs("log_files", exist_ok=True)
@@ -108,7 +116,7 @@ def main():
         folder_date = datetime(year, month, day)
 
 
-        if folder_date < datetime(2024, 5, 15):
+        if folder_date < datetime(2023, 5, 15):
             continue  # skip anything before May
 
         full_date_path = os.path.join(PLOTS_INPUT_DIR, date_folder)

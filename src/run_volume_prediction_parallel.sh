@@ -1,19 +1,22 @@
 #!/bin/bash
 export PYTHONPATH=$(pwd)
 
-#INPUT_PARENT="/data-kp/FIP/Analysis/2024/WW036/debayered"
-OUTPUT_PARENT="/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2023"
-INPUT_PARENT="/data-kp/FIP/Analysis/2023/WW034/debayered"
+#INPUT_PARENT="/data-kp/FIP/Analysis/2023/WW034/debayered"
 #OUTPUT_PARENT="/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2023"
+#AFTER_DATE="20230515" #set it below! 
+
+
+INPUT_PARENT="/data-kp/FIP/Analysis/2024/WW036/debayered"
+OUTPUT_PARENT="/data-kp/FIP/Analysis/2023/WW034/volume_prediction/2024"
+
 #python3 -c "import os; print('Current working directory:', os.getcwd())"
 
 
-#INPUT_PARENT="FIP_test/2_Messung_2024"
-#OUTPUT_PARENT="FIP_test/2_Output_2024"
+#INPUT_PARENT="../FIP_test/1_Messung_2023"
+#OUTPUT_PARENT="../FIP_test/1_Output_2023"
 
 mkdir -p log_files
 SUMMARY_FILE="log_files/summary_$(date +%Y%m%d_%H%M%S).csv"
-
 
 
 # Header for CSV
@@ -31,9 +34,9 @@ process_plot() {
     DATE_STR=$(echo "$PLOT_NAME" | grep -oE '[0-9]{8}_[0-9]{6}' | cut -d_ -f1)
 
     # Skip if date is before 2023-05-15 or 2024-05-15
-    if [[ "$DATE_STR" < "20230515" ]]; then
+    if [[ "$DATE_STR" < 20240515 ]]; then
         #echo "$PLOT_NAME,skipped,0,older_than_threshold" >> "$SUMMARY_FILE"
-        echo "Skipping $PLOT_NAME (date $DATE_STR is before 2023-05-15)"
+        echo "Skipping $PLOT_NAME (date $DATE_STR is before 05-15)"
         return
     fi
 
@@ -91,4 +94,4 @@ export -f process_plot
 
 # Feed input folders to parallel
 find "$INPUT_PARENT" -mindepth 2 -maxdepth 2 -type d | \
-    parallel -j 4 process_plot {} "$OUTPUT_PARENT" "$SUMMARY_FILE"
+    parallel -j 2 process_plot {} "$OUTPUT_PARENT" "$SUMMARY_FILE"
