@@ -56,31 +56,36 @@
             padding-bottom: 5px;
         }
 
-	.abstract-section {
-	    margin-top: 60px;
-	    text-align: center;
-	}
+            .abstract-section {
+            margin-top: 60px;
+            text-align: center;
+        }
 
-    .abstract-section h2 {
-        font-size: 28px;
-        margin-bottom: 5px;
-    }
+        .abstract-section h2 {
+            font-size: 52px;
+            font-weight: 800;
+            margin-bottom: 18px;
+            color: black;
+        }
 
-	.underline {
-	    width: 60px;
-	    height: 4px;
-	    background: linear-gradient(90deg, #ff7eb3, #7afcff);
-	    margin: 10px auto 20px auto;
-	    border-radius: 2px;
-	}
+        .underline {
+            width: 120px;
+            height: 7px;
+            background: linear-gradient(90deg, #ff7eb3, #7afcff);
+            margin: 0 auto 30px auto;
+            border-radius: 10px;
+        }
 
-	.abstract-section p {
-	    max-width: 700px;
-	    margin: auto;
-	    font-size: 18px;
-	    line-height: 1.6;
-	    color: #5a6b7d;
-	}
+        .abstract-section p {
+            max-width: 760px;
+            margin: auto;
+            font-size: 18px;
+            line-height: 1.6;
+            color: #5a6b7d;
+            text-align: justify;
+        }
+
+
     </style>
 </head>
 
@@ -123,8 +128,23 @@
     <h2>Abstract</h2>
     <div class="underline"></div>
     <p>
-        <!--Accurate estimation of wheat spike volume is important for yield component analysis and stress resilience assessment, yet field-based measurement remains challenging. Active 3D sensing methods such as Light Detection and Ranging (LiDAR) or time-of-flight (ToF) are sensitive to plant motion or poorly suited to outdoor conditions, while 3D reconstructions are computationally expensive. Direct 2D image processing would offer computational advantages, but image-based models lack explicit geometric information. We therefore propose a hybrid 2D–3D approach with knowledge distillation during training while enabling efficient image-only inference. First, we train a rigid-invariant point cloud network using distance-based histogram features to obtain pose-robust geometric representations. We then combine the 3D model with a proposed multi-view image-based regulated Transformer (RT) in an ensemble architecture. Finally, we distill the ensemble knowledge into a purely image-based student model using either feature-based or label-based distillation. The two distilled RTs reduce the mean absolute error (MAE) from 654.31 $mm^3$ of the non-distilled RT to 639.93 $mm^3$ and 644.62 $mm^3$, and increase correlation from 0.76 to 0.77 and 0.82, respectively. At the same time, inference time is reduced from 160 ms to 1.4 ms per spike. Distillation further mitigates volume-dependent bias and reshapes the latent representation of the image model toward a geometry-aware shape. Our results demonstrate that 3D-informed training of a 2D Transformer allows for scalable and efficient spike volume estimation for high-throughput field phenotyping.
-    -->
+        Accurate estimation of wheat spike volume is important for yield component analysis and stress 
+        resilience assessment, yet field-based measurement remains challenging. Active 3D sensing methods 
+        such as Light Detection and Ranging (LiDAR) or time-of-flight (ToF) are sensitive to plant motion 
+        or poorly suited to outdoor conditions, while 3D reconstructions are computationally expensive. 
+        Direct 2D image processing would offer computational advantages, but image-based models lack explicit 
+        geometric information. We therefore propose a hybrid 2D-3D approach with knowledge distillation during 
+        training while enabling efficient image-only inference. First, we train a rigid-invariant point cloud
+        network using distance-based histogram features to obtain pose-robust geometric representations.
+        We then combine the 3D model with a proposed multi-view image-based regulated Transformer (RT) 
+        in an ensemble architecture. Finally, we distill the ensemble knowledge into a purely image-based 
+        student model using either feature-based or label-based distillation. The two distilled RTs reduce 
+        the mean absolute error (MAE) from 654.31 mm3 of the non-distilled RT to 639.93 mm3 and 644.62 mm3, 
+        and increase correlation from 0.76 to 0.77 and 0.82, respectively. At the same time, inference time 
+        is reduced from 160 ms to 1.4 ms per spike. Distillation further mitigates volume-dependent bias and 
+        reshapes the latent representation of the image model toward a geometry-aware shape. Our results 
+        demonstrate that 3D-informed training of a 2D Transformer allows for scalable and efficient spike 
+        volume estimation for high-throughput field phenotyping.
     </p>
     </div>
 </div>
