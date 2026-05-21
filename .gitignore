@@ -1,4 +1,5 @@
-__pycache__/
+precomputed_new_setup.json
+assets/model-weights/FoMo4Wheat_base.pth__pycache__/
 weights/
 local_stuff/
 /lib
@@ -21,3 +22,4 @@ final-testset.PNG
 assets/model-weights/sam2_s.pt
 assets/model-weights/FoMo4Wheat_base.pth
 precomputed_new_setup.json
+assets/model-weights/FoMo4Wheat_base.pth
